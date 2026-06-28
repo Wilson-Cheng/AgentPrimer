@@ -62,7 +62,7 @@ export default function SettingsPage() {
   // Initial .env content as last loaded/saved — used to detect unsaved edits
   const [envInitial, setEnvInitial] = useState('');
 
-  // Embedding provider — 'local' uses the Python sidecar (fastembed), 'openai' uses text-embedding-3-small
+  // Embedding provider — 'local' uses the in-process model (Transformers.js), 'openai' uses text-embedding-3-small
   const [embeddingProvider, setEmbeddingProvider] = useState<'local' | 'openai'>('local');
   // Optional embedding-specific endpoint/key/model. When blank the chat
   // endpoint/key are reused. The model defaults to text-embedding-3-small.
@@ -771,7 +771,7 @@ export default function SettingsPage() {
                 </div>
                 <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
                   {embeddingProvider === 'local'
-                    ? 'Uses the local Python sidecar (port 15434) — no API cost, runs fully on server.'
+                    ? 'Uses a local in-process embedding model (all-MiniLM-L6-v2) — no API cost, runs fully on server.'
                     : 'Uses an OpenAI-compatible embeddings API. Configure a separate endpoint, key and model below if your embedding provider differs from your chat provider.'}
                 </p>
 

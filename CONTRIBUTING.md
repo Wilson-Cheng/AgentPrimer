@@ -9,9 +9,11 @@ to set up your environment, run the project locally, and submit changes.
 
 - **Node.js 20+** and npm
 - **Git** (for cloning function-tool and MCP-server packages at install time)
-- **Python 3.9+** with pip — *optional.* Only needed for the local embedding
-  sidecar (`scripts/embed_server.py`). The chat, function tools, skills, MCP,
-  and everything except the RAG semantic search work without it.
+
+> **No Python required.** Local RAG embeddings run in-process via
+> `@huggingface/transformers` (the `all-MiniLM-L6-v2` ONNX model). The model
+> downloads to `data/models/` on first use; if it can't load, RAG falls back
+> to FTS5 keyword search.
 
 ### Install and run
 
@@ -20,17 +22,13 @@ git clone https://github.com/wilson-cheng/AgentPrimer.git
 cd AgentPrimer
 npm install
 
-# (Optional) Python deps for the local RAG embeddings
-pip install -r requirements.txt
-
 npm run dev
 ```
 
 The dev server runs on port 15432 and exposes the chat UI at
-`http://localhost:15432`. The Python embedding sidecar (for RAG) starts
-alongside it automatically. If you skipped `pip install -r requirements.txt`,
-the sidecar still starts but logs `(degraded)` — the app continues normally,
-only the RAG semantic search is affected.
+`http://localhost:15432`. Local embeddings load in-process on first RAG use —
+no separate sidecar process. If the model can't load, the app continues
+normally and only the RAG semantic search falls back to FTS5 keyword search.
 
 First-run setup happens entirely in the browser:
 

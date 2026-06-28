@@ -7,8 +7,13 @@ export const runtime = 'nodejs';
 /**
  * GET /api/builtin-tools/source?id=<tool_id>
  *
- * Reads lib/agent.ts and extracts the source block for the requested tool.
- * The block starts at `  <id>: tool({` and ends at the matching `    }),`.
+ * Reads lib/agent/builtin-tools.ts and extracts the source block for the
+ * requested tool. The block starts at `  <id>: tool({` and ends at the
+ * matching `    }),`.
+ *
+ * Note: the built-in tool definitions used to live in lib/agent.ts, which is
+ * now just a barrel re-export. They moved to lib/agent/builtin-tools.ts during
+ * the agent module refactor.
  */
 export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get('id');
@@ -16,12 +21,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'invalid id' }, { status: 400 });
   }
 
-  const agentPath = path.join(/* turbopackIgnore: true */ process.cwd(), 'lib', 'agent.ts');
+  const toolsPath = path.join(
+    /* turbopackIgnore: true */ process.cwd(),
+    'lib',
+    'agent',
+    'builtin-tools.ts',
+  );
   let source: string;
   try {
-    source = fs.readFileSync(agentPath, 'utf8');
+    source = fs.readFileSync(toolsPath, 'utf8');
   } catch {
-    return NextResponse.json({ error: 'could not read agent.ts' }, { status: 500 });
+    return NextResponse.json({ error: 'could not read builtin-tools.ts' }, { status: 500 });
   }
 
   const lines = source.split('\n');

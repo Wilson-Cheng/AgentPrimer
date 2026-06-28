@@ -73,7 +73,7 @@ Multi-Agent Orchestration
 | [08](./08-database.md) | **Database Design** | SQLite schema, ER diagram, all tables (including RAG index, token usage log, async task tracking), WAL mode, migration strategy |
 | [09](./09-ecosystem-comparison.md) | **Ecosystem Comparison** | Three-way comparison: AgentPrimer vs OpenClaw vs Hermes Agent — architecture, feature matrix, gap analysis, and roadmap |
 | [10](./10-structured-output.md) | **Structured Output** | `response_format: json_object`, schema-in-prompt approach, the `extractor` agent, dual rendering path (live vs. historical), `StructuredOutputPanel` |
-| [11](./11-rag.md) | **RAG** | Why flat-file memory fails at scale, the chunk→embed→store→retrieve pipeline, Python sidecar (fastembed), cosine similarity in JS, FTS5 fallback, RAG UI |
+| [11](./11-rag.md) | **RAG** | Why flat-file memory fails at scale, the chunk→embed→store→retrieve pipeline, in-process embeddings (Transformers.js), cosine similarity in JS, FTS5 fallback, RAG UI |
 | [12](./12-deployment-production.md) | **Deployment & Production** | VPS deployment, Docker Compose, nginx reverse proxy, env vars, SQLite WAL backups, rate limiting, monitoring, Langfuse observability (setup, integration, trace analysis, evaluation, privacy) |
 | [13](./13-testing-agents.md) | **Testing AI Agents** | Mocking the LLM, testing tool dispatch, integration tests, structured output tests, error path coverage, eval harness design |
 | [14](./14-multi-agent-orchestration.md) | **Multi-Agent Orchestration** | Async sub-agents, task files, task notifications, monitor bubbles, auto follow-up, and orchestration limits |

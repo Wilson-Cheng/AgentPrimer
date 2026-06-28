@@ -53,7 +53,7 @@ with vector search, streaming agent responses, and multimodal attachments.
 
 For longer documents, you'll see multiple rows split by the chunking strategy (default: ~1600-character chunks with 200-character overlap).
 
-The `embedding` column stores the 384-dimensional vector as a JSON array of floats (null if the sidecar was unavailable):
+The `embedding` column stores the 384-dimensional vector as a JSON array of floats (null if the local embedder was unavailable):
 ```sql
 SELECT chunk_index, embedding IS NOT NULL AS has_embedding
 FROM knowledge_chunks;
@@ -63,16 +63,12 @@ FROM knowledge_chunks;
 
 ## Exercise 3: Force FTS5 fallback
 
-Find the Python embed server process:
+Local embeddings now run in-process via `@huggingface/transformers`, so there
+is no separate process to kill. To force the degraded path, make the model fail
+to load by pointing `EMBED_MODEL` at a non-existent model and restarting:
 
 ```bash
-ps aux | grep embed_server
-```
-
-Kill it:
-
-```bash
-pkill -f embed_server
+EMBED_MODEL="does-not-exist/nope" npm run dev
 ```
 
 Then:
@@ -82,17 +78,17 @@ Then:
 **Expected:** The agent still returns results. The search is now keyword-based (FTS5) instead of semantic (vector). Exact keyword matches work, but synonyms and paraphrased queries will be less accurate.
 
 **How the fallback works (`lib/rag.ts`):**
-- When the agent calls `search_knowledge_base`, `retrieveChunks` first tries the vector search by calling the Python sidecar at port 15434
-- If the sidecar is unreachable or returns an error, it falls back to FTS5:
+- When the agent calls `search_knowledge_base`, `retrieveChunks` first tries the vector search via the in-process embedder (`embedLocal()` in `lib/embeddings.ts`)
+- If the embedding model is unavailable or returns an error, it falls back to FTS5:
   ```sql
   SELECT chunk_text FROM knowledge_fts WHERE chunk_text MATCH ?
   ```
 - FTS5 uses SQLite's built-in full-text search with the BM25 ranking algorithm
 - This fallback is transparent to the agent — it just receives text chunks either way
 
-Restart the embed server:
+Restore vector search by restarting without the override:
 ```bash
-python3 scripts/embed_server.py &
+npm run dev
 ```
 
 ---
@@ -115,7 +111,7 @@ Ingest a document with the phrase "automotive vehicle". Then search for "car".
 |---------|---------------------------|----------------|
 | Synonyms | ✅ Understands | ❌ Exact match only |
 | Speed | Slower (cosine against all chunks) | Faster (indexed) |
-| Setup | Requires Python sidecar | Built into SQLite |
+| Setup | In-process model (~90 MB) | Built into SQLite |
 
 ---
 

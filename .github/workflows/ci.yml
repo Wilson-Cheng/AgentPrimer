@@ -37,17 +37,6 @@ jobs:
       - name: Rebuild native bindings
         run: npm run postinstall
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      # Optional dependency for the embedding sidecar. CI installs it so we
-      # exercise the full RAG path; production users can skip this and the
-      # sidecar will start in degraded mode (semantic search falls back to FTS5).
-      - name: Install Python dependencies
-        run: pip install -r requirements.txt
-
       - name: Lint
         run: npm run lint
 

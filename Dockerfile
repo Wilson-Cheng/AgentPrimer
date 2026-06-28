@@ -58,20 +58,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN npm install -g @mermaid-js/mermaid-cli
 RUN pip install --break-system-packages python-pptx
 
+# gtts (text-to-speech) is an optional agent tool. Local RAG embeddings no
+# longer use Python — they run in-process via @huggingface/transformers.
 RUN python3 -m venv /app/venv && \
     . /app/venv/bin/activate && \
-    (pip install --no-cache-dir "fastembed" || echo "[embed] fastembed not available on this platform — FTS5 fallback will be used") && \
     pip install --no-cache-dir "click<8.2" gtts && \
     ln -sf /app/venv/bin/gtts-cli /usr/local/bin/gtts-cli
 
-COPY --from=builder /app/scripts ./scripts
-RUN chmod +x /app/scripts/start.sh && \
-    mkdir -p /app/data
+RUN mkdir -p /app/data
 
 # Runs as root: the agent's run_shell / installer flows need to apt/npm/pip
 # install tools non-interactively at runtime. Treat the container as a
 # single-tenant trusted environment and keep it off public networks.
 EXPOSE 15432
-EXPOSE 15434
 
-CMD ["/app/scripts/start.sh"]
+CMD ["node_modules/.bin/next", "start", "--hostname", "0.0.0.0", "-p", "15432"]

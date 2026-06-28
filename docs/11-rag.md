@@ -10,7 +10,7 @@ After reading this module you will be able to:
 - Explain why flat-file memory breaks at scale and what RAG solves
 - Trace the complete ingestion pipeline: chunk → embed → store
 - Trace the retrieval pipeline: embed query → cosine similarity → inject
-- Understand the Python embedding sidecar and its graceful degradation design
+- Understand the in-process embedding model and its graceful degradation design
 - Use the RAG UI to upload, search, and manage documents
 - Use the `search_knowledge_base` tool in an agent
 
@@ -40,7 +40,7 @@ graph TB
         Upload["File Upload / Paste\n/api/rag/sources"]
         Upload --> Chunk
         Chunk["chunkText()\n~1600 chars, 200 overlap"] --> Embed
-        Embed["embedTexts()\nPython sidecar OR OpenAI API"] --> Store
+        Embed["embedTexts()\nin-process Transformers.js OR OpenAI API"] --> Store
         Store["INSERT INTO knowledge_chunks\n(chunk_text, embedding JSON)"]
     end
 
@@ -55,40 +55,57 @@ graph TB
 
 ---
 
-## The Python Embedding Sidecar
+## The In-Process Embedding Model
 
-Local embeddings are handled by **`scripts/embed_server.py`**, a lightweight Python HTTP server that runs alongside Next.js.
+Local embeddings are handled by **`lib/embeddings.ts`**, which runs the
+embedding model directly inside the Next.js server process — no Python, no
+separate sidecar, no extra port.
 
 ```
-Port:    15434
-Startup: scripts/start.sh starts it before Next.js
-Model:   fastembed all-MiniLM-L6-v2 (384-dim, ~90 MB ONNX model)
-Cache:   data/models/  (persisted across container restarts)
+Library: @huggingface/transformers (Transformers.js + onnxruntime-node)
+Model:   Xenova/all-MiniLM-L6-v2 (384-dim, ~90 MB ONNX model)
+Loading: lazy — loaded on first embed call, cached for the process lifetime
+Cache:   data/models/  (persisted across container restarts; EMBED_CACHE_DIR)
 ```
 
-### API
+> **Why in-process?** Earlier versions used a Python HTTP sidecar
+> (`scripts/embed_server.py` on port 15434) running `fastembed`. That meant
+> shipping Python + a venv + `requirements.txt` purely for one embedding call.
+> Transformers.js runs the *exact same* `all-MiniLM-L6-v2` ONNX model in Node,
+> so the embeddings are compatible and Python is no longer a dependency.
 
-| Endpoint | Method | Body | Response |
-|----------|--------|------|----------|
-| `/health` | GET | — | `{"status":"ok","model":"all-MiniLM-L6-v2","backend":"fastembed"}` |
-| `/embed` | POST | `{"texts": ["...", "..."]}` | `{"embeddings": [[0.023,...],[...]]}` |
+### API (`lib/embeddings.ts`)
+
+| Function | Returns | Notes |
+|----------|---------|-------|
+| `embedLocal(texts)` | `number[][] \| null` | Embeds texts; `null` when the model is unavailable |
+| `localEmbedHealth()` | `{ ok, status, model, backend, error? }` | Reports `ok`/`degraded` status |
+| `getLocalEmbedder()` | pipeline `\| null` | Lazily loads and caches the model |
 
 ### Graceful Degradation
 
-If `fastembed` or `onnxruntime` cannot be installed (e.g., missing glibc on musl/Alpine Linux), the sidecar starts in **degraded mode**:
+If `@huggingface/transformers` is not installed or the model fails to load
+(e.g. an offline first run before the model is cached, or an unsupported
+platform), the embedder degrades gracefully:
 
-```json
-GET /health → {"status": "degraded", "error": "fastembed not available"}
-POST /embed  → HTTP 503
+```
+embedLocal()      → null
+localEmbedHealth() → { ok: false, status: "degraded", ... }
 ```
 
-When the sidecar is degraded, `lib/rag.ts` automatically falls back to **SQLite FTS5 keyword search**. RAG still works — results just use BM25 ranking instead of semantic similarity.
+When the local embedder is degraded, `lib/rag.ts` automatically falls back to
+**SQLite FTS5 keyword search**. RAG still works — results just use BM25 ranking
+instead of semantic similarity.
 
-**Production note:** The Docker image uses `node:20-slim` (Debian/glibc) and installs `fastembed` best-effort. If a compatible wheel is unavailable, the sidecar still starts in degraded mode and the application uses FTS5 fallback.
+**Production note:** The Docker image uses `node:20-slim` (Debian/glibc) and the
+model downloads on first use into the persisted `data/models/` volume. If it
+can't load, the application uses the FTS5 fallback.
 
 ### Cloud Embedding Alternative
 
-Set `embedding_provider = openai` in Settings to use `text-embedding-3-small` (1536-dim) instead of the local sidecar. Requires an OpenAI API key. Higher quality but costs money and requires outbound network access.
+Set `embedding_provider = openai` in Settings to use `text-embedding-3-small`
+(1536-dim) instead of the local model. Requires an OpenAI API key. Higher
+quality but costs money and requires outbound network access.
 
 ---
 
@@ -100,7 +117,10 @@ Splits text into ~1600-char chunks with 200-char paragraph-aware overlap. The ov
 
 ### `embedTexts(texts: string[]): Promise<number[][] | null>`
 
-Calls the Python sidecar at `http://localhost:15434/embed`. Returns `null` if degraded. Callers fall back to FTS5 when `null` is returned. Batched internally at 50 texts per call.
+For the `local` provider, calls `embedLocal()` from `lib/embeddings.ts`
+(in-process). For `openai`, calls the embeddings API. Returns `null` when the
+local model is unavailable; callers fall back to FTS5 when `null` is returned.
+Batched internally at 50 texts per call.
 
 ### `ingestDocument({ name, sourceType, content, originalContent?, originalBytes?, originalMime? })`
 
@@ -162,9 +182,9 @@ The tool calls `retrieveChunks(query, top_k)` and returns matching text as the t
 ## The RAG UI (`/knowledge`)
 
 ### Health Badge
-- `● ok — local:all-MiniLM-L6-v2` (green) — sidecar running, vector embeddings active
-- `● degraded` (amber) — sidecar running but fastembed unavailable; FTS5 fallback
-- `● error` (red) — sidecar unreachable
+- `● ok — local:Xenova/all-MiniLM-L6-v2` (green) — model loaded, vector embeddings active
+- `● degraded` (amber) — embedding model unavailable; FTS5 fallback
+- `● error` (red) — embedding provider misconfigured
 
 ### Ingest Tab
 - **Paste** — paste Markdown/plain text with a source name
@@ -195,7 +215,7 @@ From any chat session, the **Send to RAG** button (`SendToRagDialog`) allows ing
 
 | Route | Method | Description |
 |-------|--------|-------------|
-| `/api/rag/health` | GET | Proxy to Python sidecar `/health` |
+| `/api/rag/health` | GET | Report embedding provider health (`localEmbedHealth()` for local) |
 | `/api/rag/sources` | GET | List all sources with chunk counts |
 | `/api/rag/sources` | POST | Ingest a document (name + content) |
 | `/api/rag/sources/[id]` | DELETE | Delete a source and all chunks |
@@ -260,7 +280,7 @@ O(dimensions × chunks) — for 384-dim and 10k chunks: ~3.8M multiplications, w
 ## Further Reading
 
 - RAG paper: [Retrieval-Augmented Generation paper](https://arxiv.org/abs/2005.11401)
-- fastembed: [github.com/qdrant/fastembed](https://github.com/qdrant/fastembed)
+- Transformers.js: [github.com/huggingface/transformers.js](https://github.com/huggingface/transformers.js)
 - sqlite-vec: [github.com/asg017/sqlite-vec](https://github.com/asg017/sqlite-vec)
 
 See: ← [Structured Output](./10-structured-output.md) | [Back to README →](./README.md)

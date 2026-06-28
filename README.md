@@ -41,7 +41,6 @@ These are not simplified versions. This is the real code, heavily documented for
 
 - **Node.js 20+** and npm (or pnpm/yarn)
 - **Git** (GitHub-installed skills and MCP servers are git-cloned at install time)
-- **Python 3.9+** or above with pip — *optional but recommended.* Only needed for the RAG feature's local embedding sidecar. The chat agent, function tools, skills, MCP servers, approval gate, and everything else run fine without Python — RAG will simply fall back to FTS5 keyword search until you install the Python dependencies (or switch the embedding provider to OpenAI in Settings).
 
 ### Install and run
 
@@ -51,10 +50,7 @@ git clone https://github.com/wilson-cheng/AgentPrimer.git
 cd AgentPrimer
 npm install
 
-# (Optional) Install Python deps for local embeddings
-pip install -r requirements.txt
-
-# Start the server (also starts the Python sidecar if Python is available)
+# Start the server
 npm run dev
 
 # Open http://localhost:15432
@@ -63,19 +59,6 @@ npm run dev
 # optional Exa web search, and optional shell access
 # You can later adjust these under Settings
 ```
-
-### Verifying the sidecar (only matters for RAG)
-
-If you skipped `pip install -r requirements.txt`, you'll see this in the dev server output:
-
-```
-[embed-server] WARNING: neither fastembed nor sentence-transformers is installed.
-[embed-server] started (degraded — no embedding library) port=15434
-```
-
-That's fine — the app still works. Only the RAG page's *semantic* search will be unavailable; keyword (FTS5) search remains. To enable semantic search later, run `pip install -r requirements.txt` and restart `npm run dev`.
-
-That's it. No Docker required for local development.
 
 ---
 
@@ -309,4 +292,4 @@ MIT — use it, fork it, teach with it, build on it.
 
 ## Deployment Note
 
-AgentPrimer is designed for Docker/VPS-style deployment with persistent filesystem storage, SQLite, native dependencies, and the embedding sidecar. Standard serverless hosting is not the intended deployment target unless you replace those storage/runtime assumptions.
+AgentPrimer is designed for Docker/VPS-style deployment with persistent filesystem storage, SQLite, native dependencies, and the in-process embedding model. Standard serverless hosting is not the intended deployment target unless you replace those storage/runtime assumptions.

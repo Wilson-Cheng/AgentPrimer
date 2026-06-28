@@ -786,7 +786,7 @@ token_usage_log     (id, day, input, cached, output, created_at)
 ├── system.md            ← Global system prompt (prepended to every agent)
 ├── agents/<agent>/memory.md            ← Agent persistent memory
 ├── agents/<agent>/agent.md            ← Agent configurations (name, prompt, tools, model, output schema)
-├── models/              ← fastembed ONNX model cache (~90 MB, all-MiniLM-L6-v2)
+├── models/              ← Transformers.js ONNX model cache (~90 MB, all-MiniLM-L6-v2)
 ├── uploads/             ← User-uploaded files (images, audio, text)
 ├── agent-files/         ← Files created by the agent via send_file tool
 │   └── <uuid>/<file>
@@ -997,7 +997,7 @@ Agent: → calls search_knowledge_base("action items last week meeting")
 
 | Provider | Setup | Dimensions | Notes |
 |----------|-------|-----------|-------|
-| Local (fastembed) | Automatic in Docker | 384 | Free; requires Debian/glibc |
+| Local (Transformers.js) | In-process, automatic | 384 | Free; runs in Node, no Python |
 | OpenAI | Set API key in Settings | 1536 | Better quality; costs money |
 
 The RAG page shows a health badge indicating which provider is active and whether it's working.

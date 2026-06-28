@@ -47,7 +47,7 @@ graph TB
     MCP["MCP servers\n(stdio / SSE)"]
     FS["Host filesystem\n(built-in FS tools)"]
     Memory["data/agents/<agent>/memory.md\ndata/agents/<agent>/agent.md\ndata/system.md"]
-    Embed["scripts/embed_server.py\n(Python sidecar, port 15434)\nfastembed ONNX · local embeddings"]
+    Embed["lib/embeddings.ts\n(in-process Transformers.js)\nall-MiniLM-L6-v2 ONNX · local embeddings"]
 
     Browser -- "POST /api/chat (streaming)" --> Proxy
     Proxy -- "validates JWT cookie" --> Chat
@@ -188,7 +188,7 @@ agentprimer/
 │   │   ├── workspace/               # Browse the workspace filesystem
 │   │   ├── statistics/              # Token usage and turn counts
 │   │   ├── rag/
-│   │   │   ├── health/route.ts      # GET embedding sidecar health
+│   │   │   ├── health/route.ts      # GET embedding provider health
 │   │   │   ├── search/route.ts      # POST semantic/keyword search
 │   │   │   ├── summarize/route.ts   # POST summarise for Send-to-RAG
 │   │   │   └── sources/
@@ -222,6 +222,7 @@ agentprimer/
 │   ├── db.ts                    # SQLite layer (better-sqlite3) + all DB helpers + RAG schema
 │   ├── memory.ts                # agents/<agent>/memory.md / agents/<agent>/agent.md / system.md helpers
 │   ├── rag.ts                   # RAG pipeline: chunkText, embedTexts, ingestDocument, retrieveChunks
+│   ├── embeddings.ts            # In-process local embedder (Transformers.js, all-MiniLM-L6-v2)
 │   ├── skills-loader.ts         # Loads SKILL.md skills (context injection into system prompt)
 │   ├── function-tools-loader.ts # Loads function tools (callable, runs in subprocess)
 │   ├── function-tool-worker.js  # Subprocess entry point for function tool execution
@@ -236,18 +237,12 @@ agentprimer/
 │   ├── schema-utils.ts          # JSON Schema → Zod schema converter
 │   └── auth.ts                  # JWT sign/verify helpers
 │
-├── scripts/
-│   ├── embed_server.py          # Python HTTP sidecar (port 15434) — local ONNX embeddings
-│   │                            # fastembed + all-MiniLM-L6-v2 model (384-dim)
-│   │                            # Starts in degraded mode if fastembed unavailable (FTS5 fallback)
-│   └── start.sh                 # Docker entry point (starts sidecar then Next.js)
-│
 ├── proxy.ts                     # Next.js 16 middleware (auth gate — NOT middleware.ts)
 ├── data/                        # ★ Single volume mount point
 │   ├── db/
 │   │   └── agent.db             # SQLite — all persistent state (chats, settings, RAG, tasks, tokens)
-│   ├── models/                  # Embedding model cache (fastembed ONNX, ~90 MB)
-│   │                            # Populated on first startup with EMBED_LOCAL=true; persists across deploys
+│   ├── models/                  # Embedding model cache (Transformers.js ONNX, ~90 MB)
+│   │                            # Populated on first RAG use with the local provider; persists across deploys
 │   ├── system.md                # Global system prompt — prepended to every agent's prompt
 │   ├── agents/<agent>/memory.md                # Agent's cross-session long-term memory
 │   ├── agents/<agent>/agent.md                # Agent definitions (name, system prompt, tools, model, output schema)
@@ -275,7 +270,7 @@ agentprimer/
 | MCP | **@modelcontextprotocol/sdk** | Official TypeScript SDK for stdio and SSE transports |
 | Styling | **Tailwind CSS** | Utility classes; no build step beyond Next.js |
 | Charts | **Recharts** | Token usage statistics bar charts |
-| Embeddings (local) | **fastembed** (Python, ONNX) | `scripts/embed_server.py` sidecar; all-MiniLM-L6-v2 model; 384-dim vectors; no GPU required |
+| Embeddings (local) | **Transformers.js** (Node, ONNX) | In-process via `lib/embeddings.ts`; all-MiniLM-L6-v2 model; 384-dim vectors; no GPU required |
 | Embeddings (cloud) | **OpenAI** `text-embedding-3-small` | Optional; configurable in Settings; 1536-dim; better quality |
 
 ---

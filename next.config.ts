@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
     "@modelcontextprotocol/sdk",
     "simple-git",
     "langfuse",
+    "@huggingface/transformers",
   ],
 };
 

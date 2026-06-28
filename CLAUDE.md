@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-- `npm run dev` — Start dev server (port 15432, all interfaces). Also starts the Python embedding sidecar (requires `pip install -r requirements.txt` for full RAG support — otherwise the sidecar starts in degraded mode).
+- `npm run dev` — Start dev server (port 15432, all interfaces).
 - `npm run build` — Build for production
 - `npm start` — Production start
 - `npm test` — Run all tests with Vitest (tests in `tests/**/*.test.ts`)
 - `npm run lint` — Run ESLint
-- `npm run embed` — Start the Python embedding sidecar standalone
 - `npm run postinstall` — Rebuild better-sqlite3 native bindings
-- `pip install -r requirements.txt` — Install Python dependencies for the local embedding sidecar. The sidecar runs in degraded mode without it; only the RAG semantic search is affected.
+
+Local RAG embeddings run in-process via `@huggingface/transformers` (the `all-MiniLM-L6-v2` ONNX model). No Python is required; the model downloads to `data/models/` on first use and falls back to FTS5 keyword search if it can't load.
 
 ## Architecture Overview
 
@@ -39,6 +39,7 @@ lib/function-tools-loader.ts  — Function tool loader (callable code in subproc
 lib/function-tool-worker.js   — Subprocess entry point for function tool execution
 lib/mcp-client.ts         — MCP protocol client (stdio + SSE)
 lib/rag.ts                — RAG pipeline (chunking, embeddings, FTS5 fallback)
+lib/embeddings.ts         — In-process local embedder (@huggingface/transformers, all-MiniLM-L6-v2)
 lib/approval-store.ts     — Human-in-the-loop approval gate
 lib/installer.ts          — Git clone + npm install for SKILL.md skills / MCP servers
 lib/agent-files.ts        — Files sent by agent via send_file tool

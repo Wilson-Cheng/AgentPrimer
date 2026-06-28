@@ -15,7 +15,7 @@ Initial public open-source release.
 - Hand-written ReAct agent loop with streaming, tool dispatch, and structured output.
 - Three capability types: SKILL.md skills, function tools (sandboxed subprocesses), and MCP servers (stdio + SSE).
 - 21 built-in tools, multi-agent orchestration, and a human-in-the-loop approval gate.
-- RAG pipeline with a Python embedding sidecar and FTS5 fallback for degraded mode.
+- RAG pipeline with an in-process embedding model (Transformers.js, all-MiniLM-L6-v2) and FTS5 fallback for degraded mode.
 - Full Next.js 16 web UI: chat, agents/memory editor, settings, skills catalog, approvals, statistics, knowledge, tool playground, and agent-files editor.
 - JWT authentication (httpOnly cookies) with bcrypt password hashing.
 - 15-module learning curriculum under `docs/` with answer keys.

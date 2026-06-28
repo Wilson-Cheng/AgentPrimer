@@ -165,7 +165,7 @@ Key/value configuration store. Read by `lib/agent.ts` on every request to get th
 | `endpoint` | `""` | Base URL for OpenAI-compatible API; configured by the operator during setup |
 | `api_key` | `""` | API key (blank = unauthenticated local API) |
 | `default_model` | `""` (empty) | Model used when no agent/UI override. Empty until set in Settings — the agent loop emits a friendly error pointing to `/settings` when nothing is configured. |
-| `embedding_provider` | `local` | `'local'` (Python sidecar) or `'openai'` |
+| `embedding_provider` | `local` | `'local'` (in-process model) or `'openai'` |
 | `max_agent_steps` | `100` | Max ReAct loop iterations before forced stop |
 | `reasoning:<sessionId>` | — | Last `reasoning_content` for a session (thinking models) |
 | `builtin_tool_enabled:<id>` | — | `'1'` or `'0'` per tool (e.g. `builtin_tool_enabled:run_shell`) |
@@ -327,7 +327,7 @@ Cosine similarity is computed in JavaScript at retrieval time by loading all emb
 
 ### `knowledge_fts` (FTS5 virtual table)
 
-Full-text search index over `knowledge_chunks`. Used as a fallback when no embeddings are available (e.g., when the Python sidecar can't load fastembed).
+Full-text search index over `knowledge_chunks`. Used as a fallback when no embeddings are available (e.g., when the local embedding model can't load).
 
 ```sql
 CREATE VIRTUAL TABLE IF NOT EXISTS knowledge_fts USING fts5(

@@ -32,8 +32,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "pkill -f '^python3 scripts/embed_server' 2>/dev/null; fuser -k 15432/tcp 2>/dev/null; sleep 0.5; python3 scripts/embed_server.py & next dev --hostname 0.0.0.0 -p 15432",
-    "embed": "python3 scripts/embed_server.py",
+    "dev": "NODE_ENV=development fuser -k 15432/tcp 2>/dev/null; sleep 0.5; next dev --hostname 0.0.0.0 -p 15432",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0 -p 15432",
     "lint": "eslint",
@@ -43,11 +42,12 @@
     "postinstall": "npm rebuild better-sqlite3"
   },
   "dependencies": {
+    "@huggingface/transformers": "^3.8.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@monaco-editor/react": "^4.7.0",
     "ai": "^4.3.19",
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^12.10.0",
+    "better-sqlite3": "^12.11.1",
     "jose": "^6.2.3",
     "langfuse": "^3.38.20",
     "lucide-react": "^1.16.0",
@@ -72,7 +72,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^20",
+    "@types/node": "20.19.43",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/react-syntax-highlighter": "^15.5.13",
@@ -81,7 +81,7 @@
     "eslint-config-next": "16.2.6",
     "prettier": "^3.3.3",
     "tailwindcss": "^4",
-    "typescript": "^5",
+    "typescript": "5.9.3",
     "vitest": "^4.1.8"
   }
 }

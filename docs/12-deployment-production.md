@@ -26,7 +26,7 @@ flowchart LR
     User[Browser] --> Nginx[nginx / TLS / rate limit]
     Nginx --> App[AgentPrimer Next.js container]
     App --> Data[(Persistent data volume)]
-    App --> Embed[Optional embedding sidecar]
+    App --> Embed[In-process embedding model]
     Backup[SQLite backup cron] --> Data
     Monitor[Uptime Kuma] --> Nginx
 ```
@@ -65,7 +65,7 @@ For a teaching/demo instance:
 | Disk | 10 GB | 30+ GB |
 | OS | Debian/Ubuntu | Debian 12 / Ubuntu 24.04 |
 
-If local embeddings are enabled (`EMBED_LOCAL=true`), use at least 2 GB RAM. The fastembed model cache is roughly 90 MB, but Python + ONNX runtime need extra memory.
+If local embeddings are enabled, use at least 2 GB RAM. The model cache is roughly 90 MB, but the in-process ONNX runtime needs extra memory while embedding.
 
 ---
 
@@ -90,8 +90,6 @@ services:
       NODE_ENV: production
       PORT: 15432
       AGENT_PRIMER_SECRET: "replace-with-a-random-64-character-secret"
-      EMBED_LOCAL: "true"
-      EMBED_URL: "http://127.0.0.1:15434"
     volumes:
       - ./data:/app/data
     ports:
@@ -133,7 +131,6 @@ services:
     environment:
       NODE_ENV: production
       AGENT_PRIMER_SECRET: "replace-with-a-random-64-character-secret"
-      EMBED_LOCAL: "true"
     volumes:
       - ./data:/app/data
     ports:
@@ -230,9 +227,8 @@ Important variables:
 |----------|----------|---------|
 | `AGENT_PRIMER_SECRET` | Yes | JWT signing secret. Use a long random string. |
 | `NODE_ENV` | Yes | Set to `production` in production. |
-| `EMBED_LOCAL` | Optional | Set `true` to start the local embedding sidecar. |
-| `EMBED_URL` | Optional | Embedding sidecar URL. Defaults to `http://127.0.0.1:15434`. |
-| `EMBED_MODEL` | Optional | ONNX embedding model name. Defaults to `all-MiniLM-L6-v2`. |
+| `EMBED_MODEL` | Optional | ONNX embedding model name. Defaults to `Xenova/all-MiniLM-L6-v2`. |
+| `EMBED_CACHE_DIR` | Optional | Where the embedding model is cached. Defaults to `data/models`. |
 | `PORT` | Optional | Next.js server port. Defaults to `15432` in Docker (set in docker-compose.yml). |
 | `LANGFUSE_PUBLIC_KEY` | Optional | Langfuse public key if not stored in Settings. |
 | `LANGFUSE_SECRET_KEY` | Optional | Langfuse secret key if not stored in Settings. |
@@ -760,13 +756,14 @@ AgentPrimer sets WAL mode and `busy_timeout`, but high concurrent writes can sti
 
 ### Local embeddings unavailable
 
-Confirm `EMBED_LOCAL=true` and check container logs:
+The embedding model loads on first RAG use and downloads into `data/models/`.
+If it can't load (e.g. no network on first run), check container logs:
 
 ```bash
 docker compose logs -f agentprimer
 ```
 
-If fastembed cannot load on the platform, the RAG system falls back to SQLite FTS5 keyword search.
+If the embedding model cannot load on the platform, the RAG system falls back to SQLite FTS5 keyword search.
 
 ---
 

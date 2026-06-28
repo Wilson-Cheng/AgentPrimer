@@ -10,7 +10,7 @@
  *             (falls back to FTS5 keyword search when embeddings unavailable)
  *
  * Embedding backends (configured via Settings → Embedding Provider):
- *   local  — POST http://127.0.0.1:15434/embed  (Python sidecar, fastembed ONNX)
+ *   local  — in-process @huggingface/transformers (all-MiniLM-L6-v2 ONNX)
  *   openai — OpenAI-compatible embeddings API   (text-embedding-3-small)
  *
  * Vector storage: embeddings are JSON TEXT columns in knowledge_chunks.
@@ -19,6 +19,7 @@
  */
 
 import { getDb, getSetting } from './db';
+import { embedLocal, localEmbedHealth, LOCAL_EMBED_MODEL } from './embeddings';
 import crypto from 'crypto';
 import OpenAI from 'openai';
 
@@ -34,8 +35,6 @@ export interface KnowledgeSource {
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-
-const LOCAL_EMBED_URL = process.env.EMBED_URL ?? 'http://127.0.0.1:15434';
 
 const CHUNK_SIZE    = 1600;   // ≈ 400 tokens  (1 token ≈ 4 chars for English prose)
 const CHUNK_OVERLAP = 200;    // ≈  50 tokens overlap — preserves cross-boundary sentences
@@ -89,8 +88,7 @@ function cosineSimilarity(a: number[], b: number[]): number {
 export function currentModelId(): string {
   const provider = getSetting('embedding_provider') || 'local';
   if (provider === 'local') {
-    const model = process.env.EMBED_MODEL ?? 'all-MiniLM-L6-v2';
-    return `local:${model}`;
+    return `local:${LOCAL_EMBED_MODEL}`;
   }
   const model = getSetting('embedding_model') || 'text-embedding-3-small';
   return `openai:${model}`;
@@ -107,24 +105,10 @@ export async function embedTexts(texts: string[]): Promise<number[][] | null> {
   const provider = getSetting('embedding_provider') || 'local';
 
   if (provider === 'local') {
-    try {
-      const res = await fetch(`${LOCAL_EMBED_URL}/embed`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ texts }),
-        signal:  AbortSignal.timeout(60_000),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({})) as { error?: string };
-        console.error('[rag] sidecar /embed error:', res.status, err.error);
-        return null;
-      }
-      const data = await res.json() as { embeddings: number[][] };
-      return data.embeddings;
-    } catch (e) {
-      console.error('[rag] local embed failed:', e);
-      return null;
-    }
+    // In-process embedding via @huggingface/transformers (no sidecar).
+    // Returns null when the model/library is unavailable so callers fall
+    // back to FTS5 keyword search.
+    return embedLocal(texts);
   }
 
   // OpenAI-compatible API
@@ -159,13 +143,7 @@ export async function checkEmbedHealth(): Promise<{
   const provider = getSetting('embedding_provider') || 'local';
 
   if (provider === 'local') {
-    try {
-      const res  = await fetch(`${LOCAL_EMBED_URL}/health`, { signal: AbortSignal.timeout(3_000) });
-      const data = await res.json() as { status: string; model?: string; backend?: string; error?: string };
-      return { ok: data.status === 'ok', status: data.status, model: data.model, backend: data.backend, error: data.error };
-    } catch {
-      return { ok: false, status: 'unreachable', error: 'Sidecar not running — start with: npm run embed' };
-    }
+    return localEmbedHealth();
   }
 
   const hasKey = !!(getSetting('embedding_api_key') || getSetting('api_key'));

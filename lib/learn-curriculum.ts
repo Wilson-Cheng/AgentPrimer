@@ -129,7 +129,7 @@ AgentPrimer is a full-stack teaching app. The important idea is separation of co
 | Presentation | React UI, chat input, messages, trace drawer, preview panel |
 | API | Request validation, session handling, persistence, streaming response |
 | Agent | ReAct loop, tool dispatch, approvals, structured output, tracing |
-| Infrastructure | SQLite, JWT auth, installer, RAG sidecar, file storage |
+| Infrastructure | SQLite, JWT auth, installer, RAG embeddings, file storage |
 
 ## Key insight
 
@@ -617,7 +617,7 @@ Agents can create or send files. The UI keeps large bytes out of chat history by
       {
         id: '07-root',
         prompt: 'Which component owns the main chat UI state?',
-        options: ['ChatInterface', 'lib/db.ts', 'proxy.ts', 'requirements.txt'],
+        options: ['ChatInterface', 'lib/db.ts', 'proxy.ts', 'lib/embeddings.ts'],
         answer: 0,
         explanation: 'ChatInterface manages active session, messages, selectors, preview state, and send behavior.',
       },

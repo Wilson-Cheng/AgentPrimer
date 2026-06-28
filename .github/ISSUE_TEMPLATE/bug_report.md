@@ -34,7 +34,7 @@ assignees: ''
 Include relevant logs from:
   - the Next.js dev server (terminal)
   - the browser console
-  - the Python embedding sidecar (if RAG-related)
+  - the embedding model load (if RAG-related)
 
 PLEASE REDACT YOUR API KEY from anything you paste.
 -->

@@ -453,16 +453,16 @@ for (const fixture of fixtures) {
 For text responses where exact match is too brittle, use embeddings to compare semantic similarity:
 
 ```typescript
-import { cosineSimilarity } from '../lib/rag';
+import { embedTexts } from '../lib/rag';
 
 async function semanticSimilarity(a: string, b: string): Promise<number> {
-  // Use the Python embedding sidecar or an API
-  const response = await fetch('http://127.0.0.1:15434/embed', {
-    method: 'POST',
-    body: JSON.stringify({ texts: [a, b] }),
-  });
-  const { embeddings } = await response.json();
-  return cosineSimilarity(embeddings[0], embeddings[1]);
+  // Use the in-process embedder (or the OpenAI provider) via embedTexts()
+  const embeddings = await embedTexts([a, b]);
+  if (!embeddings) throw new Error('embeddings unavailable');
+  const [va, vb] = embeddings;
+  const dot = va.reduce((s, x, i) => s + x * vb[i], 0);
+  const mag = (v: number[]) => Math.sqrt(v.reduce((s, x) => s + x * x, 0));
+  return dot / (mag(va) * mag(vb) + 1e-8);
 }
 
 // In a test:
