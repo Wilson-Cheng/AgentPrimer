@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" width="420" height="120">
+  <defs>
+    <linearGradient id="brand" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6C5CE7"/>
+      <stop offset="100%" stop-color="#00B4D8"/>
+    </linearGradient>
+    <linearGradient id="dotGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFD93D"/>
+      <stop offset="100%" stop-color="#FF9F43"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Icon: circular badge (0.75x) — same colors as light version -->
+  <circle cx="60" cy="54" r="38" fill="url(#brand)"/>
+  
+  <!-- Stylized "A" — left stroke -->
+  <line x1="44" y1="69" x2="60" y2="30" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+  
+  <!-- Stylized "A" — right stroke -->
+  <line x1="60" y1="30" x2="76" y2="69" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+  
+  <!-- Crossbar — glowing AI agent node -->
+  <circle cx="60" cy="50" r="4.5" fill="url(#dotGlow)"/>
+  <circle cx="59" cy="49" r="1.5" fill="rgba(255,255,255,0.4)"/>
+
+  <!-- Wordmark — white text for dark bg -->
+  <text x="104" y="58" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="40" font-weight="700" fill="#EEEEFF" letter-spacing="-0.5">
+    Agent
+    <tspan font-weight="300" fill="#C4B5FD">Primer</tspan>
+  </text>
+  
+  <!-- Tagline -->
+  <text x="104" y="80" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13" fill="#8888AA" font-weight="400" letter-spacing="0.5">
+    Learn. Build. Agentic AI.
+  </text>
+</svg>

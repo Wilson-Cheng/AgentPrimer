@@ -1,0 +1,56 @@
+{
+  "type": "object",
+  "description": "Structured information extracted from unstructured text",
+  "properties": {
+    "summary": {
+      "type": "string",
+      "description": "A concise 1-3 sentence summary of the input"
+    },
+    "sentiment": {
+      "type": "string",
+      "enum": ["positive", "negative", "neutral", "mixed"],
+      "description": "Overall sentiment or tone"
+    },
+    "people": {
+      "type": "array",
+      "description": "People explicitly mentioned in the text",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Full name or best available identifier" },
+          "role": { "type": "string", "description": "Role, title, or relationship to the text" },
+          "email": { "type": "string", "description": "Email address if present, otherwise empty string" }
+        },
+        "required": ["name", "role", "email"]
+      }
+    },
+    "organizations": {
+      "type": "array",
+      "description": "Organizations explicitly mentioned in the text",
+      "items": { "type": "string" }
+    },
+    "key_facts": {
+      "type": "array",
+      "description": "Important facts, claims, or findings from the text",
+      "items": { "type": "string" }
+    },
+    "dates_and_events": {
+      "type": "array",
+      "description": "Dates or time references paired with their related events",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": { "type": "string", "description": "Date, time, or time reference as written or normalized when obvious" },
+          "event": { "type": "string", "description": "Associated event, deadline, or action" }
+        },
+        "required": ["date", "event"]
+      }
+    },
+    "action_items": {
+      "type": "array",
+      "description": "Concrete tasks, follow-ups, or decisions that need action",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["summary", "sentiment", "people", "organizations", "key_facts", "dates_and_events", "action_items"]
+}

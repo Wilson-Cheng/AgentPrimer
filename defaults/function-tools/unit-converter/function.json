@@ -1,0 +1,22 @@
+{
+  "name": "unit_converter",
+  "description": "Convert a numeric value between measurement units. Supports length (m, km, ft, in, mi, cm), mass (kg, g, lb, oz, t), temperature (C, F, K), and data size (B, KB, MB, GB, TB). Use when the user asks to convert units or measurements.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "value": {
+        "type": "number",
+        "description": "The numeric value to convert"
+      },
+      "from_unit": {
+        "type": "string",
+        "description": "The source unit (e.g. 'km', 'lb', 'C', 'GB'). Case-insensitive."
+      },
+      "to_unit": {
+        "type": "string",
+        "description": "The target unit (e.g. 'mi', 'kg', 'F', 'MB'). Case-insensitive."
+      }
+    },
+    "required": ["value", "from_unit", "to_unit"]
+  }
+}

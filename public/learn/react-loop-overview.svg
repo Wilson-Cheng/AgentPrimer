@@ -1,0 +1,83 @@
+<svg width="1100" height="620" viewBox="0 0 1100 620" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1100" y2="620" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F172A"/>
+      <stop offset="0.48" stop-color="#1E1B4B"/>
+      <stop offset="1" stop-color="#312E81"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#38BDF8"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FDE68A"/>
+      <stop offset="1" stop-color="#F97316"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#86EFAC"/>
+      <stop offset="1" stop-color="#10B981"/>
+    </linearGradient>
+    <linearGradient id="pink" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#F9A8D4"/>
+      <stop offset="1" stop-color="#A855F7"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#020617" flood-opacity="0.35"/>
+    </filter>
+    <marker id="arrow" markerWidth="14" markerHeight="14" refX="11" refY="7" orient="auto" markerUnits="strokeWidth">
+      <path d="M2 2L12 7L2 12" fill="none" stroke="#E0F2FE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <rect width="1100" height="620" rx="34" fill="url(#bg)"/>
+  <circle cx="95" cy="95" r="150" fill="#38BDF8" opacity="0.12"/>
+  <circle cx="1025" cy="545" r="210" fill="#F472B6" opacity="0.12"/>
+  <circle cx="560" cy="310" r="250" fill="#A78BFA" opacity="0.09"/>
+
+  <text x="70" y="78" fill="#F8FAFC" font-family="Inter, Arial, sans-serif" font-size="36" font-weight="900">The ReAct Loop</text>
+  <text x="70" y="112" fill="#CBD5E1" font-family="Inter, Arial, sans-serif" font-size="18">Reason → Act → Observe → repeat until the agent can answer</text>
+
+  <g filter="url(#shadow)">
+    <rect x="85" y="250" width="210" height="120" rx="26" fill="url(#blue)"/>
+    <text x="190" y="298" text-anchor="middle" fill="white" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="900">Reason</text>
+    <text x="190" y="328" text-anchor="middle" fill="#E0F2FE" font-family="Inter, Arial, sans-serif" font-size="15">LLM chooses</text>
+    <text x="190" y="350" text-anchor="middle" fill="#E0F2FE" font-family="Inter, Arial, sans-serif" font-size="15">the next step</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="445" y="140" width="210" height="120" rx="26" fill="url(#amber)"/>
+    <text x="550" y="188" text-anchor="middle" fill="#431407" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="900">Act</text>
+    <text x="550" y="218" text-anchor="middle" fill="#7C2D12" font-family="Inter, Arial, sans-serif" font-size="15">Call a tool with</text>
+    <text x="550" y="240" text-anchor="middle" fill="#7C2D12" font-family="Inter, Arial, sans-serif" font-size="15">structured JSON</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="805" y="250" width="210" height="120" rx="26" fill="url(#green)"/>
+    <text x="910" y="298" text-anchor="middle" fill="#052E16" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="900">Observe</text>
+    <text x="910" y="328" text-anchor="middle" fill="#14532D" font-family="Inter, Arial, sans-serif" font-size="15">Read the tool</text>
+    <text x="910" y="350" text-anchor="middle" fill="#14532D" font-family="Inter, Arial, sans-serif" font-size="15">result</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="445" y="390" width="210" height="120" rx="26" fill="url(#pink)"/>
+    <text x="550" y="438" text-anchor="middle" fill="white" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="900">Update Context</text>
+    <text x="550" y="468" text-anchor="middle" fill="#FAE8FF" font-family="Inter, Arial, sans-serif" font-size="15">Append observation</text>
+    <text x="550" y="490" text-anchor="middle" fill="#FAE8FF" font-family="Inter, Arial, sans-serif" font-size="15">then reason again</text>
+  </g>
+
+  <path d="M295 283C355 235 389 210 445 200" stroke="#E0F2FE" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow)"/>
+  <path d="M655 200C720 210 762 235 805 282" stroke="#E0F2FE" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow)"/>
+  <path d="M910 370C855 435 750 463 655 458" stroke="#E0F2FE" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow)"/>
+  <path d="M445 458C330 465 238 425 190 370" stroke="#E0F2FE" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow)"/>
+
+  <g opacity="0.95">
+    <rect x="355" y="285" width="390" height="62" rx="18" fill="#020617" opacity="0.58" stroke="#475569"/>
+    <text x="550" y="311" text-anchor="middle" fill="#F8FAFC" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800">Stop condition</text>
+    <text x="550" y="334" text-anchor="middle" fill="#CBD5E1" font-family="Inter, Arial, sans-serif" font-size="14">Final answer produced or max steps reached</text>
+  </g>
+
+  <g transform="translate(70 535)">
+    <rect width="960" height="48" rx="16" fill="#0F172A" opacity="0.7" stroke="#334155"/>
+    <text x="24" y="31" fill="#E0F2FE" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700">In AgentPrimer, every loop step is visible in the trace drawer: prompt → model step → tool call → tool result → next model step.</text>
+  </g>
+</svg>

@@ -1,0 +1,51 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - agentprimerdata:/app/data
+    ports:
+      - "${AGENT_PRIMER_PORT:-15432}:15432"
+    environment:
+      NODE_ENV: production
+      PORT: 15432
+      AGENT_PRIMER_SECRET: ${AGENT_PRIMER_SECRET:?Set AGENT_PRIMER_SECRET to a long random value before starting}
+      EXA_API_KEY: ${EXA_API_KEY:-}
+      CONTEXT7_API_KEY: ${CONTEXT7_API_KEY:-}
+      MINIMAX_API_KEY: ${MINIMAX_API_KEY:-}
+    restart: unless-stopped
+    # NOTE: this container runs as root and the agent can install OS/npm/pip
+    # packages at runtime. Do not expose it on a public network; run it only
+    # in a trusted single-tenant environment behind your own access controls.
+
+  code-server:
+    image: codercom/code-server:latest
+    profiles: ["devtools"]
+    user: "0:0" # run as root
+    volumes:
+      - agentprimerdata:${AGENT_PRIMER_DATA:-/root/agentprimer-data}
+      - agentprimercodeconfig:/root/.config/code-server
+      - agentprimercodedata:/root/.local/share/code-server
+      - agentprimercodekiloconfig:/root/.config/kilo
+      - agentprimercodekilodata:/root/.local/share/kilo
+    ports:
+      - "${CODE_SERVER_PORT:-15433}:15433"
+    environment:
+      PASSWORD: ${CODE_SERVER_PASSWORD:?Set CODE_SERVER_PASSWORD before starting the devtools profile}
+      CODE_SERVER_PROXY_DOMAIN: ${CODE_SERVER_PROXY_DOMAIN:-}
+      CODE_SERVER_ARGS: ${CODE_SERVER_ARGS:---disable-telemetry}
+    command: ["--bind-addr", "0.0.0.0:15433", "--auth", "password", "${CODE_SERVER_WORKSPACE:-/root/agentprimer-data}"]
+    restart: unless-stopped
+
+volumes:
+  agentprimerdata:
+    name: agentprimerdata
+  agentprimercodeconfig:
+    name: agentprimercodeconfig
+  agentprimercodedata:
+    name: agentprimercodedata
+  agentprimercodekiloconfig:
+    name: agentprimercodekiloconfig
+  agentprimercodekilodata:
+    name: agentprimercodekilodata

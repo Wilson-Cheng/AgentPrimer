@@ -1,0 +1,11 @@
+.next/
+node_modules/
+data/
+cache/
+public/
+*.md
+*.mdx
+package-lock.json
+defaults/skills/
+defaults/mcp-servers/
+.kilo/

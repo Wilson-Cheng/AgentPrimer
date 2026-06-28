@@ -1,0 +1,6 @@
+{
+  "name": "datetime",
+  "transport": "stdio",
+  "command": "node",
+  "args": ["index.js"]
+}

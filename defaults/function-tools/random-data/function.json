@@ -1,0 +1,29 @@
+{
+  "name": "random_data",
+  "description": "Generate random test data: UUIDs, names, email addresses, hex colours, integers, or Lorem Ipsum text. Use when the user needs sample data, placeholder content, test fixtures, or random identifiers.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "type": {
+        "type": "string",
+        "enum": ["uuid", "name", "email", "color", "integer", "lorem"],
+        "description": "The type of random data to generate"
+      },
+      "count": {
+        "type": "integer",
+        "description": "How many items to generate (default: 1, max: 20)",
+        "default": 1
+      },
+      "options": {
+        "type": "object",
+        "description": "Type-specific options: for 'integer' use { min: number, max: number }; for 'lorem' use { words: number }",
+        "properties": {
+          "min": { "type": "number", "description": "Minimum value for integer generation (default: 0)" },
+          "max": { "type": "number", "description": "Maximum value for integer generation (default: 1000)" },
+          "words": { "type": "integer", "description": "Number of Lorem Ipsum words to generate (default: 20)" }
+        }
+      }
+    },
+    "required": ["type"]
+  }
+}

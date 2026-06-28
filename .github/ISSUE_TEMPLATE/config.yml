@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/wilson-cheng/AgentPrimer/tree/main/docs
+    about: Module 00–13 cover architecture, the agent loop, streaming, RAG, deployment, and more.
+  - name: Security vulnerability
+    url: https://github.com/wilson-cheng/AgentPrimer/blob/main/SECURITY.md
+    about: Please report security issues privately — do NOT open a public issue.

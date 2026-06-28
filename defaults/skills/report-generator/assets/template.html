@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{TITLE}}</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 17px; scroll-behavior: smooth; scroll-padding-top: 3rem; }
+  body {
+    font-family: 'Google Sans Flex','Google Sans','Segoe UI',system-ui,-apple-system,sans-serif;
+    color: #1a1a1a;
+    background: #fff;
+    line-height: 1.65;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    -webkit-font-smoothing: antialiased;
+  }
+  img, svg, iframe { max-width: 100%; height: auto; display: block; }
+  a { color: #2563eb; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ── Bauhaus Decorative Bar ── */
+  .bauhaus-bar {
+    display: flex; height: 6px; margin-bottom: 2rem; border-radius: 3px; overflow: hidden;
+  }
+  .bauhaus-bar span { flex: 1; }
+  .bauhaus-bar .red { background: #e74c3c; }
+  .bauhaus-bar .yellow { background: #f1c40f; }
+  .bauhaus-bar .blue { background: #3498db; }
+  .bauhaus-bar .dark { background: #2c3e50; }
+
+  /* ── SVG dual-theme container ── */
+  .svg-light { display: block; }
+  .svg-dark { display: none; }
+  .svg-chart-wrap { margin: 1.5rem 0; text-align: center; }
+  .svg-chart-wrap img, .svg-chart-wrap svg { max-width: 100%; height: auto; border-radius: 8px; }
+  .svg-chart-wrap .caption { margin-top: 0.3rem; font-size: 0.85rem; color: #444; }
+
+  /* ── Theme Toggle ── */
+  .theme-toggle-wrap {
+    text-align: right; margin-bottom: 1rem;
+  }
+  .theme-toggle {
+    background: #f0f0f0; border: none; border-radius: 20px;
+    padding: 6px 14px; font-size: 13px; cursor: pointer;
+    font-family: inherit; color: #333; font-weight: 600;
+  }
+  .theme-toggle:hover { background: #e0e0e0; }
+
+  /* ── Title Page ── */
+  .title-page {
+    text-align: center; padding: 3rem 0 2rem; page-break-after: always;
+  }
+  .title-page h1 {
+    font-size: 2.6rem; font-weight: 800; line-height: 1.15;
+    background: linear-gradient(135deg,#e74c3c,#f39c12,#3498db);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; margin-bottom: 0.5rem;
+  }
+  .title-page .subtitle {
+    font-size: 1.2rem; color: #333; font-weight: 400; margin-bottom: 1.5rem;
+  }
+  .title-page .meta { margin-top: 2.5rem; font-size: 0.95rem; color: #444; }
+  .title-page .meta p { margin: 0.2rem 0; }
+
+  /* ── TOC ── */
+  .toc { page-break-after: always; padding: 1.5rem 0; }
+  .toc h1 { font-size: 1.8rem; margin-bottom: 1.2rem; color: #2c3e50; }
+  .toc ul { list-style: none; }
+  .toc li { padding: 0.35rem 0; border-bottom: 1px dotted #ddd; }
+  .toc-l1 { font-weight: 600; font-size: 1.1rem; }
+  .toc-l2 { padding-left: 1.5rem !important; font-size: 1rem; color: #333; }
+  .toc li a { color: inherit; display: block; }
+  .toc li a:hover { color: #e74c3c; }
+
+  /* ── Sections ── */
+  h1 { font-size: 1.9rem; font-weight: 700; margin: 2.5rem 0 1rem; color: #2c3e50; page-break-before: always; padding-top: 0.5rem; }
+  h1:first-of-type { page-break-before: auto; }
+  h2 { font-size: 1.35rem; font-weight: 600; margin: 1.8rem 0 0.6rem; color: #c0392b; }
+  h3 { font-size: 1.1rem; font-weight: 600; margin: 1.2rem 0 0.4rem; color: #333; }
+  p { margin: 0 0 0.9rem; }
+  ul, ol { margin: 0.6rem 0 1rem 1.5rem; }
+  li { margin-bottom: 0.3rem; }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.95rem; }
+  thead { background: #2c3e50; color: #fff; }
+  th, td { padding: 0.55rem 0.75rem; text-align: left; border-bottom: 1px solid #e0e0e0; }
+  th { font-weight: 600; }
+  tbody tr:nth-child(even) { background: #f8f8f8; }
+
+  /* ── Blockquote ── */
+  blockquote {
+    margin: 1.2rem 0; padding: 0.8rem 1.2rem; border-left: 4px solid #e74c3c;
+    background: #fafafa; border-radius: 0 6px 6px 0; font-style: italic; color: #222;
+  }
+
+  /* ── Spotlight images (capped height) ── */
+  .spotlight-img { margin: 1.2rem 0; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  .spotlight-img img { width: 100%; max-height: 400px; object-fit: cover; display: block; }
+  .spotlight-img .img-cap { padding: 0.5rem 0.8rem; font-size: 0.85rem; color: #444; background: #f8f8f8; text-align: center; }
+
+  /* ── Charts / media ── */
+  .chart-container { margin: 1.5rem 0; text-align: center; }
+  .chart-container img, .chart-container iframe, .chart-container svg { border-radius: 8px; }
+  .chart-container .caption { margin-top: 0.3rem; font-size: 0.85rem; color: #444; }
+
+  /* ── Info boxes ── */
+  .info-box {
+    margin: 1rem 0; padding: 0.8rem 1rem; border-radius: 8px;
+    border-left: 4px solid; font-size: 0.95rem;
+  }
+  .info-box.tip { background: #e8f5e9; border-color: #2ecc71; }
+  .info-box.note { background: #e3f2fd; border-color: #3498db; }
+  .info-box.warn { background: #fff3e0; border-color: #f39c12; }
+  .info-box strong { display: block; margin-bottom: 0.3rem; }
+
+  /* ── Code ── */
+  pre { background: #f5f5f5; border: 1px solid #e0e0e0; padding: 0.8rem 1rem; border-radius: 6px; overflow-x: auto; margin: 1rem 0; color: #1a1a1a; }
+  code { font-family: 'Courier New', monospace; font-size: 0.95rem; background: #f5f5f5; padding: 0.1rem 0.3rem; border-radius: 3px; color: #1a1a1a; }
+  pre code { background: none; padding: 0; color: inherit; }
+
+  /* ── Two-column layout ── */
+  .two-col { display: flex; gap: 1.2rem; margin: 1rem 0; }
+  .two-col > div { flex: 1; }
+  @media (max-width: 600px) { .two-col { flex-direction: column; } }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 3rem; padding-top: 1rem; border-top: 2px solid #ccc;
+    text-align: center; font-size: 0.85rem; color: #555;
+  }
+
+  /* ── Print ── */
+  @media print {
+    body { padding: 0; font-size: 13px; }
+    .theme-toggle-wrap { display: none; }
+    h1 { page-break-before: always; }
+    h1:first-of-type { page-break-before: auto; }
+    .title-page { page-break-after: always; }
+    .toc { page-break-after: always; }
+    a { color: inherit !important; text-decoration: none !important; }
+    thead { background: #2c3e50 !important; color: #fff !important; }
+  }
+
+  /* ── Dark Theme ── */
+  body.dark { background: #1a1a2e; color: #e0e0e0; }
+  body.dark h1 { color: #f0f0f0; }
+  body.dark h2 { color: #f1948a; }
+  body.dark h3 { color: #ddd; }
+  body.dark .toc li { border-color: #444; }
+  body.dark .toc-l2 { color: #bbb; }
+  body.dark thead { background: #2c3e50; }
+  body.dark tbody tr:nth-child(even) { background: #2a2a40; }
+  body.dark blockquote { background: #2a2a40; border-color: #e74c3c; color: #ddd; }
+  body.dark .info-box.tip { background: #1b3a1b; color: #ddd; }
+  body.dark .info-box.note { background: #1a2a3a; color: #ddd; }
+  body.dark .info-box.warn { background: #3a2a1a; color: #ddd; }
+  body.dark .theme-toggle { background: #333; color: #eee; }
+  body.dark .theme-toggle:hover { background: #444; }
+  body.dark .chart-container .caption { color: #bbb; }
+  body.dark .spotlight-img .img-cap { background: #2a2a40; color: #bbb; }
+  body.dark .footer { border-color: #444; color: #bbb; }
+  body.dark .title-page .subtitle { color: #ddd; }
+  body.dark .title-page .meta { color: #bbb; }
+  body.dark .bauhaus-bar .dark { background: #555; }
+  body.dark table { color: #e0e0e0; }
+  body.dark td { border-color: #444; }
+  body.dark pre { background: #2a2a40; border-color: #444; color: #e0e0e0; }
+  body.dark code { background: #2a2a40; color: #e0e0e0; }
+  body.dark pre code { color: inherit; }
+  body.dark .svg-light { display: none; }
+  body.dark .svg-dark { display: block; }
+  body.dark .toc h1 { color: #f0f0f0; }
+</style>
+</head>
+<body>
+
+<div class="bauhaus-bar">
+  <span class="red"></span>
+  <span class="yellow"></span>
+  <span class="blue"></span>
+  <span class="dark"></span>
+  <span class="red"></span>
+  <span class="yellow"></span>
+  <span class="blue"></span>
+</div>
+
+<div class="theme-toggle-wrap">
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌓 Toggle Theme</button>
+</div>
+
+{{{CONTENT}}}
+
+<script>
+  // ── Theme Toggle ──
+  (function() {
+    var saved = localStorage.getItem('report-theme');
+    if (saved === 'dark') document.body.classList.add('dark');
+    var btn = document.getElementById('themeToggle');
+    if (saved === 'dark') btn.textContent = '🌓 Toggle Theme';
+  })();
+  function toggleTheme() {
+    var b = document.body;
+    b.classList.toggle('dark');
+    localStorage.setItem('report-theme', b.classList.contains('dark') ? 'dark' : 'light');
+  }
+</script>
+
+</body>
+</html>

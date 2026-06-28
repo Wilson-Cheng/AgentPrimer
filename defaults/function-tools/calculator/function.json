@@ -1,0 +1,14 @@
+{
+  "name": "calculator",
+  "description": "Evaluate a mathematical expression and return the numeric result. Use when the user asks to calculate, compute, or evaluate any arithmetic expression. Supports +, -, *, /, ** (power), % (modulo), and parentheses.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "expression": {
+        "type": "string",
+        "description": "The arithmetic expression to evaluate, e.g. '(3 + 4) * 2' or '2 ** 10'. Only numbers and operators are allowed — no variable names or function calls."
+      }
+    },
+    "required": ["expression"]
+  }
+}

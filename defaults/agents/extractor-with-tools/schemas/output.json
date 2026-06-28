@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "description": "Research brief assembled from tool-assisted investigation",
+  "properties": {
+    "topic": {
+      "type": "string",
+      "description": "The researched topic, person, organization, or question"
+    },
+    "summary": {
+      "type": "string",
+      "description": "A concise 2-4 sentence summary of the findings"
+    },
+    "key_facts": {
+      "type": "array",
+      "description": "The most important verified or clearly attributed facts",
+      "items": { "type": "string" }
+    },
+    "sources": {
+      "type": "array",
+      "description": "URLs, file paths, or other source identifiers consulted",
+      "items": { "type": "string" }
+    },
+    "open_questions": {
+      "type": "array",
+      "description": "Unresolved questions, missing evidence, or uncertainties",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["topic", "summary", "key_facts", "sources", "open_questions"]
+}

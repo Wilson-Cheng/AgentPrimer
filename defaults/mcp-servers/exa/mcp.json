@@ -1,0 +1,7 @@
+{
+  "name": "exa",
+  "transport": "stdio",
+  "command": "npx",
+  "args": ["-y", "exa-mcp-server"],
+  "enabled": false
+}
