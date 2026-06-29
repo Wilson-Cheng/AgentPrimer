@@ -19,12 +19,14 @@ const fixture: {
   callImpl?: (args: Record<string, unknown>) => Promise<{ content: unknown }>;
   connectShouldThrow: boolean;
   closed: number;
+  stdioParams: Array<{ command: string; args?: string[]; env?: Record<string, string> }>;
 } = {
   tools: [],
   callResult: { content: [{ type: 'text', text: 'ok' }] },
   callImpl: undefined,
   connectShouldThrow: false,
   closed: 0,
+  stdioParams: [],
 };
 
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
@@ -49,6 +51,9 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
 vi.mock('@modelcontextprotocol/sdk/client/stdio.js', () => {
   class StdioClientTransport {
     onclose?: () => void;
+    constructor(params: { command: string; args?: string[]; env?: Record<string, string> }) {
+      fixture.stdioParams.push(params);
+    }
     close() {}
   }
   return { StdioClientTransport };
@@ -93,6 +98,7 @@ function defineServer(over: Partial<Record<string, unknown>> = {}) {
     url: '',
     local_path: '',
     enabled: 1,
+    env_json: '{}',
     ...over,
   };
 }
@@ -104,6 +110,7 @@ beforeEach(() => {
   fixture.callImpl = undefined;
   fixture.connectShouldThrow = false;
   fixture.closed = 0;
+  fixture.stdioParams = [];
 });
 
 afterEach(() => {
@@ -181,21 +188,24 @@ describe('loadMcpTools', () => {
     expect(errorSpy).toHaveBeenCalled();
   });
 
-  it('reuses a single connection across tool loads and closes it on disconnectAll', async () => {
-    mockServers.push(defineServer());
-    fixture.tools = [{ name: 'now' }];
+  it('reconnects when a server env changes so new credentials reach the subprocess', async () => {
+    const server = defineServer({ env_json: JSON.stringify({ EXA_API_KEY: 'old-key' }) });
+    mockServers.push(server);
+    fixture.tools = [{ name: 'search' }];
 
     const { loadMcpTools, disconnectAll } = await loadClient();
 
     await loadMcpTools();
-    await loadMcpTools(); // second load should reuse the cached client
+    expect(fixture.stdioParams).toHaveLength(1);
+    expect(fixture.stdioParams[0].env).toMatchObject({ EXA_API_KEY: 'old-key' });
 
-    await disconnectAll();
-    expect(fixture.closed).toBe(1);
-
-    // After disconnect, a fresh load reconnects (no stale clients linger).
+    server.env_json = JSON.stringify({ EXA_API_KEY: 'new-key' });
     await loadMcpTools();
+
+    expect(fixture.closed).toBe(1);
+    expect(fixture.stdioParams).toHaveLength(2);
+    expect(fixture.stdioParams[1].env).toMatchObject({ EXA_API_KEY: 'new-key' });
+
     await disconnectAll();
-    expect(fixture.closed).toBe(2);
   });
 });

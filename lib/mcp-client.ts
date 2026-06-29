@@ -33,6 +33,18 @@ import { jsonSchemaToZod } from './schema-utils';
 // Key: MCP server id, Value: connected Client instance
 // ---------------------------------------------------------------------------
 const activeClients = new Map<string, Client>();
+const activeClientFingerprints = new Map<string, string>();
+
+function serverFingerprint(server: McpServer): string {
+  return JSON.stringify({
+    transport: server.transport,
+    command: server.command,
+    args_json: server.args_json,
+    url: server.url,
+    local_path: server.local_path,
+    env_json: server.env_json || '{}',
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Connect to an MCP server (or return existing connection)
@@ -164,9 +176,12 @@ function childProcessEnv(server?: McpServer): Record<string, string> {
 }
 
 async function connectMcpServer(server: McpServer): Promise<Client> {
-  // Return existing connection if already established
+  const fingerprint = serverFingerprint(server);
   const existing = activeClients.get(server.id);
-  if (existing) return existing;
+  if (existing) {
+    if (activeClientFingerprints.get(server.id) === fingerprint) return existing;
+    removeClient(server.id);
+  }
 
   const client = new Client(
     { name: 'agentprimer', version: '1.0.0' },
@@ -221,6 +236,7 @@ async function connectMcpServer(server: McpServer): Promise<Client> {
   }
 
   activeClients.set(server.id, client);
+  activeClientFingerprints.set(server.id, fingerprint);
   return client;
 }
 
@@ -229,6 +245,7 @@ function removeClient(serverId: string): void {
   if (client) {
     try { client.close(); } catch { /* ignore */ }
     activeClients.delete(serverId);
+    activeClientFingerprints.delete(serverId);
   }
 }
 
@@ -241,6 +258,7 @@ export async function disconnectAll(): Promise<void> {
       await client.close();
     } catch { /* ignore */ }
     activeClients.delete(id);
+    activeClientFingerprints.delete(id);
   }
 }
 
