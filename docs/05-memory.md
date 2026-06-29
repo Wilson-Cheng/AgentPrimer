@@ -196,18 +196,23 @@ sequenceDiagram
 
 2. **`agent_notifications` table** — When the sub-agent finishes (or errors), it writes a notification record to the DB. On the parent agent's next turn, the notification is included in the system prompt, prompting the agent to report back to the user.
 
-**Source:** `lib/agent.ts` → `run_subagent_async` tool, `update_task_status` tool, `list_tasks` tool; `lib/db.ts` → `agent_tasks` and `agent_notifications` table definitions.
+**Source:** `lib/agent/builtin-tools.ts` → `run_subagent_async` tool, `update_task_status` tool, `list_tasks` tool (all inside `createBuiltinTools()`); `lib/db.ts` → `agent_tasks` and `agent_notifications` table definitions.
 
 ---
 
 ## Model Priority
 
-When resolving which model to use for a given turn:
+When resolving which model to use for a given turn (`resolveModelWithFallback` in `lib/agent/model-resolver.ts`):
 
 ```
 1. UI model selector (per-message override)
         ↓
 2. agents/<agent>/agent.md **Model:** field for the selected agent
+        ↓
+   ✱ Validation: the chosen model is checked against the provider's
+     /v1/models list. If the agent-pinned model is missing from the
+     provider, the resolver falls through to the global default below
+     instead of failing the turn.
         ↓
 3. DB settings → key: 'default_model' (set under Settings → Default Model)
         ↓
@@ -257,7 +262,7 @@ For a local single-user setup, markdown injection is ideal: it requires zero inf
 
 2. **Trigger memory update:** Ask the agent "Please remember that I prefer all code comments in Spanish." Verify that `data/agents/<agent>/memory.md` was updated. Open a new chat and confirm the agent remembers the preference.
 
-3. **Trace model resolution:** In `lib/agent.ts`, add a `console.log('Resolved model:', resolvedModel)` line. Then: (a) use the UI selector, (b) clear the selection, (c) modify agents/<agent>/agent.md with a `**Model:**` line. Observe which step wins.
+3. **Trace model resolution:** In `lib/agent/model-resolver.ts` (`resolveModelWithFallback`), add a `console.log('Resolved model:', resolvedModel)` line. Then: (a) use the UI selector, (b) clear the selection, (c) modify agents/<agent>/agent.md with a `**Model:**` line, (d) pin an agent to a model that the provider's `/v1/models` list does not return. Observe which step wins.
 
 4. **Launch an async sub-agent:** Ask the agent to "Run a background research task: find all TypeScript files in the project that use `fetch`. Report back when done." Observe the `agent_tasks` entry in the DB and the task `.md` file.
 

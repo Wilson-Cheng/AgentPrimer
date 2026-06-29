@@ -17,7 +17,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
-// Routes that are accessible without authentication
+// Routes that are accessible without authentication.
+// We treat each entry as either an exact match or a strict directory prefix
+// (entry + '/'), never a bare `startsWith`. Without that constraint a future
+// route accidentally named `/login-admin-panel` or `/registerable` would
+// silently bypass authentication.
 const PUBLIC_PATHS = ['/login', '/register', '/logo.svg'];
 const PUBLIC_API_PATHS = ['/api/auth/login', '/api/auth/register', '/api/auth/setup'];
 
@@ -34,20 +38,32 @@ function getSecret(): Uint8Array {
   return new TextEncoder().encode(secret ?? DEV_JWT_SECRET);
 }
 
+function isExactOrChildPath(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(prefix + '/');
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public paths
-  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
+  // Allow public paths (exact match OR child of the public prefix)
+  if (PUBLIC_PATHS.some((p) => isExactOrChildPath(pathname, p))) {
     return NextResponse.next();
   }
 
-  if (PUBLIC_API_PATHS.some(p => pathname === p)) {
+  if (PUBLIC_API_PATHS.some((p) => pathname === p)) {
     return NextResponse.next();
   }
 
-  // Allow Next.js internals
-  if (pathname.startsWith('/_next') || pathname.startsWith('/favicon')) {
+  // Allow Next.js internals. We use the same exact-or-child match as
+  // `isExactOrChildPath` (rather than a bare `startsWith`) so a future
+  // route accidentally named `/_next-something` or `/favicon-evil` cannot
+  // bypass authentication.
+  if (
+    pathname === '/_next' ||
+    pathname.startsWith('/_next/') ||
+    pathname === '/favicon.ico' ||
+    pathname === '/favicon'
+  ) {
     return NextResponse.next();
   }
 

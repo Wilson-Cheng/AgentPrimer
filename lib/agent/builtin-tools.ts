@@ -301,8 +301,19 @@ export function createBuiltinTools(
       execute: async ({ agent_name, task, project_folder }) => {
         if ((agent_name as string) === agentName)
           return { error: 'An agent cannot call itself as a sub-agent.' };
+        // Sandbox `project_folder` to be inside DATA_DIR. Without this the
+        // model can pick any path on disk for the tasks/ directory (e.g.
+        // `/tmp`, `/etc`), exfiltrating task content or littering arbitrary
+        // locations. The path is allowed to point at a leaf that does not
+        // exist yet — `resolveAgentPath` covers that case.
+        const sandboxed = resolveAgentPath(project_folder as string);
+        if (!sandboxed) {
+          return {
+            error: `project_folder must be inside ./data/ (got "${project_folder}").`,
+          };
+        }
         const taskId = randomUUID();
-        const taskDir = path.resolve(project_folder as string, 'tasks');
+        const taskDir = path.join(sandboxed, 'tasks');
         const taskFile = path.join(taskDir, `${taskId}.md`);
         await fs.promises.mkdir(taskDir, { recursive: true });
         const now = new Date().toISOString();
@@ -327,7 +338,7 @@ export function createBuiltinTools(
         );
         createAgentTask(
           taskId,
-          path.resolve(project_folder as string),
+          sandboxed,
           agentName,
           agent_name as string,
           task as string,
@@ -1011,24 +1022,39 @@ export function createBuiltinTools(
         timeout_ms: z.number().default(30000).describe('Timeout in milliseconds (default: 30 000)'),
       }),
       execute: async ({ command, cwd, timeout_ms }) => {
-        if (!sessionId) {
-          return {
-            error:
-              'run_shell requires an interactive chat session for approval and cannot run from Tool Playground or async sub-agents.',
-          };
-        }
         const op: ApprovalOperation = 'run_shell';
-        if (!isApproved(sessionId, op, command as string)) {
+        const commandText = command as string;
+        if (!sessionId) {
+          if (!currentTaskFile) {
+            return {
+              error:
+                'run_shell requires an interactive chat session for approval and cannot run from Tool Playground.',
+            };
+          }
+          // Async sub-agents do not have a browser chat session, so they can
+          // never pause and render an approval UI. They should still be able
+          // to use shell when the operator has granted the operation forever
+          // via the normal approval table; `isApproved()` checks permanent
+          // approvals before looking at the session map, so a synthetic
+          // session id is enough to ask only that global question.
+          if (!isApproved('__async_subagent__', op, commandText)) {
+            return {
+              error:
+                'run_shell requires a permanent approval before async sub-agents can execute shell commands. Approve run_shell forever from an interactive chat first.',
+            };
+          }
+        } else if (!isApproved(sessionId, op, commandText)) {
           return {
             requires_approval: true,
             operation: op,
             path: command,
             description: `Run shell command: ${command}`,
           };
+        } else {
+          consumeOnce(sessionId, op, commandText);
         }
-        consumeOnce(sessionId, op, command as string);
         try {
-          const { stdout, stderr } = await execAsync(command as string, {
+          const { stdout, stderr } = await execAsync(commandText, {
             cwd: cwd ? path.resolve(cwd as string) : process.cwd(),
             timeout: (timeout_ms as number) ?? 30000,
             encoding: 'utf8',

@@ -13,7 +13,7 @@ import { useState, useEffect } from 'react';
 import Button from '@/components/ui/Button';
 import CustomDropDown from '@/components/ui/CustomDropDown';
 import { useConfirm } from '@/components/ui/CustomConfirmDialog';
-import { Settings, Key, Globe, Cpu, Save, Check, RefreshCw, CheckCircle2, XCircle, Sliders, Repeat, FileCode, Database, Layout, GripVertical, Sun, Moon, Monitor, Activity, PanelRightClose, AlertTriangle, RotateCcw, BookOpen } from 'lucide-react';
+import { Settings, Key, Globe, Cpu, Save, Check, RefreshCw, CheckCircle2, XCircle, Sliders, Repeat, Database, Layout, GripVertical, Sun, Moon, Monitor, Activity, PanelRightClose, AlertTriangle, RotateCcw, BookOpen } from 'lucide-react';
 
 
 export default function SettingsPage() {
@@ -56,11 +56,9 @@ export default function SettingsPage() {
   // Human-readable message from the last API key test
   const [testMsg, setTestMsg] = useState('');
 
-  // .env editor state
-  // Current content of the .env file being edited
-  const [envContent, setEnvContent] = useState('');
-  // Initial .env content as last loaded/saved — used to detect unsaved edits
-  const [envInitial, setEnvInitial] = useState('');
+  // (.env editor removed — MCP server credentials live on the per-server
+  // env_json column (Skills/MCP → Edit → Environment variables) so a stray
+  // host env variable can no longer leak across MCP servers.)
 
   // Embedding provider — 'local' uses the in-process model (Transformers.js), 'openai' uses text-embedding-3-small
   const [embeddingProvider, setEmbeddingProvider] = useState<'local' | 'openai'>('local');
@@ -221,11 +219,7 @@ export default function SettingsPage() {
         }
       });
 
-    // Load .env content
-    fetch('/api/data-files?file=.env')
-      .then(r => r.json())
-      .then(d => { const c = d.content ?? ''; setEnvContent(c); setEnvInitial(c); })
-      .catch(() => {});
+    // (.env editor removed — see comment above the deleted state hooks.)
 
     // Load new-chat layout prefs
     fetch('/api/ui-settings')
@@ -381,20 +375,11 @@ export default function SettingsPage() {
         }),
       }),
     ];
-    const envChanged = envContent !== envInitial;
-    if (envChanged) {
-      reqs.push(fetch('/api/data-files', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ file: '.env', content: envContent }),
-      }));
-    }
     await Promise.all(reqs);
 
     if (apiKey) setKeyIsMasked(false);
     if (embeddingApiKey) setEmbeddingKeyMasked(false);
     if (langfuseSecretKey) setLangfuseSecretMasked(false);
-    if (envChanged) setEnvInitial(envContent);
 
     // Notify any layout shells listening for nav-relevant changes.
     window.dispatchEvent(new CustomEvent('ui-settings-changed', {
@@ -1272,32 +1257,6 @@ export default function SettingsPage() {
                       </div>
                     );
                   })}
-                </div>
-              </section>
-
-              {/* Environment Variables */}
-              <section className="rounded-xl px-0 pb-6 md:p-6 md:bg-gray-50 dark:md:bg-gray-800/50">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="h-9 w-9 rounded-lg min-w-9 bg-rose-500 flex items-center justify-center">
-                    <FileCode size={18} className="text-white" />
-                  </div>
-                  <div>
-                    <h2 className="font-700 text-gray-900 dark:text-gray-100">Environment Variables</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Saved to <code className="font-mono bg-gray-100 dark:bg-gray-700 px-1 rounded">data/.env</code> — overrides all other env vars at startup</p>
-                  </div>
-                </div>
-                <textarea
-                  value={envContent}
-                  onChange={e => setEnvContent(e.target.value)}
-                  rows={10}
-                  spellCheck={false}
-                  placeholder="# KEY=value pairs, one per line&#10;# Lines starting with # are comments&#10;OPENAI_API_KEY=sk-..."
-                  className="w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2.5 rounded-lg border-2 border-gray-200 dark:border-gray-600 text-sm focus:outline-none focus:border-rose-400 transition-all duration-200 font-mono resize-y"
-                />
-                <div className="mt-3">
-                  <p className="text-sm text-gray-400 dark:text-gray-500">
-                    Edits are applied when you click <span className="font-600">Save Settings</span> below.
-                  </p>
                 </div>
               </section>
 

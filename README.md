@@ -25,7 +25,7 @@ After working through this project, you will be able to explain **and implement*
 
 - The **ReAct loop** (Reason + Act) — how agents chain tool calls to complete multi-step tasks
 - **Real-time streaming** — Vercel AI SDK data stream from LLM to browser, token by token, with tool-call events
-- **Four-tier capability architecture** — built-in tools, subprocess-isolated function tools, SKILL.md instruction modules, and MCP servers
+- **Four-tier capability architecture** — 22 built-in tools, subprocess-isolated function tools, SKILL.md instruction modules, and MCP servers
 - **Persistent memory** — how agents remember facts across sessions
 - **Multi-agent orchestration** — sync and async sub-agents with task tracking
 - **Human-in-the-loop** — an approval gate that pauses the agent before dangerous operations
@@ -85,7 +85,7 @@ The project comes with **15 documentation modules** (00–14) that take you from
 | [00](docs/00-build-from-scratch.md) | **Build From Scratch** | A minimal ReAct agent in about 60 lines before studying the full app |
 | [01](docs/01-architecture.md) | **System Architecture** | Component map, request flow, technology choices and why |
 | [02](docs/02-agent-loop.md) | **The Agent Loop** | ReAct pattern, streaming tool calls, safety limits, async agents |
-| [03](docs/03-tools-and-skills.md) | **Tools, Function Tools, Skills & MCP** | All 21 built-in tools, subprocess-isolated function tools, SKILL.md instruction modules, and MCP servers |
+| [03](docs/03-tools-and-skills.md) | **Tools, Function Tools, Skills & MCP** | All 22 built-in tools, subprocess-isolated function tools, SKILL.md instruction modules, and MCP servers |
 | [04](docs/04-streaming.md) | **Streaming Protocol** | AI SDK data stream wire format, every event type, browser `useChat` hook |
 | [05](docs/05-memory.md) | **Memory & Agents** | Long-term memory, multi-agent patterns, async task tracking |
 | [06](docs/06-approval-gate.md) | **Approval Gate** | Human-in-the-loop, three approval scopes, security guarantees |
@@ -105,8 +105,8 @@ If you are new to the codebase, follow this order. Each step builds on the previ
 1. **[Module 00](docs/00-build-from-scratch.md)** — Build your first agent from scratch in ~60 lines. This gives you the mental model before you look at the full codebase.
 2. **[`app/api/chat/route.ts`](app/api/chat/route.ts)** — Read the API entry point. See how a user message becomes an agent turn, including persistence and stream keep-alives.
 3. **[Module 03](docs/03-tools-and-skills.md)** — Tools, Skills & MCP. Understand the three-tier tool architecture before diving into the agent loop.
-4. **[`lib/agent.ts` header comment](lib/agent.ts#L1-L59)** (lines 1-59) then **`createStreamingAgent`** (line ~1731). The header explains the overall architecture; the entry point shows how everything is wired together.
-5. **[Module 02](docs/02-agent-loop.md)** — The Agent Loop deep dive. Now you are ready for the full loop logic inside `lib/agent.ts`.
+4. **[`lib/agent.ts`](lib/agent.ts)** (the barrel) then **[`lib/agent/streaming-agent.ts`](lib/agent/streaming-agent.ts)** (`createStreamingAgent`, ~line 42) and **[`lib/agent/loop.ts`](lib/agent/loop.ts)** (`runAgentLoop`). `lib/agent.ts` is a 28-line barrel that re-exports the real implementation from `lib/agent/*.ts`; `streaming-agent.ts` is the public entry point and `loop.ts` is the ReAct loop itself.
+5. **[Module 02](docs/02-agent-loop.md)** — The Agent Loop deep dive. Now you are ready for the full loop logic inside `lib/agent/loop.ts`.
 6. **[Module 05](docs/05-memory.md)** — Memory & Agents. How persistent context and multi-agent orchestration work.
 7. **[Module 10](docs/10-structured-output.md)** — Structured Output. The alternative execution path for extraction agents.
 8. **[Module 11](docs/11-rag.md)** — RAG. How retrieval-augmented generation is added.
@@ -128,8 +128,9 @@ proxy.ts  (JWT page auth; API routes enforce auth individually where needed)
 app/api/chat/route.ts  (save message, start agent)
     │
     ▼
-lib/agent.ts  ─────────────────────────────────┐
-    │                                          │
+lib/agent/*.ts  ─────────────────────────────────┐
+  (lib/agent.ts is a barrel; real code in        │
+   streaming-agent.ts + loop.ts + helpers)       │
     │  openai.chat.completions.create()        │
     │  ↕ streaming tool calls                  │
     ▼                                          │
@@ -182,7 +183,7 @@ AgentPrimer includes several built-in tools to help you understand what the agen
 
 ## What's Built In
 
-The running agent comes with **21 built-in tools** out of the box:
+The running agent comes with **22 built-in tools** out of the box:
 
 - **File system**: `read_file`, `write_file`, `edit_file`, `append_file`, `list_directory`, `make_directory`, `delete_path`, `move_path`, `copy_path`, `stat_path`, `search_files`
 - **Output**: `send_file` (inline preview in chat), `open_preview` (Preview Panel)

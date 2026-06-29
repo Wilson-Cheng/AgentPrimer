@@ -247,24 +247,14 @@ export async function createStreamingAgent(params: {
 
   return createDataStreamResponse({
     execute: async (writer) => {
-      // `loopSettled` flips true the moment runAgentLoop's main work has
-      // finished AND its onFinish has run. The outer catch below uses this
-      // flag to avoid overwriting a successful row with an error notice
-      // when post-success bookkeeping throws.
+      // `loopSettled` flips true the moment `runAgentLoop` returns without
+      // throwing. After that point the assistant row has already been
+      // persisted (via `onFinish` inside the loop) and the success-side of
+      // the stream has been written; any later throw from incidental work
+      // (finalize-trace flush, reasoning persistence, the user's onFinish
+      // bookkeeping) must NOT be turned into an "incomplete" notice that
+      // overwrites the successful response.
       let loopSettled = false;
-      const wrappedOnFinish = onFinish
-        ? async (
-            text: string,
-            toolCalls: unknown[],
-            tokenUsage?: TokenUsage,
-            reasoning?: string,
-            parts?: unknown[],
-            trace?: AgentStepTrace[],
-          ) => {
-            await onFinish(text, toolCalls, tokenUsage, reasoning, parts, trace);
-            loopSettled = true;
-          }
-        : undefined;
       try {
         await runAgentLoop({
           openai,
@@ -277,11 +267,11 @@ export async function createStreamingAgent(params: {
           sessionId,
           agentName,
           assistantMessageId,
-          onFinish: wrappedOnFinish,
+          onFinish,
           activatedSkills,
           outputSchema: outputSchemaConfig,
         });
-        if (!onFinish) loopSettled = true;
+        loopSettled = true;
       } catch (err) {
         if (loopSettled) {
           console.warn(

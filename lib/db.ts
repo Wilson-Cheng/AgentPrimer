@@ -140,7 +140,12 @@ function migrate(db: Database.Database): void {
       args_json   TEXT NOT NULL DEFAULT '[]',
       -- For SSE/HTTP: the base URL of the server
       url         TEXT NOT NULL DEFAULT '',
-      enabled     INTEGER NOT NULL DEFAULT 1
+      enabled     INTEGER NOT NULL DEFAULT 1,
+      -- JSON object of per-server environment variables (forwarded to stdio
+      -- subprocesses, merged on top of the default allow-list). Added so
+      -- operators can give a single MCP server its own API key without
+      -- exposing that key to every other MCP server they install.
+      env_json    TEXT NOT NULL DEFAULT '{}'
     );
 
     -- Permanently approved agent operations (delete, read_dotfile, …)
@@ -290,6 +295,14 @@ function migrate(db: Database.Database): void {
   }
   if (!ksCols.includes('original_mime')) {
     db.exec('ALTER TABLE knowledge_sources ADD COLUMN original_mime TEXT');
+  }
+
+  // Per-MCP-server environment variables. Lets the user supply an MCP
+  // server-specific API key (e.g. GITHUB_TOKEN for the github MCP server)
+  // without exposing it to every other MCP server they install.
+  const mcpCols = (db.prepare('PRAGMA table_info(mcp_servers)').all() as Array<{ name: string }>).map(c => c.name);
+  if (!mcpCols.includes('env_json')) {
+    db.exec("ALTER TABLE mcp_servers ADD COLUMN env_json TEXT NOT NULL DEFAULT '{}'");
   }
 
   // Backfill token_usage_log from existing messages (INSERT OR IGNORE = idempotent)
@@ -538,7 +551,14 @@ export function getMessagesPage(
 ): { messages: Array<Message & { _rowid: number }>; nextCursor: number | null; hasMore: boolean } {
   const cap = Math.max(1, Math.min(limit, 500));
   const db = getDb();
-  const rows = before
+  // `before` is a rowid cursor: only `undefined`/`null` should mean "no
+  // cursor → newest page". The falsy check used to also accept `0` as "no
+  // cursor", which is wrong — rowid 0 is a perfectly valid (if rare)
+  // sentinel meaning "rows older than rowid 0" (an empty result). Compare
+  // explicitly so a caller asking for `before: 0` gets an empty page
+  // instead of the newest messages.
+  const hasCursor = before !== undefined && before !== null;
+  const rows = hasCursor
     ? db.prepare(
         `SELECT *, rowid AS _rowid FROM messages
          WHERE session_id = ? AND rowid < ?
@@ -681,6 +701,13 @@ export interface McpServer {
   args_json: string;
   url: string;
   enabled: number;
+  /**
+   * JSON object of per-server environment variables (e.g.
+   * `{"GITHUB_TOKEN":"ghp_…"}`). Merged on top of the global allow-list in
+   * `lib/mcp-client.ts` when the stdio subprocess is launched. Empty `{}`
+   * for SSE servers and for stdio servers that don't need custom env vars.
+   */
+  env_json: string;
 }
 
 export function listMcpServers(): McpServer[] {
@@ -693,8 +720,8 @@ export function getMcpServer(id: string): McpServer | undefined {
 
 export function upsertMcpServer(server: McpServer): void {
   getDb().prepare(
-    `INSERT INTO mcp_servers (id, name, github_url, local_path, transport, command, args_json, url, enabled)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO mcp_servers (id, name, github_url, local_path, transport, command, args_json, url, enabled, env_json)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        name = excluded.name,
        github_url = excluded.github_url,
@@ -703,8 +730,20 @@ export function upsertMcpServer(server: McpServer): void {
        command = excluded.command,
        args_json = excluded.args_json,
        url = excluded.url,
-       enabled = excluded.enabled`
-  ).run(server.id, server.name, server.github_url, server.local_path, server.transport, server.command, server.args_json, server.url, server.enabled);
+       enabled = excluded.enabled,
+       env_json = excluded.env_json`
+  ).run(
+    server.id,
+    server.name,
+    server.github_url,
+    server.local_path,
+    server.transport,
+    server.command,
+    server.args_json,
+    server.url,
+    server.enabled,
+    server.env_json ?? '{}',
+  );
 }
 
 export function setMcpServerEnabled(id: string, enabled: boolean): void {

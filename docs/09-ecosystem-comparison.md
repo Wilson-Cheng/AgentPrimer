@@ -4,6 +4,10 @@
 
 ---
 
+> **About this module.** AgentPrimer is the in-repo project; everything in the "AgentPrimer" column is verified against the current source. The "OpenClaw" and "Hermes Agent" columns describe other open-source personal-agent projects as positioning context — those external claims are **not verified by this codebase** and are illustrative only. Treat the comparison as a design discussion of how AgentPrimer's choices compare to broader patterns in the personal-agent space, not as a fact-checked statement about any specific external project.
+
+---
+
 ## Learning Objectives
 
 After reading this module you will be able to:
@@ -28,14 +32,14 @@ All three are open-source, self-hostable AI agent applications targeting develop
 | **Design goal** | Self-hosted web training platform | Personal assistant, omnichannel | Self-improving personal agent |
 | **Skills** | Developer-written npm packages | SKILL.md; ClawHub registry (5,400+) | Agent-written Python; self-improving |
 | **Memory** | Markdown files injected into prompt | `MEMORY.md` + `USER.md` in prompt | Markdown + FTS5 session search + Honcho |
-| **Sandboxing** | ❌ (approval gate only) | ✅ Docker / SSH / OpenShell | ✅ Docker, SSH, Singularity, Modal, Daytona |
+| **Sandboxing** | ⚠️ Approval gate + per-tool path sandboxing; **no container/VM sandbox** for `run_shell` or function tools. Function tools execute in a Node.js subprocess with a 35 s parent / 30 s inner timeout and `--max-old-space-size=256` memory cap, but the subprocess has full host filesystem access. Recommended deployment is inside Docker (see `Dockerfile` / `docker-compose.yml`). | ✅ Docker / SSH / OpenShell | ✅ Docker, SSH, Singularity, Modal, Daytona |
 | **Voice** | ❌ | ✅ Wake words + Talk Mode (macOS/iOS/Android) | ✅ Voice memo transcription + TTS |
 | **Messaging channels** | ❌ (web only) | ✅ 20+ (WhatsApp, Telegram, Slack, iMessage…) | ✅ Telegram, Discord, Slack, WhatsApp, Signal, Email |
 | **Mobile apps** | ❌ | ✅ iOS node + Android node | ❌ |
 | **Desktop app** | ❌ | ✅ macOS menu bar (OpenClaw.app) | ❌ |
 | **Live Canvas** | ❌ | ✅ A2UI visual workspace | ❌ |
 | **Cron scheduler** | ❌ | ✅ Channel-aware, natural language | ✅ Platform delivery |
-| **Multi-user auth** | ⚠️ Single-admin JWT auth | ❌ Single-user | ❌ Single-user |
+| **Multi-user auth** | ⚠️ First-run registration is an "admin"; additional users can be added (stored in `data/.users` as `username:bcrypt-hash`). JWT cookie auth via `proxy.ts`. | ❌ Single-user | ❌ Single-user |
 | **Web chat UI** | ✅ Full authenticated app | Partial (WebChat is one channel) | Partial (web dashboard only) |
 | **File preview panel** | ✅ HTML/image/PDF/audio inline | ❌ (file attachments to channels) | ❌ |
 | **Token cost tracking** | ✅ Per-message statistics page | ❌ | ❌ |
@@ -102,7 +106,7 @@ The three projects are built around fundamentally different ideas about where th
 |---|---|---|---|
 | **Lifecycle** | Per-HTTP-request | Persistent daemon (24/7) | Interactive session or gateway |
 | **Users** | Single admin (JWT auth) | Single (personal) | Single (personal) |
-| **State storage** | SQLite (`data/db/agent.db`) | `~/.openclaw/workspace/` | `~/.hermes/` |
+| **State storage** | SQLite (`data/db/agent.db`) plus filesystem state under `data/` (agents, skills, function tools, MCP servers, uploads, agent-files, RAG model cache, `.users`) | `~/.openclaw/workspace/` | `~/.hermes/` |
 | **Code execution** | Host, approval required | Host by default; Docker for group sessions | Configurable (Docker, SSH, Modal, Daytona…) |
 | **Language runtime** | Node.js (TypeScript) | Node.js (TypeScript) | Python 3.11 |
 | **Install** | `npm run dev` | `npm install -g openclaw` | `curl … \| bash` |
@@ -133,7 +137,7 @@ It connects to the messaging apps you already use and provides a persistent, alw
   You talk to it from your phone             You access it from a browser
   Single user — you                          Single admin via browser login
   Meets you where you are (20+ channels)     One interface (web UI)
-  SOUL.md gives the agent a name/persona     agents/<agent>/memory.md + preference.md give context
+  SOUL.md gives the agent a name/persona     agents/<agent>/agent.md (system prompt) + memory.md (cross-session memory) give context
   Skills from ClawHub (5,400+)               Skills as npm packages (handful built-in)
   Docker sandboxing for group sessions       Approval gate for dangerous tools
 ```
@@ -348,7 +352,7 @@ OpenClaw's ClawHub (5,400+ skills) and Hermes Agent's agentskills.io are major n
 
 1. Build a community skills registry where users can discover and install SKILL.md skills with one click
 2. Allow function tool packages to be shared via npm or GitHub with automatic `function.json` schema discovery
-3. Add an `/api/skills/install?package=<npm-name>` endpoint that runs `npm install` and parses the skill (already partially implemented via `lib/installer.ts`)
+3. Add an `/api/skills/install?package=<npm-name>` endpoint that fetches and parses the skill. (`lib/installer.ts` already implements the related git-clone install path for skills/MCP/function-tool packages from GitHub URLs; an npm-based installer would be a parallel implementation.)
 
 #### Docker Sandboxing (Difficulty: High) — Safety Critical
 

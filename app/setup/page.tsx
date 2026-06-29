@@ -65,32 +65,34 @@ export default function SetupPage() {
     }
   };
 
-  const saveExaEnv = async () => {
-    if (!enableWebSearch || !exaKey.trim()) return;
-    const res = await fetch('/api/data-files?file=.env');
-    const data = await res.json().catch(() => ({}));
-    const current = typeof data.content === 'string' ? data.content : '';
-    const line = `EXA_API_KEY=${exaKey.trim()}`;
-    const next = /^EXA_API_KEY=.*$/m.test(current)
-      ? current.replace(/^EXA_API_KEY=.*$/m, line)
-      : `${current.trimEnd()}${current.trim() ? '\n' : ''}${line}\n`;
-    await fetch('/api/data-files', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ file: '.env', content: next }),
-    });
-  };
-
+  /**
+   * Enable the bundled Exa MCP server and (if the operator supplied one)
+   * store `EXA_API_KEY` on that server's per-server env so the subprocess
+   * picks it up. We do NOT write to `data/.env` any more — the MCP allow-
+   * list in lib/mcp-client.ts does not forward host env by default, so
+   * a per-server credential is the supported path.
+   */
   const enableExaServer = async () => {
     if (!enableWebSearch) return;
     const res = await fetch('/api/mcp');
     const data = await res.json().catch(() => ({}));
-    const exa = (data.servers ?? []).find((s: { name?: string; github_url?: string }) => s.name === 'exa' || s.github_url === 'builtin://exa');
+    const exa = (data.servers ?? []).find(
+      (s: { name?: string; github_url?: string }) =>
+        s.name === 'exa' || s.github_url === 'builtin://exa',
+    );
     if (!exa?.id) throw new Error('Exa MCP server was not found.');
+    const trimmedKey = exaKey.trim();
     await fetch('/api/mcp', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: exa.id, enabled: true }),
+      body: JSON.stringify({
+        id: exa.id,
+        enabled: true,
+        // Only set env when the user actually typed a key. Use `envPatch`
+        // (merge semantics) rather than `env` (replace semantics) so
+        // onboarding cannot wipe any operator-added Exa MCP env vars.
+        ...(trimmedKey ? { envPatch: { EXA_API_KEY: trimmedKey } } : {}),
+      }),
     });
   };
 
@@ -107,7 +109,6 @@ export default function SetupPage() {
           default_model: model.trim(),
         }),
       });
-      await saveExaEnv();
       await enableExaServer();
       await fetch('/api/builtin-tools', {
         method: 'PATCH',
@@ -173,7 +174,7 @@ export default function SetupPage() {
                     className="[&_button]:h-10 [&_button]:bg-gray-900 [&_button]:text-gray-100 [&_button]:border [&_button]:border-gray-600 [&_button]:font-mono [&_button]:focus:bg-gray-900 [&_button]:dark:focus:bg-gray-900"
                   />
                 ) : (
-                  <input type="text" value={model} onChange={e => setModel(e.target.value)} placeholder="e.g. deepseek-v4-flash, gpt-4o" className="w-full h-10 bg-gray-900 text-gray-100 px-3 rounded-lg border border-gray-600 text-sm focus:outline-none focus:border-blue-500 font-mono" />
+                  <input type="text" value={model} onChange={e => setModel(e.target.value)} placeholder="e.g. deepseek-chat, gpt-4o" className="w-full h-10 bg-gray-900 text-gray-100 px-3 rounded-lg border border-gray-600 text-sm focus:outline-none focus:border-blue-500 font-mono" />
                 )}
               </div>
             </div>
@@ -188,7 +189,7 @@ export default function SetupPage() {
               </label>
               {enableWebSearch && (
                 <div className="space-y-1.5">
-                  <label className="text-sm font-700 text-gray-200">Enter API Key (skip if EXA_API_KEY is already set in the system)</label>
+                  <label className="text-sm font-700 text-gray-200">Enter API Key</label>
                   <div className="relative">
                     <input type={showExaKey ? 'text' : 'password'} value={exaKey} onChange={e => setExaKey(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" className="w-full h-10 bg-gray-900 text-gray-100 pl-3 pr-10 rounded-lg border border-gray-600 text-sm focus:outline-none focus:border-blue-500 font-mono" />
                     <button type="button" onClick={() => setShowExaKey(v => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200">{showExaKey ? <EyeOff size={15} /> : <Eye size={15} />}</button>
@@ -196,7 +197,7 @@ export default function SetupPage() {
                 </div>
               )}
               {enableWebSearch && (
-                <p className="text-sm text-gray-500">EXA_API_KEY can be updated in Settings {">"} Environment Variables</p>
+                <p className="text-sm text-gray-500">The key is stored only on the Exa MCP server&apos;s environment. You can update it later in Skills &amp; MCP → Exa → Edit → Environment variables.</p>
               )}
             </div>
           )}

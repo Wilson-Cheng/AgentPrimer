@@ -8,10 +8,12 @@
 
 After reading this module you will be able to:
 - Explain the ReAct (Reason + Act) pattern and why it enables multi-step tasks
-- Trace exactly what happens inside `lib/agent.ts` on each agent turn
+- Trace exactly what happens inside the `lib/agent/` module on each agent turn
 - Understand how streaming tool-call arguments are accumulated from fragments
 - Explain the difference between synchronous and asynchronous sub-agents
 - Identify the safety limits (maxSteps, timeouts) and why they exist
+
+> **File map:** `lib/agent.ts` is a 28-line barrel that re-exports everything from `lib/agent/index.ts`. The actual implementation lives in fourteen smaller files under `lib/agent/`. This module names the specific file each piece of logic lives in.
 
 ---
 
@@ -74,40 +76,47 @@ flowchart TD
 
 ### Step 0: Bootstrap
 
-`createStreamingAgent()` in [lib/agent.ts](../lib/agent.ts) performs setup before the loop starts:
+`createStreamingAgent()` in [`lib/agent/streaming-agent.ts`](../lib/agent/streaming-agent.ts) performs setup before the loop starts. Each numbered sub-step lives in a focused helper module:
 
 ```
-0a. Resolve the agent name from the request body (default: "main")
-0b. Read agent config (system prompt, allowed tools, model) from data/agents/<agent>/agent.md
-0c. Read data/agents/<agent>/memory.md → inject into system prompt after the agent's own prompt
-0d. Load function tools (from DB; each will execute in a subprocess)
-0e. Load MCP tools (connect to all enabled MCP servers, call listTools())
-0f. Load built-in tools (filtered by builtin-tools-registry — user can disable them)
-0g. Inject SKILL.md skill descriptions into system prompt (Stage 1 discovery)
-0h. Merge all callable tools: function tools → MCP tools → built-in tools
+0a. Resolve the agent name from the request body (default: "main")     // streaming-agent.ts
+0b. Read agent config (system prompt, allowed tools, model)             // lib/memory.ts
+    from data/agents/<agent>/agent.md
+0c. Read data/agents/<agent>/memory.md → inject into system prompt      // lib/agent/prompt.ts
+    after the agent's own prompt (buildSystemPrompt)
+0d. Load function tools (from DB; each will execute in a subprocess)    // lib/function-tools-loader.ts
+0e. Load MCP tools (connect to all enabled MCP servers, listTools())    // lib/mcp-client.ts
+0f. Load built-in tools (filtered by builtin-tools-registry)            // lib/agent/builtin-tools.ts
+0g. Inject SKILL.md skill descriptions into system prompt (Stage 1)     // lib/skills-loader.ts
+0h. Merge all callable tools: function tools → MCP tools → built-ins
     (built-ins have highest priority; they cannot be shadowed)
-0i. Filter tool allowlist from data/agents/<agent>/agent.md (if agent has Tools: list)
-0j. Filter/sanitize incomplete tool invocations from message history
-    (these appear when the browser was refreshed mid-stream)
-0k. Convert useChat message format → OpenAI Chat API format
-    (one useChat message can contain multiple agent "steps" with tool calls)
-0l. Load last reasoning_content from cache (for thinking models, two-level cache:
-    in-memory Map + SQLite setting keyed by sessionId)
-0m. Resolve model priority:
-    UI selector > agents/<agent>/agent.md **Model:** > DB default_model (set it in settings page)
+0i. Filter tool allowlist from data/agents/<agent>/agent.md
+0j. Filter/sanitize incomplete tool invocations from message history    // streaming-agent.ts + lib/agent/sanitize.ts
+0k. Convert useChat → OpenAI Chat API format                            // lib/agent/messages.ts (convertMessagesToOpenAI)
+0l. Load last reasoning_content (two-level cache: Map + SQLite)         // lib/agent/reasoning.ts
+0m. Resolve model priority                                              // lib/agent/model-resolver.ts
+    UI selector > agents/<agent>/agent.md **Model:** > DB default_model
+    (also validated against the provider's /v1/models list — if the
+     agent-pinned model is missing, falls back to default_model)
 ```
+
+The actual ReAct loop runs inside [`runAgentLoop`](../lib/agent/loop.ts) (in `lib/agent/loop.ts`); `createStreamingAgent` is the orchestrator that prepares everything and then hands off to the loop.
 
 ### Step 1: LLM Call (Streaming)
 
 ```typescript
+// Real call in lib/agent/loop.ts. `tools` and `tool_choice` are only
+// passed when at least one tool is available — many providers reject
+// an empty `tools: []` array.
 const stream = await openai.chat.completions.create({
   model: resolvedModel,
   messages: [
     { role: 'system', content: systemPrompt },  // agent prompt + memory
     ...conversationHistory,                      // all prior turns
   ],
-  tools: openaiTools,        // undefined if no tools (some models reject empty array)
-  tool_choice: 'auto',       // model decides when to call tools
+  ...(openaiTools
+    ? { tools: openaiTools, tool_choice: 'auto' }
+    : {}),
   stream: true,
   stream_options: { include_usage: true },  // get token counts
 });
@@ -201,39 +210,39 @@ This is the core of the loop: the model's tool requests and their results become
 ```mermaid
 sequenceDiagram
     participant Browser
-    participant agent.ts
+    participant agent
     participant OpenAI
     participant Tool
 
-    Browser->>agent.ts: POST /api/chat (messages)
-    Note over agent.ts: Setup: load config, tools, memory
-    agent.ts->>OpenAI: chat.completions.create(stream:true, step 1)
-    OpenAI-->>agent.ts: delta: tool_call_streaming_start
-    agent.ts-->>Browser: b: {toolCallId, toolName}
-    OpenAI-->>agent.ts: delta: tool_call_delta (args fragment 1)
-    agent.ts-->>Browser: c: {toolCallId, argsFragment}
-    OpenAI-->>agent.ts: delta: tool_call_delta (args fragment 2)
-    agent.ts-->>Browser: c: {toolCallId, argsFragment}
-    OpenAI-->>agent.ts: finish_reason: tool_calls
-    agent.ts-->>Browser: 9: {toolCallId, toolName, args} (complete)
-    agent.ts->>Tool: execute(parsedArgs)
-    Tool-->>agent.ts: result
-    agent.ts-->>Browser: a: {toolCallId, result}
-    Note over agent.ts: Append assistant msg + tool result to history
-    agent.ts->>OpenAI: chat.completions.create(stream:true, step 2, with tool result)
-    OpenAI-->>agent.ts: delta: content "Based on the file..."
-    agent.ts-->>Browser: 0: "Based on the file..."
-    OpenAI-->>agent.ts: finish_reason: stop
-    agent.ts-->>Browser: e: {finishReason:stop} (finish_step)
-    agent.ts-->>Browser: d: {finishReason:stop} (finish_message)
-    Note over agent.ts: onFinish() → save to DB
+    Browser->>agent: POST /api/chat (messages)
+    Note over agent: Setup: load config, tools, memory
+    agent->>OpenAI: chat.completions.create(stream:true, step 1)
+    OpenAI-->>agent: delta: tool_call_streaming_start
+    agent-->>Browser: b: {toolCallId, toolName}
+    OpenAI-->>agent: delta: tool_call_delta (args fragment 1)
+    agent-->>Browser: c: {toolCallId, argsFragment}
+    OpenAI-->>agent: delta: tool_call_delta (args fragment 2)
+    agent-->>Browser: c: {toolCallId, argsFragment}
+    OpenAI-->>agent: finish_reason: tool_calls
+    agent-->>Browser: 9: {toolCallId, toolName, args} (complete)
+    agent->>Tool: execute(parsedArgs)
+    Tool-->>agent: result
+    agent-->>Browser: a: {toolCallId, result}
+    Note over agent: Append assistant msg + tool result to history
+    agent->>OpenAI: chat.completions.create(stream:true, step 2, with tool result)
+    OpenAI-->>agent: delta: content "Based on the file..."
+    agent-->>Browser: 0: "Based on the file..."
+    OpenAI-->>agent: finish_reason: stop
+    agent-->>Browser: e: {finishReason:stop} (finish_step)
+    agent-->>Browser: d: {finishReason:stop} (finish_message)
+    Note over agent: onFinish() → save to DB
 ```
 
 ---
 
 ## Message Format Conversion
 
-The Vercel AI SDK's `useChat` hook stores messages in its own format. The OpenAI API requires a different format. `lib/agent.ts` bridges the two.
+The Vercel AI SDK's `useChat` hook stores messages in its own format. The OpenAI API requires a different format. `convertMessagesToOpenAI()` in [`lib/agent/messages.ts`](../lib/agent/messages.ts) bridges the two.
 
 **useChat format (one message, multiple steps):**
 ```json
@@ -262,7 +271,7 @@ The Vercel AI SDK's `useChat` hook stores messages in its own format. The OpenAI
 ]
 ```
 
-The conversion function `convertMessagesToOpenAI()` handles this. It also re-attaches `reasoning_content` to the last assistant message so thinking models can continue their chain-of-thought.
+The conversion function `convertMessagesToOpenAI()` in `lib/agent/messages.ts` handles this. It also re-attaches `reasoning_content` to the last assistant message so thinking models can continue their chain-of-thought.
 
 ---
 
@@ -270,8 +279,8 @@ The conversion function `convertMessagesToOpenAI()` handles this. It also re-att
 
 | Limit | Value | What happens when reached |
 |-------|-------|--------------------------|
-| `maxSteps` | 100 by default (`max_agent_steps` setting) | Loop exits; emits `finish_message` with reason `"max-steps"` |
-| Function tool timeout | 35 seconds | Subprocess is killed; tool returns `{ error: "timeout" }` |
+| `maxSteps` | 100 by default (`max_agent_steps` setting; falls back to 100 in `streaming-agent.ts` if unset) | Loop exits; emits `finish_message` with reason `"max-steps"` |
+| Function tool timeout | 35 s parent kill (`lib/function-tools-loader.ts`), 30 s inner deadline (`lib/function-tool-worker.js` — the effective ceiling) | Subprocess is killed; tool returns `{ error: "timeout" }` |
 | Function tool memory | 256 MB (`--max-old-space-size`) | Node.js OOM-kills the subprocess |
 | MCP call timeout | 30 seconds | Client throws; tool returns `{ error: "timeout" }` |
 
@@ -311,7 +320,7 @@ Some models (DeepSeek R1, o1, o3) emit a `reasoning_content` field in addition t
 - The reasoning text must be *streamed to the browser* so the user can see the "Thinking..." panel
 - The reasoning text must be *persisted between turns* and re-sent on the next API call, because the API requires echoing it back
 
-AgentPrimer uses a two-level cache for this:
+AgentPrimer uses a two-level cache for this (see `lib/agent/reasoning.ts`):
 1. **In-memory `Map<sessionId, reasoning>`** — fast; survives as long as the Node.js process is running
 2. **SQLite setting `reasoning:<sessionId>`** — survives server restarts
 
@@ -345,7 +354,7 @@ For learning purposes, AgentPrimer's hand-written loop is ideal: every step is e
 
 ## Exercises
 
-1. **Trace a tool call manually:** Set a breakpoint in `lib/agent.ts` at the tool execution step. Send a message like "List all files in /app/lib" and trace through the code to see how the `list_directory` tool is called and its result is returned.
+1. **Trace a tool call manually:** Set a breakpoint in `lib/agent/loop.ts` (around the tool execution block) **or** in `lib/agent/builtin-tools.ts` inside the specific tool's `execute()` function. Send a message like "List all files in /app/lib" and trace through the code to see how the `list_directory` tool is called and its result is returned.
 
 2. **Add a `console.log` step counter:** Inside the agent loop's `for` loop, log `Step ${step}: finish_reason = ${finishReason}`. Send a complex multi-step request and observe how many steps it takes.
 

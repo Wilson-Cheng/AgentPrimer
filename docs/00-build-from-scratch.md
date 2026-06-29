@@ -25,9 +25,11 @@ npm install openai ai zod uuid better-sqlite3
 
 This installs:
 - **openai** — the official OpenAI SDK (works with any compatible provider)
-- **ai** — Vercel AI SDK (for the `useChat` React hook on the frontend)
+- **ai** — Vercel AI SDK (for the `useChat` React hook on the frontend; in v4 the hook itself ships in `@ai-sdk/react`, but this from-scratch tutorial keeps things minimal and just calls `fetch` directly)
 - **zod** — schema validation
 - **better-sqlite3** — zero-config persistence
+
+> **Heads up — this is a toy.** For simplicity the tutorial reads the API key and base URL from environment variables. The full AgentPrimer codebase stores both in the SQLite `settings` table (see `lib/agent/openai-client.ts`) and configures them through the Settings UI, not env vars.
 
 ---
 
@@ -51,7 +53,7 @@ export async function runAgent(userMessage: string): Promise<string> {
 
   for (let step = 0; step < 10; step++) {
     const response = await openai.chat.completions.create({
-      model: 'deepseek-v4-flash',
+      model: 'deepseek-chat',
       messages,
       tools: [{
         type: 'function',
@@ -183,14 +185,14 @@ Open http://localhost:3000 and ask "What time is it?" The agent will call `get_t
 
 | Your code | AgentPrimer adds |
 |-----------|-----------------|
-| One hard-coded tool | 21 built-in tools, N function tools, N skills, N MCP servers |
+| One hard-coded tool | 22 built-in tools, N function tools, N skills, N MCP servers |
 | Synchronous (user waits) | Streaming SSE to browser with real-time token display |
 | One agent config | Multiple named agents with per-agent prompts/tools |
 | In-memory conversation | SQLite persistence, session management, history |
 | No memory | `data/agents/<agent>/memory.md` injected into every system prompt |
 | No approval gates | Human-in-the-loop for dangerous operations |
 | No sub-agents | Async background agents with task files |
-| No streaming | Token-by-token streaming to the `useChat` hook |
+| Token-by-token streaming | `useChat` hook + AI SDK data-stream wire format (see Module 04) |
 | No typing indicator | Reasoning content panel, live tool call cards |
 | No multimodal | Image, audio, and text file attachments |
 | No RAG index | RAG with vector embeddings + FTS5 fallback |
@@ -200,7 +202,7 @@ Open http://localhost:3000 and ask "What time is it?" The agent will call `get_t
 
 Your 60-line prototype and AgentPrimer run on the *exact same primitives*: a system prompt, an API call, and a loop that checks `finish_reason`. Everything else — streaming, persistence, tools, memory, approvals — is added in layers on top of those three things.
 
-AgentPrimer is what your prototype grows into when you add every feature a production agent platform needs. The code in `lib/agent.ts` is still recognizably the same loop you just wrote.
+AgentPrimer is what your prototype grows into when you add every feature a production agent platform needs. The same ReAct loop you just wrote lives in `lib/agent/loop.ts` (`runAgentLoop`), wrapped by `lib/agent/streaming-agent.ts` (`createStreamingAgent`). `lib/agent.ts` itself is just a 28-line barrel re-exporting from `lib/agent/*.ts`.
 
 ---
 

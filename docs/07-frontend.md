@@ -23,8 +23,10 @@ graph TD
     ChatInterface["components/ChatInterface.tsx\n(shared chat client component)"]
     Sidebar["components/Sidebar.tsx\n(session list + session action menu)"]
     ResizableSidebar["components/ResizableSidebar.tsx\n(draggable sidebar width)"]
-    MessageBubble["components/MessageBubble.tsx\n(renders one message)"]
+    MessageBubble["components/MessageBubble.tsx\n(thin orchestrator)"]
+    MessageSubs["components/message/*\n(ToolCards · Reasoning · FileBlocks · StructuredOutput · FinalizeCallBubble · TraceDrawer)"]
     ChatInput["components/ChatInput.tsx\n(text + file input)"]
+    ChatSubs["components/chat/*\n(chat-screen sub-components)"]
     ModelSelector["components/ModelSelector.tsx\n(provider model selector)"]
     PreviewPanel["components/PreviewPanel.tsx\n(live preview panel)"]
     ThemeToggle["components/ThemeToggle.tsx\n(light/dark mode)"]
@@ -32,9 +34,14 @@ graph TD
     SendToRagDialog["components/SendToRagDialog.tsx\n(send message to RAG)"]
     WritingGuideModal["components/WritingGuideModal.tsx\n(agent.md/memory.md writing guide)"]
     SystemPromptModal["components/SystemPromptModal.tsx\n(inspect composed system prompt)"]
-    LiveToolCard["LiveToolCard (inside MessageBubble)\n(tool call + approval UI)"]
-    ReasoningPanel["Reasoning panel (inside MessageBubble)\n(chain-of-thought)"]
-    AgentFile["AgentFile card (inside MessageBubble)\n(inline file preview + download)"]
+    AuthGuard["components/AuthGuard.tsx\n(client-side auth boundary)"]
+    BrandLogo["components/BrandLogo.tsx"]
+    CodeEditorPanel["components/CodeEditorPanel.tsx\n(Monaco wrapper)"]
+    MermaidBlock["components/MermaidBlock.tsx\n(Mermaid diagrams)"]
+    MarkdownContent["components/MarkdownContent.tsx\n(GFM + KaTeX + syntax highlighting)"]
+    EditorSubs["components/editor/*\n(Agent Files editor pieces)"]
+    LearnSubs["components/learn/*\n(Learn page pieces)"]
+    UI["components/ui/*\n(small shared primitives)"]
     TokenGauges["Token gauges (inside ChatInterface)\n(context + output usage bars)"]
 
     ChatInterface --> ResizableSidebar
@@ -42,13 +49,14 @@ graph TD
     ChatInterface --> ModelSelector
     ChatInterface --> ThemeToggle
     ChatInterface --> MessageBubble
+    MessageBubble --> MessageSubs
     ChatInterface --> PreviewPanel
     ChatInterface --> RagViewerPanel
     ChatInterface --> ChatInput
+    ChatInterface --> ChatSubs
     ChatInterface --> TokenGauges
-    MessageBubble --> LiveToolCard
-    MessageBubble --> ReasoningPanel
-    MessageBubble --> AgentFile
+    MessageBubble --> MarkdownContent
+    MarkdownContent --> MermaidBlock
 ```
 
 ---
@@ -91,36 +99,36 @@ Every time the user sends a message, `useChat` sends `POST /api/chat` with `{ me
 ### Sending a Message
 
 ```typescript
+// components/ChatInterface.tsx — attachments are passed in the per-call
+// `body` override on `append`, NOT as a message annotation.
 const handleSend = async (text: string, attachments: Attachment[]) => {
-  await append({
-    role: 'user',
-    content: text,
-    // Attachments are passed as a data annotation
-    data: { attachments },
-  });
+  await append(
+    { role: 'user', content: text },
+    { body: { sessionId, agentName, modelId, attachments } },
+  );
 };
 ```
 
 ### Token Gauges
 
 `ChatInterface` displays two token usage progress bars below the chat header:
-- **Context length** — estimated prompt tokens vs. model's known context window (`KNOWN_CTX` table)
-- **Output length** — estimated completion tokens vs. model's known max output limit (`KNOWN_OUTPUT` table)
+- **Context length** — estimated prompt tokens vs. model's known context window
+- **Output length** — estimated completion tokens vs. model's known max output limit
 
-Model limits are looked up from internal tables keyed by model ID, falling back to values fetched from the provider's `/v1/models` endpoint.
+Limits come primarily from the provider's `/v1/models` endpoint (`context_length` / `max_output_tokens`). When the provider does not advertise them, AgentPrimer falls back to a small lookup of well-known prefixes in `lib/model-lengths.ts` (`KNOWN_CONTEXT_LENGTHS` and `KNOWN_OUTPUT_LENGTHS`), each an array of `[modelPrefix, size]` pairs matched by `startsWith`.
 
 ### Approval Gate Callbacks
 
 ```typescript
 <MessageBubble
   sessionId={sessionId}
-  onApprovalGranted={async (_inv, scope) => {
+  onApprovalGranted={async (inv, scope) => {
     await append({
       role: 'user',
       content: `I approved the operation (scope: ${scope}). Please proceed.`,
     });
   }}
-  onApprovalDenied={async () => {
+  onApprovalDenied={async (inv) => {
     await append({
       role: 'user',
       content: 'I denied the operation. Please do not proceed with it.',
@@ -153,12 +161,20 @@ flowchart TD
 
 ## `components/MessageBubble.tsx`
 
-Renders a single chat message. Handles three rendering modes:
+`MessageBubble` is a thin orchestrator that delegates rendering to specialised sub-components under `components/message/`:
+- `ToolCards.tsx` — live and historical tool-call cards (including approval UI)
+- `Reasoning.tsx` — collapsible "Thinking…" panel
+- `FileBlocks.tsx` — inline previews for `send_file` results
+- `StructuredOutput.tsx` — structured-output renderers (see Module 10)
+- `FinalizeCallBubble.tsx` — finalize call bubble
+- `TraceDrawer.tsx` — per-step trace inspector
+
+It handles three rendering modes:
 
 | Mode | When | Source |
 |------|------|--------|
-| **Streaming** | `isStreaming: true` | `toolInvocations` from `msg.parts` (live) |
-| **Historical** | Loaded from DB | `toolCalls` from `tool_calls_json` column |
+| **Streaming** | `isStreaming: true` | `parts` and `toolInvocations` from the live useChat message |
+| **Historical** | Loaded from DB | `parts`/`toolCalls` from `parts_json` / `tool_calls_json` |
 | **User message** | `role: "user"` | Plain markdown content |
 
 ### Props
@@ -170,11 +186,13 @@ interface MessageBubbleProps {
   attachments?: Attachment[];
   toolCalls?: ToolCall[];             // Historical (from DB)
   toolInvocations?: LiveToolInvocation[]; // Live (streaming)
-  reasoning?: string;                 // Chain-of-thought text
+  parts?: UIPart[];                   // Ordered parts (text, reasoning, tool-invocation)
+  reasoning?: string;                 // Chain-of-thought text (fallback when no parts)
   isStreaming?: boolean;
+  expandByDefault?: boolean;
   sessionId?: string;
-  onApprovalGranted?: (inv, scope) => void;
-  onApprovalDenied?: (inv) => void;
+  onApprovalGranted?: (inv: LiveToolInvocation, scope: 'once' | 'session' | 'permanent') => void;
+  onApprovalDenied?: (inv: LiveToolInvocation) => void;
 }
 ```
 
@@ -258,8 +276,8 @@ sequenceDiagram
     ChatInput->>ChatInput: Add to pendingAttachments state
     Note over ChatInput: Thumbnail/icon shown in input area
     User->>ChatInput: Send message
-    ChatInput->>ChatPage: onSend(text, attachments)
-    ChatPage->>useChat: append({ content: text, data: { attachments } })
+    ChatInput->>ChatInterface: onSend(text, attachments)
+    ChatInterface->>useChat: append({ role:"user", content:text }, { body:{ attachments, ... } })
 ```
 
 Files are uploaded immediately when selected (not at send time). The returned URL is a local `/api/uploads/<filename>` path stored in `data/uploads/`.
@@ -276,8 +294,8 @@ flowchart LR
         Bubble["MessageBubble\n(renders)"]
     end
     subgraph Server
-        Route["route.ts\nPOST /api/chat"]
-        Agent["agent.ts\nstreaming"]
+        Route["app/api/chat/route.ts\nPOST /api/chat"]
+        Agent["lib/agent/streaming-agent.ts\n+ lib/agent/loop.ts"]
     end
 
     Input -->|append()| Hook
@@ -294,7 +312,7 @@ The `useChat` hook handles:
 - Setting `isLoading` true/false
 - Exposing `error` if the stream errors
 
-`MessageBubble` is a pure rendering component — it receives props from `ChatPage` which reads `messages` from `useChat`.
+`MessageBubble` is a pure rendering component — it receives props from `ChatInterface`, which reads `messages` from `useChat`.
 
 ---
 
@@ -304,11 +322,11 @@ Messages loaded from the database are formatted slightly differently than live s
 
 | Field | Live (streaming) | Historical (DB) |
 |-------|-----------------|-----------------|
-| Tool calls | `msg.toolInvocations` (parts) | `msg.toolCalls` (parsed from `tool_calls_json`) |
-| Reasoning | `msg.annotations` (accumulated) | Restored from persisted reasoning data |
+| Tool calls | `msg.toolInvocations` / ordered `msg.parts` of type `tool-invocation` | `msg.toolCalls` (parsed from `tool_calls_json`) and `msg.parts` (parsed from `parts_json`) |
+| Reasoning | `msg.parts` entries of type `reasoning` (preferred); accumulated on `msg.reasoning` as a fallback | Restored from persisted `reasoning_json` and `parts_json` |
 | Content | Built up chunk by chunk | Full string from DB |
 
-When `ChatPage` loads a session's history, it calls `setMessages()` to inject the stored messages into the `useChat` hook's state, keeping the same rendering pipeline.
+When `ChatInterface` loads a session's history it calls `setMessages()` to inject the stored messages into the `useChat` hook's state, keeping the same rendering pipeline.
 
 ---
 
@@ -322,9 +340,9 @@ The Preview Panel is a resizable right-side panel that displays files generated 
 - **HTML** — rendered in a sandboxed `<iframe>` with scripts allowed, same-origin disabled, and preview CSP applied
 - **Images** (PNG, JPEG, GIF, WebP, SVG) — displayed with zoom controls
 - **PDFs** — rendered using the browser's native PDF viewer
-- **Markdown** — rendered as HTML
+- **Markdown** — split view (Monaco editor + live rendered preview) so both agent and user can edit collaboratively
 
-**How it opens:** The `open_preview` built-in tool returns `{ type: 'open_preview', path, title, exists }`. `ChatPage` watches tool results for this shape, converts the path to a workspace or editor preview URL, and opens the panel.
+**How it opens:** The `open_preview` built-in tool returns `{ type: 'open_preview', path, title, exists }`. `ChatInterface` watches tool results for this shape, converts the path to a workspace or editor preview URL, and opens the panel.
 
 **Source:** `components/PreviewPanel.tsx`
 

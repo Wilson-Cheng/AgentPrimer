@@ -170,9 +170,15 @@ The `tests/` directory contains the following test suites (configured via `vites
 | `db.test.ts` | SQLite schema migration and CRUD helpers |
 | `function-tools-loader.test.ts` | Subprocess function tool execution |
 | `installer.test.ts` | GitHub clone, npm install, manifest validation |
+| `mcp-client.test.ts` | MCP transport selection and tool listing |
 | `memory.test.ts` | `agent.md` / `memory.md` read/write operations |
+| `openai-client-di.test.ts` | OpenAI client factory dependency-injection seam |
+| `path-security.test.ts` | `resolveAgentPath` sandbox + symlink rejection |
+| `preview-security.test.ts` | Preview iframe CSP + sandbox attributes |
+| `provider-normalization.test.ts` | Provider-specific quirks in chunk + usage normalisation |
 | `rag.test.ts` | Chunking, embedding, ingestion, and retrieval |
 | `skills-loader.test.ts` | SKILL.md discovery and activation |
+| `tool-result-sanitization.test.ts` | Anti-prompt-injection scrub of tool results |
 
 Run all tests with:
 
@@ -218,17 +224,22 @@ it('calls read_file with the requested path', async () => {
 
 ### Testing the approval gate
 
-When an unapproved `delete_path` call is made, the tool returns a special result indicating approval is needed:
+When an unapproved `delete_path` call is made, the tool returns a special result indicating approval is needed.
+
+> **Note on calling shape:** Built-in tools are not exported as plain functions — they are constructed by `createBuiltinTools()` (in `lib/agent/builtin-tools.ts`) into a `ToolSet` keyed by tool name. Call them via `tools.delete_path.execute({...})` rather than an imported `deletePath`.
 
 ```typescript
 it('returns requires_approval when deleting without prior approval', async () => {
   const { isApproved } = await import('../lib/approval-store');
+  const { createBuiltinTools } = await import('../lib/agent');
 
-  // No approval granted yet
-  expect(isApproved('session-1', 'delete', '/tmp/file.txt')).toBe(false);
+  // No approval granted yet — note the resolved absolute path used as key
+  expect(isApproved('session-1', 'delete', path.resolve('/tmp/file.txt'))).toBe(false);
 
-  // The tool should return { requires_approval: true, ... }
-  const result = await deletePath({ path: '/tmp/file.txt' }, 'session-1');
+  const tools = createBuiltinTools('main', 'session-1');
+  const result = await tools.delete_path.execute({ target_path: '/tmp/file.txt' });
+
+  // The tool should return { requires_approval: true, ... } — NOT throw
   expect(result.requires_approval).toBe(true);
 });
 ```
@@ -254,6 +265,8 @@ The prompt builder is exported, so unit tests can verify schema injection withou
 
 ```typescript
 import { buildFinalizeSystemPrompt } from '@/lib/agent';
+// (Re-exported via the lib/agent barrel; the actual implementation lives in
+//  lib/agent/finalize.ts.)
 
 it('includes the schema in the finalize prompt', () => {
   const prompt = buildFinalizeSystemPrompt({
@@ -313,12 +326,13 @@ it('completes a multi-step ReAct loop: tool call → result → final answer', a
 
 ### Testing a function tool subprocess
 
-Function tools run in isolated subprocesses via `function-tools-loader.ts`. Test them through the exported loader and the returned tool's `execute` function:
+Function tools run in isolated subprocesses via `function-tools-loader.ts`. Test them through the exported loader and the returned tool's `execute` function. The example below assumes a `calculator` package exists under `data/function-tools/calculator/`; if your test environment doesn't ship one, point the test at the bundled `defaults/function-tools/calculator` instead, or stub the loader:
 
 ```typescript
 it('executes a function tool and returns the result', async () => {
   const { loadFunctionTools } = await import('../lib/function-tools-loader');
   const tools = loadFunctionTools('all');
+  if (!tools.calculator) return; // skip if calculator isn't installed
 
   const result = await tools.calculator.execute({ expression: '2 + 2' });
 
@@ -336,10 +350,13 @@ SKILL.md skills are instruction modules injected into the system prompt — they
 it('injects skill context into system prompt', async () => {
   const { buildSkillDiscoverySection } = await import('../lib/skills-loader');
   const { section, skills } = buildSkillDiscoverySection('all');
-  
-  expect(skills.length).toBeGreaterThan(0);
+
+  // This assertion assumes at least one skill is installed under data/skills/.
+  // The repo ships a bundled `defaults/skills/` set; clone or copy one in
+  // before running this test, or assert structurally instead:
+  if (skills.length === 0) return; // no skills installed → nothing to verify
   expect(section).toContain('## Available Skills');
-  expect(section).toContain('hello-world');
+  expect(section).toContain(skills[0].name);
 });
 ```
 
@@ -407,6 +424,8 @@ interface EvalFixture {
 ```typescript
 import { readFileSync, readdirSync } from 'fs';
 import { createStreamingAgent } from '../lib/agent';
+// (Re-exported via the lib/agent barrel; the implementation lives in
+//  lib/agent/streaming-agent.ts.)
 
 async function runEval(fixturePath: string) {
   const fixture = JSON.parse(readFileSync(fixturePath, 'utf-8'));

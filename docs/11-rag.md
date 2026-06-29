@@ -139,26 +139,29 @@ Full ingestion pipeline, idempotent via MD5 hash:
 ### `retrieveChunks(query: string, topK = 5): Promise<string[]>`
 
 ```
-1. embedTexts([query]) → queryVector
-2. If queryVector is null → FTS5 fallback:
+1. Load all (chunk_text, embedding) from knowledge_chunks
+   joined with knowledge_sources WHERE embedding_model = currentModel
+   AND embedding IS NOT NULL.
+2. If at least one such row exists, embedTexts([query]) → queryVector.
+     • queryVector non-null → cosine-similarity rank all rows, return top topK
+     • queryVector null     → fall through to FTS5
+3. FTS5 keyword fallback (always available, never empty for non-empty queries):
      SELECT chunk_text FROM knowledge_fts WHERE knowledge_fts MATCH ? LIMIT topK
-3. Otherwise:
-     Load all (chunk_text, embedding) from knowledge_chunks
-     cosineSimilarity(queryVector, chunkEmbedding) for each chunk
-     Sort desc, return top topK chunk_text strings
 ```
+
+Note the ordering: we first check whether any rows are embedded with the current model. If they are, we try to embed the query; if that fails (or no embedded rows exist), we fall through to FTS5. This means a freshly ingested document that hasn't been embedded yet (e.g. when the local model failed to load) will still be searchable by keyword.
 
 ### Other exports
 
 | Function | Description |
 |----------|-------------|
-| `checkEmbedHealth()` | Calls `/health`; returns `{ok, status, model?, backend?, error?}` |
+| `checkEmbedHealth()` | Provider-agnostic health: for `local` delegates to `localEmbedHealth()` (in-process); for `openai` checks whether an API key is configured. No HTTP `/health` call. |
 | `listSources()` | Returns all knowledge_sources with chunk counts |
 | `getSourceMeta(id)` | Returns `{id, name, mime}` for a single source — used by the View panel |
 | `getSourceContent(id)` | Returns `{id, name, mime, content, bytes}` — the full original document for inline/iframe rendering |
 | `deleteSource(id)` | Deletes a source; cascades to chunks via FK |
 | `getSourceCount()` | Count of sources |
-| `currentModelId()` | `'local:all-MiniLM-L6-v2'` or `'openai:text-embedding-3-small'` based on settings |
+| `currentModelId()` | `'local:Xenova/all-MiniLM-L6-v2'` or `'openai:text-embedding-3-small'` based on settings |
 
 ---
 
@@ -168,8 +171,14 @@ Agents search the RAG index via the `search_knowledge_base` built-in tool:
 
 ```typescript
 parameters: z.object({
-  query: z.string().describe('Describe what information you need'),
-  top_k: z.number().optional().describe('How many chunks to return (default 5, max 20)'),
+  query: z.string().describe('Natural language search query'),
+  top_k: z
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .optional()
+    .describe('Number of text chunks to return (default 5)'),
 })
 ```
 
@@ -269,11 +278,11 @@ O(dimensions × chunks) — for 384-dim and 10k chunks: ~3.8M multiplications, w
    WHERE ks.name = 'your-doc.md';
    ```
 
-3. **Force FTS5 fallback:** Stop the embed server. Reload the RAG page, observe the `degraded` badge, run a search, and verify it still returns results.
+3. **Force FTS5 fallback:** Temporarily set `embedding_provider = openai` in Settings without supplying an `embedding_api_key`. Reload the RAG page, observe the `no_key` / `degraded` status, run a search, and verify it still returns keyword results via the FTS5 fallback.
 
 4. **Compare embedding vs. keyword search:** Ingest a doc using synonyms. Search with a term that doesn't appear verbatim. Compare vector results vs. FTS5 results to understand why embeddings matter.
 
-5. **Add auto-retrieval:** In `lib/agent.ts`, modify `buildSystemPrompt()` to automatically call `retrieveChunks(lastUserMessage, 3)` and prepend the results. Discuss trade-offs vs. the current tool-based approach.
+5. **Add auto-retrieval:** In `lib/agent/prompt.ts`, modify `buildSystemPrompt()` to automatically call `retrieveChunks(lastUserMessage, 3)` and prepend the results. Discuss trade-offs vs. the current tool-based approach.
 
 ---
 

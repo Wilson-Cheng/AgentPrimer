@@ -20,10 +20,11 @@ After reading this module you will be able to:
 
 All persistent state lives in a single SQLite database file: **`data/db/agent.db`**.
 
-- **Engine**: `better-sqlite3` v12 — synchronous, zero-config, no external server
+- **Engine**: `better-sqlite3` (`^12.11.1`) — synchronous, zero-config, no external server
 - **File**: `data/db/agent.db` (created automatically on first run)
 - **WAL mode**: enabled for concurrent readers without blocking writers
 - **Module**: [`lib/db.ts`](../lib/db.ts) — singleton connection, auto-migration
+- **Other state on disk** (not in SQLite): `data/.users` (auth), `data/agents/<agent>/*.md`, `data/system.md`, `data/skills/`, `data/function-tools/`, `data/mcp-servers/`, `data/agent-files/`, `data/uploads/`, `data/models/`
 
 ---
 
@@ -57,6 +58,7 @@ erDiagram
         TEXT token_usage_json
         TEXT reasoning_json
         TEXT parts_json
+        TEXT trace_json
         INTEGER created_at
     }
 
@@ -88,6 +90,7 @@ erDiagram
         TEXT args_json
         TEXT url
         INTEGER enabled
+        TEXT env_json
     }
 
     permanent_approvals {
@@ -109,11 +112,21 @@ erDiagram
     agent_notifications {
         TEXT id PK
         TEXT session_id
-        TEXT task_id FK
+        TEXT task_id
         TEXT task_file
         TEXT summary
         INTEGER created_at
         INTEGER read_at
+    }
+
+    lesson_progress {
+        TEXT username PK
+        TEXT lesson_slug PK
+        TEXT status
+        INTEGER quiz_score
+        INTEGER quiz_total
+        INTEGER updated_at
+        INTEGER completed_at
     }
 
     knowledge_sources {
@@ -158,15 +171,17 @@ erDiagram
 
 ### `settings`
 
-Key/value configuration store. Read by `lib/agent.ts` on every request to get the API key, endpoint, and default model.
+Key/value configuration store. Read by the agent (settings come into `lib/agent/openai-client.ts`, `lib/agent/streaming-agent.ts`, and `lib/agent/model-resolver.ts`) on every request to get the API key, endpoint, and default model.
 
-| Key | Default | Description |
-|-----|---------|-------------|
+| Key | Seeded default | Description |
+|-----|----------------|-------------|
 | `endpoint` | `""` | Base URL for OpenAI-compatible API; configured by the operator during setup |
 | `api_key` | `""` | API key (blank = unauthenticated local API) |
-| `default_model` | `""` (empty) | Model used when no agent/UI override. Empty until set in Settings — the agent loop emits a friendly error pointing to `/settings` when nothing is configured. |
-| `embedding_provider` | `local` | `'local'` (in-process model) or `'openai'` |
-| `max_agent_steps` | `100` | Max ReAct loop iterations before forced stop |
+| `default_model` | _not seeded_ | Operator-picked model. The agent emits a friendly streamed message linking to `/settings` until this is set. |
+| `embedding_provider` | `"local"` | `'local'` (in-process model) or `'openai'` |
+| `max_agent_steps` | _not seeded_ | Max ReAct loop iterations before forced stop. If the setting is absent the agent loop hard-codes `100` (see `lib/agent/streaming-agent.ts`). |
+| `context_keep_pairs` | _not seeded_ | Sliding-window compaction size; `0` (or unset) disables compaction. |
+| `tracing_enabled` | _not seeded_ | `'1'` enables per-step trace capture. |
 | `reasoning:<sessionId>` | — | Last `reasoning_content` for a session (thinking models) |
 | `builtin_tool_enabled:<id>` | — | `'1'` or `'0'` per tool (e.g. `builtin_tool_enabled:run_shell`) |
 
@@ -250,6 +265,7 @@ Installed MCP server configs.
 | `args_json` | TEXT | JSON array of arguments (e.g. `["server.js"]`) |
 | `url` | TEXT | Base URL for SSE transport |
 | `enabled` | INTEGER | `1` = active, `0` = disabled |
+| `env_json` | TEXT | JSON object of per-server env vars forwarded to the stdio subprocess (e.g. `{"GITHUB_TOKEN":"ghp_…"}`). Empty `{}` for SSE servers. Added via `ALTER TABLE` on existing installs. |
 
 ### `permanent_approvals`
 
@@ -284,12 +300,26 @@ Queued notifications delivered to a parent session when an async task completes.
 | Column | Type | Description |
 |--------|------|-------------|
 | `id` | TEXT PK | UUID |
-| `session_id` | TEXT | Parent session that should receive this notification |
-| `task_id` | TEXT FK | References `agent_tasks.id` |
+| `session_id` | TEXT | Parent session that should receive this notification (no schema-level FK; application convention) |
+| `task_id` | TEXT | Application-level reference to `agent_tasks.id` (no schema-level FK) |
 | `task_file` | TEXT | Path to the task file for the parent to read |
 | `summary` | TEXT | One-line human-readable completion summary |
 | `created_at` | INTEGER | Unix timestamp |
 | `read_at` | INTEGER | Set when the parent has seen this notification (null = unread) |
+
+### `lesson_progress`
+
+Per-user progress for the in-app learning curriculum (`/learn` and `/learn/[slug]`).
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `username` | TEXT | First half of the composite primary key |
+| `lesson_slug` | TEXT | Lesson identifier, second half of the composite primary key |
+| `status` | TEXT | `'not_started'` / `'in_progress'` / `'completed'` (CHECK-constrained) |
+| `quiz_score` | INTEGER | Most recent quiz score (nullable) |
+| `quiz_total` | INTEGER | Total quiz questions for that lesson (nullable) |
+| `updated_at` | INTEGER | Unix timestamp of the most recent change |
+| `completed_at` | INTEGER | Unix timestamp when first marked `completed` (nullable) |
 
 ---
 
@@ -358,6 +388,8 @@ Aggregated by the Statistics page (`/api/statistics`) to render Recharts bar cha
 
 ## Full Schema SQL
 
+> **Note:** The Full Schema SQL below is the **logical** end-state of all `CREATE TABLE` + `ALTER TABLE … ADD COLUMN` migrations in `lib/db.ts`. The actual `lib/db.ts` `CREATE TABLE` statements are narrower; later columns (e.g. `messages.token_usage_json`, `messages.reasoning_json`, `messages.parts_json`, `messages.trace_json`, `sessions.pinned_chat`, `sessions.pinned_prompt`, `sessions.preview_state_json`, `knowledge_sources.original_*`) are added by guarded `ALTER TABLE` statements during `migrate()`. New installs end up with the schema below; upgraded installs reach it via the ALTERs. See "Migration Strategy" below.
+
 ```sql
 CREATE TABLE IF NOT EXISTS settings (
   key   TEXT PRIMARY KEY,
@@ -370,9 +402,9 @@ CREATE TABLE IF NOT EXISTS sessions (
   agent_name         TEXT NOT NULL DEFAULT 'main',
   created_at         INTEGER NOT NULL DEFAULT (unixepoch()),
   updated_at         INTEGER NOT NULL DEFAULT (unixepoch()),
-  pinned_chat        INTEGER NOT NULL DEFAULT 0,
-  pinned_prompt      TEXT,
-  preview_state_json TEXT NOT NULL DEFAULT '{}'
+  pinned_chat        INTEGER NOT NULL DEFAULT 0,   -- added by ALTER
+  pinned_prompt      TEXT,                          -- added by ALTER
+  preview_state_json TEXT NOT NULL DEFAULT '{}'     -- added by ALTER
 );
 
 CREATE TABLE IF NOT EXISTS messages (
@@ -382,12 +414,13 @@ CREATE TABLE IF NOT EXISTS messages (
   content          TEXT NOT NULL DEFAULT '',
   attachments_json TEXT NOT NULL DEFAULT '[]',
   tool_calls_json  TEXT NOT NULL DEFAULT '[]',
-  token_usage_json TEXT NOT NULL DEFAULT '{}',
-  reasoning_json   TEXT NOT NULL DEFAULT '',
-  parts_json       TEXT NOT NULL DEFAULT '[]',
-  trace_json       TEXT NOT NULL DEFAULT '[]',
+  token_usage_json TEXT NOT NULL DEFAULT '{}',     -- added by ALTER
+  reasoning_json   TEXT NOT NULL DEFAULT '',       -- added by ALTER
+  parts_json       TEXT NOT NULL DEFAULT '[]',     -- added by ALTER
+  trace_json       TEXT NOT NULL DEFAULT '[]',     -- added by ALTER
   created_at       INTEGER NOT NULL DEFAULT (unixepoch())
 );
+CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id);
 
 CREATE TABLE IF NOT EXISTS skills (
   id            TEXT PRIMARY KEY,
@@ -416,7 +449,8 @@ CREATE TABLE IF NOT EXISTS mcp_servers (
   command     TEXT NOT NULL DEFAULT '',
   args_json   TEXT NOT NULL DEFAULT '[]',
   url         TEXT NOT NULL DEFAULT '',
-  enabled     INTEGER NOT NULL DEFAULT 1
+  enabled     INTEGER NOT NULL DEFAULT 1,
+  env_json    TEXT NOT NULL DEFAULT '{}'   -- added by ALTER on upgrade
 );
 
 CREATE TABLE IF NOT EXISTS permanent_approvals (
@@ -431,9 +465,9 @@ CREATE TABLE IF NOT EXISTS knowledge_sources (
   embedding_model  TEXT,
   chunk_count      INTEGER NOT NULL DEFAULT 0,
   ingested_at      INTEGER NOT NULL DEFAULT (unixepoch()),
-  original_content TEXT,
-  original_blob    BLOB,
-  original_mime    TEXT
+  original_content TEXT,    -- added by ALTER (RAG View panel)
+  original_blob    BLOB,    -- added by ALTER
+  original_mime    TEXT     -- added by ALTER
 );
 
 CREATE TABLE IF NOT EXISTS knowledge_chunks (
@@ -482,6 +516,18 @@ CREATE TABLE IF NOT EXISTS token_usage_log (
   cached     INTEGER NOT NULL DEFAULT 0,
   output     INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL DEFAULT (unixepoch())
+);
+
+CREATE TABLE IF NOT EXISTS lesson_progress (
+  username     TEXT NOT NULL,
+  lesson_slug  TEXT NOT NULL,
+  status       TEXT NOT NULL DEFAULT 'not_started'
+                 CHECK(status IN ('not_started','in_progress','completed')),
+  quiz_score   INTEGER,
+  quiz_total   INTEGER,
+  updated_at   INTEGER NOT NULL DEFAULT (unixepoch()),
+  completed_at INTEGER,
+  PRIMARY KEY (username, lesson_slug)
 );
 ```
 
@@ -541,7 +587,11 @@ getFirstUserMessage(sessionId): string | null
 
 ```typescript
 saveMessage(msg: Omit<Message, 'created_at'>): void
+upsertAssistantMessage(msg): void   // checkpoint write — used during streaming
 getMessages(sessionId): Message[]
+getMessagesPage(sessionId, opts): Message[]   // cursor-paginated reads
+getMessagesAfter(sessionId, afterRowid): Message[]   // tail polling for sub-agent UI
+countMessages(sessionId): number
 ```
 
 ### Skills, Function Tools & MCP Servers

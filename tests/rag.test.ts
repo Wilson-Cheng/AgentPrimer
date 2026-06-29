@@ -16,6 +16,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.doUnmock('../lib/embeddings');
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   fs.rmSync(tempDir, { recursive: true, force: true });
@@ -40,17 +41,18 @@ describe('RAG pipeline', () => {
   });
 
   it('ingests documents, skips identical re-ingestion, and retrieves via vector search', async () => {
+    vi.doMock('../lib/embeddings', () => ({
+      LOCAL_EMBED_MODEL: 'Xenova/all-MiniLM-L6-v2',
+      embedLocal: vi.fn(async (texts: string[]) =>
+        texts.map(text => text.toLowerCase().includes('banana') ? [1, 0] : [0, 1]),
+      ),
+      localEmbedHealth: vi.fn(async () => ({ ok: true, status: 'ok', model: 'Xenova/all-MiniLM-L6-v2', backend: 'mock' })),
+    }));
+
     const { ingestDocument, retrieveChunks } = await loadRag();
     const { setSetting } = await import('../lib/db');
 
     setSetting('embedding_provider', 'local');
-    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
-      const body = init?.body ? JSON.parse(init.body.toString()) as { texts: string[] } : { texts: [] };
-      return Response.json({
-        embeddings: body.texts.map(text => text.toLowerCase().includes('banana') ? [1, 0] : [0, 1]),
-      });
-    });
-    vi.stubGlobal('fetch', fetchMock);
 
     const first = await ingestDocument({
       name: 'fruit-notes',
@@ -71,11 +73,16 @@ describe('RAG pipeline', () => {
   });
 
   it('falls back to FTS5 search when embeddings are unavailable', async () => {
+    vi.doMock('../lib/embeddings', () => ({
+      LOCAL_EMBED_MODEL: 'Xenova/all-MiniLM-L6-v2',
+      embedLocal: vi.fn(async () => null),
+      localEmbedHealth: vi.fn(async () => ({ ok: false, status: 'degraded', model: 'Xenova/all-MiniLM-L6-v2', backend: 'mock', error: 'down' })),
+    }));
+
     const { ingestDocument, retrieveChunks } = await loadRag();
     const { setSetting } = await import('../lib/db');
 
     setSetting('embedding_provider', 'local');
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ error: 'down' }), { status: 503 })));
 
     const ingested = await ingestDocument({
       name: 'fallback-notes',

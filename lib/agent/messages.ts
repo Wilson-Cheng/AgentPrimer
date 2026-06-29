@@ -55,10 +55,17 @@ export function convertMessagesToOpenAI(
     const isLastAssistant = i === lastAssistantIdx;
 
     if (msg.role === 'user') {
-      result.push({
-        role: 'user',
-        content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
-      });
+      // Preserve multimodal (array) `content` exactly as-is. A user turn that
+      // already carries OpenAI-style content parts (e.g. `image_url`,
+      // `input_audio`) was produced by `buildMultimodalContent` on a prior
+      // request; JSON-stringifying it here would turn the image bytes into a
+      // literal `[{"type":"image_url",…}]` string and the model would lose
+      // sight of the attachment permanently after the first follow-up turn.
+      const content =
+        typeof msg.content === 'string' || Array.isArray(msg.content)
+          ? msg.content
+          : JSON.stringify(msg.content);
+      result.push({ role: 'user', content });
       continue;
     }
 
@@ -106,8 +113,47 @@ export function convertMessagesToOpenAI(
     }
 
     if (msg.content) {
+      // OpenAI's Chat Completions API requires assistant `content` to be a
+      // plain string (or `null` when emitting only tool_calls). Earlier
+      // turns may have stored structured arrays in `content` (e.g. from
+      // structured-output rendering); flatten them to a string here.
+      let contentStr: string;
+      if (typeof msg.content === 'string') {
+        contentStr = msg.content;
+      } else if (Array.isArray(msg.content)) {
+        const pieces: string[] = [];
+        for (const p of msg.content as Array<{ text?: string } | string>) {
+          if (typeof p === 'string') {
+            pieces.push(p);
+            continue;
+          }
+          if (p && typeof p === 'object' && typeof p.text === 'string') {
+            pieces.push(p.text);
+            continue;
+          }
+          // Non-text part inside assistant content. Today this never
+          // happens in production, but it would silently lose data if the
+          // part schema ever expands. Stringify so the information
+          // survives the round-trip and warn loudly outside production so
+          // the schema drift is visible during development.
+          if (process.env.NODE_ENV !== 'production') {
+            console.warn(
+              '[agent] dropped non-text assistant content part in conversion to OpenAI format:',
+              p,
+            );
+          }
+          try {
+            pieces.push(JSON.stringify(p));
+          } catch {
+            pieces.push(String(p));
+          }
+        }
+        contentStr = pieces.filter(Boolean).join('\n');
+      } else {
+        contentStr = String(msg.content);
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const m: any = { role: 'assistant', content: msg.content };
+      const m: any = { role: 'assistant', content: contentStr };
       if (isLastAssistant && lastReasoning) m.reasoning_content = lastReasoning;
       result.push(m);
     }

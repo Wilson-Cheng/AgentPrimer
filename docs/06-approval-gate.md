@@ -28,7 +28,7 @@ The approval gate **pauses the agent** before a sensitive operation and asks the
 | Operation key | Triggered by | When |
 |--------------|--------------|------|
 | `delete` | `delete_path` tool | Always, for any path when a `sessionId` is available |
-| `read_dotfile` | `read_file` tool | When the target filename starts with `.` (e.g. `.env`, `.gitconfig`) and a `sessionId` is available |
+| `read_dotfile` | `read_file` tool | When the resolved target's basename starts with `.` (e.g. `.env`, `.gitconfig`) and a `sessionId` is available. **Without** a `sessionId` (background sub-agent) the dotfile check is silently skipped — keep sub-agent `Tools:` allowlists narrow if dotfile reads are sensitive. |
 | `run_shell` | `run_shell` tool | Always, for any command when a `sessionId` is available |
 
 ---
@@ -49,45 +49,45 @@ The approval gate **pauses the agent** before a sensitive operation and asks the
 sequenceDiagram
     actor User
     participant Browser
-    participant agent.ts
+    participant agent
     participant approval-store.ts
     participant DB
     participant Filesystem
 
     User->>Browser: "Delete the temp.log file"
-    Browser->>agent.ts: POST /api/chat
+    Browser->>agent: POST /api/chat
 
-    agent.ts->>agent.ts: delete_path tool called with target_path="/tmp/temp.log"
-    agent.ts->>approval-store.ts: isApproved(sessionId, 'delete', path)
+    agent->>agent: delete_path tool called with target_path="/tmp/temp.log"
+    agent->>approval-store.ts: isApproved(sessionId, 'delete', resolvedPath)
     approval-store.ts->>DB: SELECT permanent_approvals WHERE operation='delete'
     DB-->>approval-store.ts: (not found)
-    approval-store.ts-->>agent.ts: false
+    approval-store.ts-->>agent: false
 
-    agent.ts-->>Browser: a: { requires_approval: true, operation:"delete", path:"/tmp/temp.log", description:"..." }
+    agent-->>Browser: a: { requires_approval: true, operation:"delete", path:"/tmp/temp.log", description:"..." }
     Note over Browser: MessageBubble renders approval UI
 
     alt User clicks "Approve once"
         User->>Browser: Click "Approve once"
         Browser->>approval-store.ts: POST /api/approval {sessionId, operation:"delete", scope:"once", filePath}
-        approval-store.ts->>approval-store.ts: sessionStore.set("delete:/tmp/temp.log", "once")
-        Browser->>agent.ts: append message "I approved the operation (scope: once). Please proceed."
-        agent.ts->>approval-store.ts: isApproved(sessionId, 'delete', path) → true
-        agent.ts->>Filesystem: fs.rm("/tmp/temp.log")
-        agent.ts->>approval-store.ts: consumeOnce(sessionId, 'delete', path)
+        approval-store.ts->>approval-store.ts: sessionStore.set("delete:<resolved path>", "once")
+        Browser->>agent: append message "I approved the operation (scope: once). Please proceed."
+        agent->>approval-store.ts: isApproved(sessionId, 'delete', resolvedPath) → true
+        agent->>Filesystem: fs.rm(resolvedPath)
+        agent->>approval-store.ts: consumeOnce(sessionId, 'delete', resolvedPath)
         Note over approval-store.ts: Approval consumed (cannot reuse)
-        agent.ts-->>Browser: "Done, deleted temp.log"
+        agent-->>Browser: "Done, deleted temp.log"
 
     else User clicks "Always allow"
         User->>Browser: Click "Always allow"
         Browser->>approval-store.ts: POST /api/approval {operation:"delete", scope:"permanent"}
         approval-store.ts->>DB: INSERT INTO permanent_approvals (operation) VALUES ('delete')
-        Browser->>agent.ts: append message "I approved (scope: permanent). Please proceed."
-        Note over agent.ts: All future delete operations skip the gate
+        Browser->>agent: append message "I approved (scope: permanent). Please proceed."
+        Note over agent: All future delete operations skip the gate
 
     else User clicks "Deny"
         User->>Browser: Click "Deny"
-        Browser->>agent.ts: append message "I denied the operation. Please do not proceed."
-        agent.ts-->>Browser: "Understood, I won't delete the file."
+        Browser->>agent: append message "I denied the operation. Please do not proceed."
+        agent-->>Browser: "Understood, I won't delete the file."
     end
 ```
 
@@ -98,13 +98,14 @@ sequenceDiagram
 ### 1. `delete_path` tool checks approval before acting
 
 ```typescript
-// Inside createBuiltinTools() in lib/agent.ts
+// Inside createBuiltinTools() in lib/agent/builtin-tools.ts
 delete_path: tool({
   description: '...',
   parameters: z.object({ target_path: z.string() }),
   execute: async ({ target_path: targetPath }) => {
+    const resolved = resolveAgentPath(targetPath); // sandboxed absolute path
     if (sessionId) {
-      if (!isApproved(sessionId, 'delete', targetPath)) {
+      if (!isApproved(sessionId, 'delete', resolved)) {
         // Return special object — NOT an error, the tool "succeeds" with this value
         return {
           requires_approval: true,
@@ -113,11 +114,13 @@ delete_path: tool({
           description: `Are you sure you want to permanently delete: ${targetPath}?`,
         };
       }
-      // Consume 'once' approval immediately after checking
-      consumeOnce(sessionId, 'delete', targetPath);
+      // Consume 'once' approval immediately after checking.
+      // Note: approvals are keyed by the RESOLVED absolute path,
+      // not the raw user-supplied string.
+      consumeOnce(sessionId, 'delete', resolved);
     }
     // Actually perform the deletion
-    await fs.rm(absolutePath, { recursive: true, force: true });
+    await fs.rm(resolved, { recursive: true, force: true });
     return { success: true };
   },
 }),
@@ -155,18 +158,20 @@ When a tool result has `requires_approval: true`, the `LiveToolCard` component r
 └─────────────────────────────────────────────────────┘
 ```
 
-### 4. `page.tsx` wires the callbacks
+### 4. `ChatInterface.tsx` wires the callbacks
+
+The chat client at `components/ChatInterface.tsx` mounts `<MessageBubble />` and wires the callbacks. (The page-level `app/(main)/chat/[id]/page.tsx` and `app/(main)/chat/page.tsx` just render `<ChatInterface />`.)
 
 ```typescript
 <MessageBubble
   sessionId={sessionId}
-  onApprovalGranted={async (_inv, scope) => {
+  onApprovalGranted={async (inv, scope) => {
     await append({
       role: 'user',
       content: `I approved the operation (scope: ${scope}). Please proceed.`,
     });
   }}
-  onApprovalDenied={async () => {
+  onApprovalDenied={async (inv) => {
     await append({
       role: 'user',
       content: 'I denied the operation. Please do not proceed with it.',
@@ -210,16 +215,14 @@ graph TD
 
 ## Security Notes
 
-- Approval state is **per-session** in-memory — a new browser tab has a new sessionId and starts with no approvals
-- Permanent approvals are stored per **operation type** (e.g. `delete` covers ALL future delete operations, not just specific paths)
-- Background sub-agents run without a browser `sessionId`; dangerous built-ins that require UI approval, such as `delete_path` and `run_shell`, refuse to execute in that context. Still keep sub-agent `Tools:` allowlists narrow so they only receive the capabilities they need.
-- The UI Deny button does NOT call the API — it only appends a denial message; no approval is ever granted
+- Approval state is **per-session** in-memory — a new browser tab has a new sessionId and starts with no approvals.
+- Permanent approvals are stored per **operation type** (e.g. `delete` covers ALL future delete operations, not just specific paths).
+- Background sub-agents run without a browser `sessionId`. `delete_path` and `run_shell` explicitly refuse to execute in that context. `read_file`'s dotfile check, however, is **skipped** when there is no sessionId — keep sub-agent `Tools:` allowlists narrow if dotfile reads are sensitive.
+- The UI Deny button does NOT call the API — it only appends a denial message; no approval is ever granted.
 
----
+### Caveats
 
-## Security Notes
-
-1. **The gate only applies when a `sessionId` is available.** Main chat turns include a session and can pause for approval. Background sub-agents currently run without that browser session context, so dangerous tools that require approval refuse to execute there; restrict all other sub-agent `Tools:` allowlists to the minimum needed capabilities.
+1. **The gate only applies when a `sessionId` is available.** Main chat turns include a session and can pause for approval. Background sub-agents currently run without that browser session context (see asymmetry above).
 
 2. **`run_shell` also gates all commands in session-backed chat turns.** Even when `run_shell` is enabled in Settings, it requires approval per-command unless permanently approved.
 

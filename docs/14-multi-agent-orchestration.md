@@ -97,16 +97,18 @@ run_subagent_async({
 })
 ```
 
-Implementation lives in `lib/agent.ts` inside `createBuiltinTools()`.
+Implementation lives in `lib/agent/builtin-tools.ts` inside `createBuiltinTools()` (re-exported via the `lib/agent` barrel).
 
 When called, it:
 
 1. Generates a `task_id`.
-2. Creates a task file:
+2. Creates a task file under `<project_folder>/tasks/<task_id>.md`. By convention parent agents pass a folder under `data/projects/<project>/`, e.g.:
 
    ```text
    data/projects/<project>/tasks/<task_id>.md
    ```
+
+   `project_folder` is **not** sandboxed at the tool layer — it is whatever path the parent agent supplied. The convention exists so all task files end up under `data/` and are picked up by `list_tasks` / the monitor; the tool will still create the directory wherever it is told to.
 
 3. Inserts a row into `agent_tasks`.
 4. Starts `runSubagentWithTaskFile(...)` in the background.
@@ -195,7 +197,7 @@ created_at
 read_at
 ```
 
-When the sub-agent finishes, AgentPrimer creates an `agent_notifications` row. On the next parent-agent turn, `createStreamingAgent()` loads pending notifications and injects them into the parent agent's system prompt.
+When the sub-agent finishes, AgentPrimer creates an `agent_notifications` row. On the next parent-agent turn, `createStreamingAgent()` (in `lib/agent/streaming-agent.ts`) loads pending notifications and injects them into the parent agent's system prompt.
 
 That means even without automatic monitor bubbles, the parent agent can learn about completed sub-agent work on the next user message.
 

@@ -101,25 +101,32 @@ function copyDefaults(src: string, dest: string, root = true, forceOverwrite = f
 // ---------------------------------------------------------------------------
 // Step 1b: create data/.env with a template if it does not yet exist
 // ---------------------------------------------------------------------------
-const ENV_TEMPLATE = `# data/.env — environment variable overrides
+const ENV_TEMPLATE = `# data/.env — environment variable overrides (advanced)
 #
 # Variables defined here are loaded at server startup and take priority
-# over all other sources (Docker env vars, .env.local, etc.).
+# over Docker env vars and any other source. Use this file for
+# infrastructure variables you want to persist across container restarts
+# (AGENT_PRIMER_SECRET, LANGFUSE_*, EMBED_MODEL, EMBED_CACHE_DIR, …).
 #
 # Syntax:  KEY=value
 # Quotes are optional. Lines starting with # are ignored.
 #
-# Here are some examples of variables you might want to set here:
+# ─────────────────────────────────────────────────────────────────────────
+# NOTE about MCP server credentials
+# ─────────────────────────────────────────────────────────────────────────
+# By default AgentPrimer does NOT forward variables in this file to MCP
+# server subprocesses (only a small shell allow-list — PATH, HOME, etc.).
+# To give a single MCP server its own credential (e.g. EXA_API_KEY for the
+# exa MCP server, GITHUB_TOKEN for a github MCP server), use:
 #
-# install exa mcp in "Skills & MCP" page
-# npx -y exa-mcp-server
-# then set EXA_API_KEY below
-# EXA_API_KEY=<Your EXA API Key>
+#   Skills & MCP → <server> → Edit → Environment variables
 #
-# install context7 mcp in "Skills & MCP" page
-# npx -y @upstash/context7-mcp@latest
-# then set CONTEXT7_API_KEY below
-# CONTEXT7_API_KEY=<Your Context7 API key>
+# That field stores the credential on the server's row in SQLite and only
+# ever reaches that one server's subprocess.
+#
+# For fleet-wide forwarding from this file you can also set MCP_FORWARD_ENV
+# to a comma-separated allow-list (e.g. MCP_FORWARD_ENV="OPENAI_API_KEY"),
+# but the per-server field above is the recommended path.
 #
 `;
 

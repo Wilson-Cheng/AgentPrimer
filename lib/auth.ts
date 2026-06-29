@@ -98,8 +98,30 @@ async function hashPassword(password: string): Promise<string> {
 function rewriteUsersFile(users: Map<string, string>): void {
   const dir = path.dirname(USERS_FILE);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  const content = Array.from(users.entries()).map(([username, hash]) => `${username}:${hash}`).join('\n') + '\n';
-  fs.writeFileSync(USERS_FILE, content, 'utf-8');
+  const content =
+    Array.from(users.entries())
+      .map(([username, hash]) => `${username}:${hash}`)
+      .join('\n') + '\n';
+  // Atomic write: render the new file to a sibling temp path, then rename
+  // it on top of the real `.users` file. `fs.renameSync` is atomic on POSIX
+  // filesystems, so concurrent `validateCredentials` calls (each upgrading
+  // a legacy MD5 row to bcrypt at the same time) can no longer produce a
+  // truncated/interleaved file that locks the admin out.
+  const tmp = `${USERS_FILE}.tmp-${process.pid}-${Date.now()}`;
+  fs.writeFileSync(tmp, content, { encoding: 'utf-8', mode: 0o600 });
+  try {
+    fs.renameSync(tmp, USERS_FILE);
+  } catch (err) {
+    // Rename can fail across filesystems / on EPERM / ENOSPC. Clean up the
+    // temp file so it doesn't accumulate in `data/` and confuse the
+    // operator. Failure to unlink is best-effort.
+    try {
+      fs.unlinkSync(tmp);
+    } catch {
+      /* best-effort cleanup */
+    }
+    throw err;
+  }
 }
 
 export function needsSetup(): boolean {

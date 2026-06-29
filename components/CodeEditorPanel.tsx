@@ -244,7 +244,10 @@ export default function CodeEditorPanel({ initialFolder = '', className = 'h-ful
     const label      = basename(filePath);
     const previewOnly = isPreviewOnly(filePath);
     setTabs(prev => [...prev, {
-      path: filePath, label, content: '', savedContent: '', loading: false, previewOnly,
+      // Keep text tabs in the loading state until the initial file content is
+      // available, so Monaco mounts once with the correct initial model value.
+      // Preview-only files skip this because their bytes stream via PreviewPane.
+      path: filePath, label, content: '', savedContent: '', loading: !previewOnly, previewOnly,
     }]);
     setActiveTabPath(filePath);
 

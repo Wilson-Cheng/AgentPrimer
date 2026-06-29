@@ -56,15 +56,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN npm install -g @mermaid-js/mermaid-cli
-RUN pip install --break-system-packages python-pptx
-
-# gtts (text-to-speech) is an optional agent tool. Local RAG embeddings no
-# longer use Python — they run in-process via @huggingface/transformers.
-RUN python3 -m venv /app/venv && \
-    . /app/venv/bin/activate && \
-    pip install --no-cache-dir "click<8.2" gtts && \
-    ln -sf /app/venv/bin/gtts-cli /usr/local/bin/gtts-cli
-
 RUN mkdir -p /app/data
 
 # Runs as root: the agent's run_shell / installer flows need to apt/npm/pip

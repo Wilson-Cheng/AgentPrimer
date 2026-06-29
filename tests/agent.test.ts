@@ -113,4 +113,34 @@ describe('agent helper functions', () => {
     expect(schemas.open_preview).toMatchObject({ category: 'output' });
     expect(schemas.run_shell).toBeUndefined(); // disabled by default
   });
+
+  it('allows async sub-agents to run shell when permanently approved', async () => {
+    const { createBuiltinTools } = await loadAgent();
+    const { grantApproval } = await import('../lib/approval-store');
+    const { setBuiltinToolEnabled } = await import('../lib/builtin-tools-registry');
+
+    setBuiltinToolEnabled('run_shell', true);
+    grantApproval('session-1', 'run_shell', 'permanent');
+
+    const tools = createBuiltinTools('worker', undefined, path.join(tempDir, 'data', 'tasks', 'task.md'));
+    const result = await tools.run_shell.execute({ command: 'printf subagent-shell' });
+
+    expect(result).toMatchObject({ stdout: 'subagent-shell', stderr: '', exit_code: 0 });
+  });
+
+  it('keeps Tool Playground shell blocked without an interactive session', async () => {
+    const { createBuiltinTools } = await loadAgent();
+    const { grantApproval } = await import('../lib/approval-store');
+    const { setBuiltinToolEnabled } = await import('../lib/builtin-tools-registry');
+
+    setBuiltinToolEnabled('run_shell', true);
+    grantApproval('session-1', 'run_shell', 'permanent');
+
+    const tools = createBuiltinTools('_playground', undefined);
+    const result = await tools.run_shell.execute({ command: 'printf playground-shell' });
+
+    expect(result).toMatchObject({
+      error: 'run_shell requires an interactive chat session for approval and cannot run from Tool Playground.',
+    });
+  });
 });

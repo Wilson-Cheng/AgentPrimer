@@ -51,6 +51,7 @@ HTTP chunks are **not** aligned to lines — a single chunk may contain multiple
 | `f` | `start_step` | `{ messageId: string }` | Start of each agent step |
 | `g` | `reasoning` | `"chain of thought text"` | Each reasoning token (thinking models) |
 | `0` | `text` | `"token text"` | Each assistant text token |
+| `2` | `data` | `Array<any>` | Custom side-channel data (heartbeats, finalize-call markers, incomplete-stream markers, structured-output events) |
 | `b` | `tool_call_streaming_start` | `{ toolCallId, toolName }` | First chunk of a tool call |
 | `c` | `tool_call_delta` | `{ toolCallId, argsTextDelta }` | Each argument fragment |
 | `9` | `tool_call` | `{ toolCallId, toolName, args }` | Complete tool call (after all args received) |
@@ -85,16 +86,18 @@ d:{"finishReason":"stop","usage":{"promptTokens":0,"completionTokens":0}}
 
 ### `createDataStreamResponse` (Vercel AI SDK)
 
-`lib/agent.ts` calls `createDataStreamResponse` which:
+`lib/agent/streaming-agent.ts` calls `createDataStreamResponse`, which:
 1. Creates an HTTP `Response` with the correct headers
 2. Creates a `TransformStream` that `DataStreamWriter` writes to
 3. Calls the `execute(writer)` callback immediately
 4. Returns the Response so Next.js can begin sending bytes
 
+The actual `writer.write(formatDataStreamPart(...))` calls are split between `lib/agent/streaming-agent.ts` (lifecycle: start, error, incomplete) and `lib/agent/loop.ts` (per-token, per-chunk, per-tool-call events).
+
 ```typescript
 return createDataStreamResponse({
   execute: async (writer: DataStreamWriter) => {
-    // Emitted at the start of each step:
+    // Emitted at the start of each step (lib/agent/loop.ts):
     writer.write(formatDataStreamPart('start_step', { messageId }));
 
     // Every text token from OpenAI → forwarded immediately:
@@ -109,6 +112,10 @@ return createDataStreamResponse({
     writer.write(formatDataStreamPart('tool_call', { toolCallId, toolName, args }));
     writer.write(formatDataStreamPart('tool_result', { toolCallId, result }));
 
+    // Side-channel data (heartbeats, incomplete markers, finalize-call markers):
+    writer.write(formatDataStreamPart('data', [{ type: 'heartbeat' }]));
+    writer.write(formatDataStreamPart('data', [{ type: 'incomplete', reason, detail }]));
+
     // At the end:
     writer.write(formatDataStreamPart('finish_message', { finishReason: 'stop', ... }));
   },
@@ -120,7 +127,7 @@ return createDataStreamResponse({
 
 ## Client Side: How `useChat` Consumes It
 
-The `useChat` hook from the Vercel AI SDK (`ai/react`) handles the stream automatically. It:
+The `useChat` hook (imported from `ai/react` in this codebase) handles the stream automatically. It:
 
 1. Sends `POST /api/chat` with the current messages
 2. Reads the chunked response line by line
@@ -145,14 +152,14 @@ The messages are stored in `useChat`'s React state. `MessageBubble` renders them
 ```mermaid
 sequenceDiagram
     participant OpenAI
-    participant agent.ts
+    participant agent
     participant HTTP Stream
     participant useChat Hook
     participant React State
     participant MessageBubble
 
-    OpenAI-->>agent.ts: delta.content = "Hello"
-    agent.ts->>HTTP Stream: write('0:"Hello"\n')
+    OpenAI-->>agent: delta.content = "Hello"
+    agent->>HTTP Stream: write('0:"Hello"\n')
     HTTP Stream-->>useChat Hook: chunk received
     useChat Hook->>React State: messages[-1].content += "Hello"
     React State-->>MessageBubble: re-render with new text
@@ -173,7 +180,7 @@ g:"First, I need to understand what the user wants..."
 
 `useChat` accumulates reasoning text separately. `MessageBubble` renders it in a collapsible "Thinking…" panel styled with a different color than the main response.
 
-The reasoning text is also **persisted** between turns via the reasoning cache (`lib/agent.ts`) so the model can continue its chain of thought on the next turn.
+The reasoning text is also **persisted** between turns via the reasoning cache (`lib/agent/reasoning.ts`) so the model can continue its chain of thought on the next turn.
 
 ---
 
@@ -217,7 +224,7 @@ The `useChat` hook surfaces this as an `error` object in its return value, which
 
 2. **Count events per turn:** Write a small Node.js script that reads `/api/chat` response line by line and counts how many events of each type are produced per turn. Find a turn that has tool calls and observe the `b → c → c → ... → 9 → a` sequence.
 
-3. **Inject an error:** In `lib/agent.ts`, throw an error inside the `execute` callback before the first LLM call. Reload the app and send a message. Observe the `3:` event in the stream and how `useChat` surfaces the error.
+3. **Inject an error:** In `lib/agent/streaming-agent.ts`, throw an error inside the `execute` callback before calling `runAgentLoop`. Reload the app and send a message. Observe the `3:` event in the stream and how `useChat` surfaces the error.
 
 4. **Visualize reasoning:** Enable a thinking model (DeepSeek R1 or similar), ask a complex math question, and observe the `g:` events arriving before the `0:` events. Expand the "Thinking..." panel in the UI.
 

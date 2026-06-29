@@ -198,6 +198,47 @@ export interface McpInstallOptions {
   command?: string;       // e.g. 'node', 'python3'
   args?: string[];        // e.g. ['server.js']
   url?: string;           // for SSE transport
+  /**
+   * Per-server environment variables forwarded to the stdio subprocess
+   * (e.g. `{ GITHUB_TOKEN: 'ghp_…' }`). Merged on top of the global
+   * allow-list in `lib/mcp-client.ts`. Ignored for `sse` transport.
+   */
+  env?: Record<string, string>;
+}
+
+/**
+ * Normalise per-server env input from the API into the shape stored in
+ * `mcp_servers.env_json`.
+ *
+ *   • Keys must look like a valid shell variable: `[A-Za-z_][A-Za-z0-9_]*`.
+ *     POSIX env vars are case-sensitive and lowercase is legal (`http_proxy`,
+ *     `no_proxy`, …), so we accept both cases. Whitespace, leading digits,
+ *     dashes, and other shell metacharacters are rejected.
+ *   • Values are coerced to strings; non-strings are dropped.
+ *   • Empty keys / empty values are dropped.
+ *   • AgentPrimer's own secrets are denied so a malicious or sloppy MCP
+ *     install payload can't shadow them at the per-server layer.
+ */
+const ENV_KEY_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const ENV_KEY_DENY = new Set([
+  'AGENT_PRIMER_SECRET',
+  'AGENTPRIMER_SECRET',
+  'CODE_SERVER_PASSWORD',
+]);
+
+export function sanitizeEnvInput(input: unknown): Record<string, string> {
+  if (!input || typeof input !== 'object') return {};
+  const out: Record<string, string> = {};
+  for (const [rawKey, rawVal] of Object.entries(input as Record<string, unknown>)) {
+    const key = String(rawKey).trim();
+    if (!key || !ENV_KEY_PATTERN.test(key)) continue;
+    if (ENV_KEY_DENY.has(key)) continue;
+    if (rawVal === null || rawVal === undefined) continue;
+    const val = String(rawVal);
+    if (!val) continue;
+    out[key] = val;
+  }
+  return out;
 }
 
 /** Extract a human-friendly name from an npx/bunx package argument.
@@ -267,6 +308,7 @@ export function installMcpServer(githubUrl: string, options: McpInstallOptions =
     args_json: JSON.stringify(finalArgs),
     url: options.url ?? '',
     enabled: 1,
+    env_json: JSON.stringify(sanitizeEnvInput(options.env)),
   });
 
   return { id, name, localPath };

@@ -119,13 +119,12 @@ Extracts people, organizations, dates, key facts, sentiment, and action items.
 **Model:** default
 ````
 
-The `**Output Schema:**` line is followed by a short description and a fenced `json` block containing the schema. Inline schemas live in `data/agents/<agent>/agent.md`, next to the agent that uses them.
+The `**Output Schema:**` line is followed by a short description and a fenced `json` block containing the schema. Schemas can be defined two ways:
 
-You can also put the JSON Schema in a separate file and reference it from the agent folder:
+- **Inline** — fenced `json` block under the `**Output Schema:**` line inside `data/agents/<agent>/agent.md` (as shown above)
+- **External file** — `**Output Schema File:** schemas/output.json` (path is relative to the agent folder). This is what `data/agents/extractor/agent.md` ships with, pointing at `data/agents/extractor/schemas/output.json`.
 
-```markdown
-**Output Schema File:** schemas/output.json
-```
+Use the external file when the schema is large or shared between agents; inline when it lives next to a single agent and you want one place to read.
 
 **Key rule:** Use `**Tools:** none` for one-shot extraction agents. If a schema agent has tools enabled, AgentPrimer first runs the normal ReAct loop, then makes one extra finalize call that converts the completed transcript into JSON.
 
@@ -164,26 +163,26 @@ Adding a new schema means adding either an `**Output Schema:**` label with a fen
 
 The regular ReAct system prompt is ~300 lines long. It explains available tools, sub-agent protocols, memory format, and approval gate rules. A schema agent may either skip tools (`Tools: none`) or use normal tools first. In both cases, the final JSON is produced by a focused finalize prompt that is separate from normal tool-use instructions.
 
-`buildFinalizeSystemPrompt` builds a lean, focused prompt:
+`buildFinalizeSystemPrompt` (in [`lib/agent/finalize.ts`](../lib/agent/finalize.ts)) builds a lean, focused prompt — note that it does **NOT** embed the agent's own role prompt. The agent's role was already in the loop transcript; the finalize prompt only describes how to convert that transcript into JSON:
 
 ```
-You are a structured data extraction agent.
-[agent's own system prompt from data/agents/<agent>/agent.md]
+You will receive a conversation transcript. Read it carefully, then emit a single JSON object that captures the final answer according to the schema below.
 
-You will receive unstructured text. Extract the requested information and return it
-as a valid JSON object. Output ONLY the raw JSON — no prose, no markdown code
-fences, no explanation before or after.
+Rules:
+- Output ONLY the raw JSON object — no prose, no explanation, no markdown code fences.
+- Every field listed in "required" MUST be present in your output.
+- Use an empty array `[]` or empty string `""` for fields with no applicable data.
+- Do not add extra fields not in the schema.
 
-Required JSON Schema:
+## Schema: Entity Extractor
+Extracts people, organizations, dates, key facts, sentiment, and action items.
+
+```json
 {
   "type": "object",
-  "properties": {
-    "summary": { "type": "string" },
-    "sentiment": { "type": "string", "enum": ["positive", "negative", "neutral", "mixed"] },
-    ...
-  },
-  "required": ["summary", "sentiment", ...]
+  "properties": { ... }
 }
+```
 ```
 
 The schema is literally printed in the system prompt. This is intentional — it works with any model, including local models that don't support `response_format`.
@@ -192,46 +191,55 @@ The schema is literally printed in the system prompt. This is intentional — it
 
 ### Layer 4: The LLM Call (`runFinalizeCall`)
 
-Unlike the normal agent loop, the finalize step uses a **non-streaming call** (`stream: false`):
+Unlike the normal agent loop, the finalize step uses a **non-streaming call** (`stream: false`). The actual implementation lives in [`lib/agent/finalize.ts`](../lib/agent/finalize.ts). Three details that diverge from a naive "just call the API" version:
+
+1. **A `finalize_call` data event is emitted *before* the API call fires**, plus a persisted `finalize-call` part is pushed onto the message's `allParts`. The UI shows a bubble with the exact request payload while the response is still in flight.
+2. **Strict JSON parsing.** No code-fence stripping, no tolerant extraction. If `JSON.parse` fails, the structured-output panel shows `{ parse_error, raw_finalize_response }` so the operator can see exactly what the model returned.
+3. **Provider-compat fallback.** Only when the first attempt throws `OpenAI.APIError` with status 400/422 — meaning "this provider doesn't accept `response_format`" — does it retry without `response_format`. Other errors propagate.
 
 ```typescript
-async function runFinalizeCall(params) {
-  // Try with response_format first — adds server-side JSON enforcement on models that support it
-  let completion;
+// lib/agent/finalize.ts (lightly simplified)
+async function runFinalizeCall({ openai, modelId, loopMsgs, finalText, schema, writer, allParts }) {
+  const request = buildFinalizeRequest({ modelId, loopMsgs, finalText, schema });
+  // request includes `max_tokens: getOutputLength(modelId)` and `response_format: { type: 'json_object' }`
+
+  // 1) Emit pre-call bubble + persisted part
+  allParts.push({ type: 'finalize-call', schemaLabel: schema.label, payload: toJSONValue(request) });
+  writer.write(formatDataStreamPart('data', [
+    { type: 'finalize_call', schemaLabel: schema.label, payload: toJSONValue(request) },
+  ]));
+
+  let response;
   try {
-    completion = await openai.chat.completions.create({
-      model:           modelId,
-      stream:          false,   // ← key difference from the ReAct path
-      messages:        apiMessages,
-      response_format: { type: 'json_object' },
-    });
-  } catch (err: unknown) {
-    const status = (err as { status?: number }).status;
-    if (status === 400 || status === 422) {
-      // Provider doesn't support response_format — retry without it
-      // The schema in the system prompt is sufficient
-      completion = await openai.chat.completions.create({
-        model:    modelId,
-        stream:   false,
-        messages: apiMessages,
+    response = await openai.chat.completions.create({ ...request });
+  } catch (err) {
+    // 3) Only fall back on the very specific 400/422 OpenAI.APIError
+    if (err instanceof OpenAI.APIError && (err.status === 400 || err.status === 422)) {
+      response = await openai.chat.completions.create({
+        model: request.model, messages: request.messages, max_tokens: request.max_tokens,
       });
-    } else throw err;
+    } else {
+      throw err;
+    }
   }
 
-  const rawText = completion.choices[0]?.message?.content ?? '{}';
+  const rawText = response.choices[0]?.message?.content ?? '{}';
 
-  // Strip accidental markdown code fences (common with some models)
-  const cleaned = rawText
-    .replace(/^```(?:json)?\n?/, '')
-    .replace(/\n?```$/, '')
-    .trim();
-
-  const parsedData = JSON.parse(cleaned);
-
-  // Emit to browser via data stream
-  writer.writeData([{ type: 'structured_output', data: parsedData, schemaName, schemaLabel }]);
+  // 2) Strict parse — surface parse errors instead of hiding them
+  let data;
+  try {
+    data = JSON.parse(rawText);
+  } catch (err) {
+    data = {
+      parse_error: `JSON.parse failed: ${(err as Error).message}`,
+      raw_finalize_response: rawText,
+    };
+  }
+  return { data, usage: normalizeTokenUsage(response.usage) };
 }
 ```
+
+The caller in `lib/agent/loop.ts` is what actually emits the live `structured_output` data event and pushes the persisted `structured-output` part once `runFinalizeCall` returns.
 
 **Why non-streaming?** A JSON object cannot be partially rendered — you need the complete closing brace before you can parse it. Buffering a streaming response and waiting for the final token is equivalent to a non-streaming call, but more complex and error-prone.
 

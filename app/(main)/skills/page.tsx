@@ -55,9 +55,40 @@ interface McpServer {
   args_json: string;
   url: string;
   enabled: number;
+  /** Names of env vars currently set on this server (values not returned). */
+  env_keys?: string[];
+  /** True when env_json could not be parsed (corrupted row). */
+  env_parse_error?: boolean;
 }
 
 type Tab = 'skills' | 'function_tools' | 'mcp' | 'builtin';
+
+/**
+ * Parse a textarea full of `KEY=value` lines into an object suitable for
+ * `POST /api/mcp { env }`. The server runs its own `sanitizeEnvInput` on
+ * top of this, so all we need to do here is be liberal with whitespace and
+ * skip obvious junk (blank lines, comments starting with `#`).
+ *
+ * Lines without an `=` are ignored. Surrounding quotes around the value
+ * are stripped so users can paste `GITHUB_TOKEN="ghp_…"` and have it work.
+ */
+function parseEnvText(text: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) continue;
+    const idx = line.indexOf('=');
+    if (idx <= 0) continue;
+    const key = line.slice(0, idx).trim();
+    let val = line.slice(idx + 1).trim();
+    if (val.length >= 2 && ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'")))) {
+      val = val.slice(1, -1);
+    }
+    if (!key || !val) continue;
+    out[key] = val;
+  }
+  return out;
+}
 
 type BuiltinCategory = 'filesystem' | 'memory' | 'agent' | 'shell' | 'output';
 
@@ -86,11 +117,23 @@ export default function SkillsPage() {
   const [mcpTransport, setMcpTransport] = useState<'stdio' | 'sse'>('stdio');
   const [mcpCommand, setMcpCommand] = useState('');
   const [mcpUrl, setMcpUrl] = useState('');
+  // Per-server env vars for the install dialog. One KEY=value per line.
+  // Persisted on `mcp_servers.env_json` so the credential only ever reaches
+  // this one MCP server's subprocess (see lib/mcp-client.ts).
+  const [mcpEnvText, setMcpEnvText] = useState('');
   const [editMcp, setEditMcp] = useState<McpServer | null>(null);
   const [editMcpName, setEditMcpName] = useState('');
   const [editMcpTransport, setEditMcpTransport] = useState<'stdio' | 'sse'>('stdio');
   const [editMcpCommand, setEditMcpCommand] = useState('');
   const [editMcpUrl, setEditMcpUrl] = useState('');
+  // The edit dialog never receives the existing env values back from the
+  // server (the API masks them). If the user leaves this textarea blank the
+  // existing env is preserved untouched; if they type at least one line the
+  // whole env map is replaced. `mcpEnvKeys` is just for the "currently
+  // configured: X, Y" hint so the user can see what's set.
+  const [editMcpEnvText, setEditMcpEnvText] = useState('');
+  const [editMcpEnvKeys, setEditMcpEnvKeys] = useState<string[]>([]);
+  const [editMcpEnvParseError, setEditMcpEnvParseError] = useState(false);
   const [editMcpError, setEditMcpError] = useState('');
   const [savingMcp, setSavingMcp] = useState(false);
 
@@ -153,9 +196,20 @@ export default function SkillsPage() {
     setInstallError('');
 
     const url = tab === 'skills' ? '/api/skills' : tab === 'function_tools' ? '/api/function-tools' : '/api/mcp';
-    const body = tab === 'mcp'
-      ? { transport: mcpTransport, command: mcpCommand || undefined, url: mcpUrl || undefined }
-      : { githubUrl };
+    let body: Record<string, unknown>;
+    if (tab === 'mcp') {
+      // Only attach `env` when the user actually typed something AND the
+      // transport will use it. SSE servers never receive env from us.
+      const env = mcpTransport === 'stdio' ? parseEnvText(mcpEnvText) : {};
+      body = {
+        transport: mcpTransport,
+        command: mcpCommand || undefined,
+        url: mcpUrl || undefined,
+        ...(Object.keys(env).length > 0 ? { env } : {}),
+      };
+    } else {
+      body = { githubUrl };
+    }
 
     const res = await fetch(url, {
       method: 'POST',
@@ -171,6 +225,7 @@ export default function SkillsPage() {
       setGithubUrl('');
       setMcpCommand('');
       setMcpUrl('');
+      setMcpEnvText('');
       refresh();
     }
     setInstalling(false);
@@ -183,17 +238,62 @@ export default function SkillsPage() {
     setEditMcpTransport(server.transport);
     setEditMcpCommand(server.transport === 'stdio' ? [server.command, ...args].filter(Boolean).join(' ') : '');
     setEditMcpUrl(server.url || '');
+    setEditMcpEnvText('');
+    setEditMcpEnvKeys(server.env_keys ?? []);
+    setEditMcpEnvParseError(!!server.env_parse_error);
     setEditMcpError('');
   };
 
   const handleSaveMcp = async () => {
     if (!editMcp) return;
+    // Warn before toggling a stdio server (that has env configured) to SSE.
+    // The credentials are preserved on the server side (we no longer wipe
+    // env_json on transport change), but the operator should know that the
+    // SSE transport will not forward any env to the remote server.
+    if (
+      editMcp.transport === 'stdio' &&
+      editMcpTransport === 'sse' &&
+      editMcpEnvKeys.length > 0 &&
+      typeof window !== 'undefined'
+    ) {
+      const confirmed = window.confirm(
+        `This server currently has ${editMcpEnvKeys.length} env var(s) configured ` +
+          `(${editMcpEnvKeys.join(', ')}). Switching to SSE transport means none of those ` +
+          `values will reach the remote server — SSE is network-accessed and AgentPrimer ` +
+          `cannot inject env into it. The values remain saved in case you switch back to stdio. ` +
+          `Continue?`,
+      );
+      if (!confirmed) return;
+    }
     setSavingMcp(true);
     setEditMcpError('');
     const parts = editMcpCommand.trim().split(/\s+/).filter(Boolean);
-    const body = editMcpTransport === 'stdio'
-      ? { id: editMcp.id, name: editMcpName, transport: editMcpTransport, command: parts[0] ?? '', args: parts.slice(1) }
-      : { id: editMcp.id, name: editMcpName, transport: editMcpTransport, url: editMcpUrl.trim() };
+    // Only send `env` when the user actually edited the textarea. A blank
+    // textarea means "leave the existing env_json alone"; typing anything
+    // (even a single blank-after-trim entry) means "replace the entire
+    // env map with what I just typed".
+    const envSubmitted = editMcpEnvText.trim().length > 0;
+    const env = editMcpTransport === 'stdio' && envSubmitted ? parseEnvText(editMcpEnvText) : undefined;
+    const body =
+      editMcpTransport === 'stdio'
+        ? {
+            id: editMcp.id,
+            name: editMcpName,
+            transport: editMcpTransport,
+            command: parts[0] ?? '',
+            args: parts.slice(1),
+            ...(env !== undefined ? { env } : {}),
+          }
+        : {
+            id: editMcp.id,
+            name: editMcpName,
+            transport: editMcpTransport,
+            url: editMcpUrl.trim(),
+            // Intentionally do NOT send `env: {}` here — that would clobber
+            // the saved values. Switching to SSE preserves them on the
+            // server side so a later switch back to stdio doesn't require
+            // the operator to re-enter every credential.
+          };
     const res = await fetch('/api/mcp', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -320,12 +420,6 @@ export default function SkillsPage() {
                 <div className="min-w-0 overflow-hidden">
                   <h1 className="text-3xl font-800 text-white tracking-tight truncate">Skills &amp; MCP</h1>
                   <p className="text-emerald-100 text-sm truncate">Skills, function tools, MCP servers, and built-in tools</p>
-                  <div className="mt-3 flex items-start gap-2 rounded-xl bg-yellow-300 px-3 py-2 text-sm font-800 text-yellow-950 ">
-                    <AlertCircle size={17} className="mt-0.5 flex-shrink-0" />
-                    <p>
-                      For external services needing API keys, add them to Settings {">"} <span className="mx-1 rounded bg-yellow-100 px-1.5 py-0.5 font-mono">Environment Variables</span>
-                    </p>
-                  </div>
                 </div>
               </div>
               {tab !== 'builtin' && (
@@ -433,16 +527,50 @@ export default function SkillsPage() {
             </div>
           </div>
           {editMcpTransport === 'stdio' ? (
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Start Command</label>
-              <input
-                type="text"
-                value={editMcpCommand}
-                onChange={e => setEditMcpCommand(e.target.value)}
-                placeholder="npx -y exa-mcp-server"
-                className="w-full h-11 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-transparent text-sm focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 transition-all duration-200 font-mono"
-              />
-            </div>
+            <>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Start Command</label>
+                <input
+                  type="text"
+                  value={editMcpCommand}
+                  onChange={e => setEditMcpCommand(e.target.value)}
+                  placeholder="npx -y exa-mcp-server"
+                  className="w-full h-11 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-transparent text-sm focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 transition-all duration-200 font-mono"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                  Environment variables
+                  <span className="ml-2 text-xs font-400 text-gray-500 dark:text-gray-400">
+                    (per-server, KEY=value per line)
+                  </span>
+                </label>
+                <textarea
+                  value={editMcpEnvText}
+                  onChange={(e) => setEditMcpEnvText(e.target.value)}
+                  placeholder={
+                    'GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxx\nBRAVE_API_KEY=...'
+                  }
+                  rows={4}
+                  className="w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 rounded-lg border-2 border-transparent text-sm focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 transition-all duration-200 font-mono"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Values are write-only and never sent back to the browser.{' '}
+                  {editMcpEnvParseError ? (
+                    <span className="text-amber-600 dark:text-amber-400">
+                      ⚠ The saved env data could not be parsed. Re-enter the env vars below to replace it.
+                    </span>
+                  ) : editMcpEnvKeys.length > 0 ? (
+                    <>
+                      Currently configured: <code className="font-mono">{editMcpEnvKeys.join(', ')}</code>.
+                      Leave blank to keep them as-is, or type at least one line to replace them.
+                    </>
+                  ) : (
+                    <>No env vars are currently set for this server.</>
+                  )}
+                </p>
+              </div>
+            </>
           ) : (
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Server URL</label>
@@ -453,6 +581,9 @@ export default function SkillsPage() {
                 placeholder="http://localhost:3001"
                 className="w-full h-11 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-transparent text-sm focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 transition-all duration-200"
               />
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Per-server environment variables only apply to <code>stdio</code> transport. SSE servers receive no env from AgentPrimer.
+              </p>
             </div>
           )}
           {editMcpError && (
@@ -467,7 +598,7 @@ export default function SkillsPage() {
       {/* Install Modal */}
       <Modal
         open={installModal}
-        onClose={() => { setInstallModal(false); setInstallError(''); setGithubUrl(''); }}
+        onClose={() => { setInstallModal(false); setInstallError(''); setGithubUrl(''); setMcpEnvText(''); }}
         title={
           tab === 'skills' ? 'Install Skill' :
           tab === 'function_tools' ? 'Install Function Tool' :
@@ -519,16 +650,36 @@ export default function SkillsPage() {
                 </div>
               </div>
               {mcpTransport === 'stdio' ? (
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Start Command</label>
-                  <input
-                    type="text"
-                    value={mcpCommand}
-                    onChange={e => setMcpCommand(e.target.value)}
-                    placeholder="npx -y exa-mcp-server"
-                    className="w-full h-11 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-transparent text-sm focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 transition-all duration-200 font-mono"
-                  />
-                </div>
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Start Command</label>
+                    <input
+                      type="text"
+                      value={mcpCommand}
+                      onChange={e => setMcpCommand(e.target.value)}
+                      placeholder="npx -y exa-mcp-server"
+                      className="w-full h-11 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-transparent text-sm focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 transition-all duration-200 font-mono"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                      Environment variables
+                      <span className="ml-2 text-xs font-400 text-gray-500 dark:text-gray-400">
+                        (optional, KEY=value per line)
+                      </span>
+                    </label>
+                    <textarea
+                      value={mcpEnvText}
+                      onChange={(e) => setMcpEnvText(e.target.value)}
+                      placeholder={'GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxx\nBRAVE_API_KEY=...'}
+                      rows={4}
+                      className="w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 rounded-lg border-2 border-transparent text-sm focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 transition-all duration-200 font-mono"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Only this server&apos;s subprocess receives these. AgentPrimer&apos;s host env (provider API keys, AGENT_PRIMER_SECRET, …) is not forwarded by default.
+                    </p>
+                  </div>
+                </>
               ) : (
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Server URL</label>

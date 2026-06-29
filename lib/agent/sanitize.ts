@@ -132,8 +132,15 @@ export function sanitizeToolResultContent(result: unknown): string {
       text = String(result);
     }
   }
+  // NOTE: ROLE_TAG_PATTERNS use the `g` flag so `.replace` rewrites every
+  // occurrence. Calling `re.test()` first is a trap: `test()` on a global
+  // regex advances `lastIndex`, and because these RegExp objects are module-
+  // level singletons that state leaks across calls, causing the next
+  // invocation to skip matches near the start of its input. Just call
+  // `.replace()` unconditionally — when nothing matches the string is
+  // returned unchanged at no cost beyond the scan.
   for (const { re, replacement } of ROLE_TAG_PATTERNS) {
-    if (re.test(text)) text = text.replace(re, replacement);
+    text = text.replace(re, replacement);
   }
   return text;
 }

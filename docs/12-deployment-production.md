@@ -78,7 +78,7 @@ mkdir -p /opt/agentprimer/data /opt/agentprimer/backups
 cd /opt/agentprimer
 ```
 
-Create `docker-compose.yml`. Replace `ghcr.io/your-org/agentprimer:latest` with your published image, or use the local build option below.
+Create `docker-compose.yml`. AgentPrimer does not publish a prebuilt image; either build locally (see "Building Your Own Image" below) or push your own image to a registry (the `ghcr.io/your-org/agentprimer:latest` reference below is a placeholder you must replace).
 
 ```yaml
 services:
@@ -218,8 +218,10 @@ Why `proxy_buffering off` matters: chat responses are Server-Sent Events. If ngi
 There are three layers of configuration:
 
 1. Docker environment variables in `docker-compose.yml`
-2. Runtime overrides in `data/.env`
+2. Runtime overrides in `data/.env` (loaded by `lib/bootstrap.ts` at startup; intended for infrastructure variables like `AGENT_PRIMER_SECRET`, `LANGFUSE_*`, `EMBED_*`)
 3. App settings in SQLite via the Settings page
+
+> **MCP credentials are separate.** Per-MCP-server credentials (e.g. `EXA_API_KEY` for the exa MCP server, `GITHUB_TOKEN` for a github MCP server) do NOT belong in `data/.env`. The MCP subprocess allow-list does not forward host env by default. Use Skills/MCP → server → Edit → Environment variables instead; values are stored on `mcp_servers.env_json` and only reach that one server's subprocess.
 
 Important variables:
 
@@ -233,6 +235,7 @@ Important variables:
 | `LANGFUSE_PUBLIC_KEY` | Optional | Langfuse public key if not stored in Settings. |
 | `LANGFUSE_SECRET_KEY` | Optional | Langfuse secret key if not stored in Settings. |
 | `LANGFUSE_BASE_URL` | Optional | Langfuse cloud or self-hosted URL. |
+| `MCP_FORWARD_ENV` | Optional | Comma- or whitespace-separated list of additional environment variable names to forward to **every** stdio MCP server subprocess. By default AgentPrimer ships an **allow-list** (`PATH`, `HOME`, `USER`, `LANG`, `NODE_ENV`, `NODE_OPTIONS`, `NPM_CONFIG_*`, `PYTHONPATH`, a handful of other shell basics — see `lib/mcp-client.ts` for the full list) and does NOT inherit the rest of `process.env`. Use this variable for credentials shared across many MCP servers; prefer the **per-server env field** (Skills/MCP → Edit → Environment variables) for credentials that belong to one server only. `AGENT_PRIMER_SECRET`, `AGENTPRIMER_SECRET`, and `CODE_SERVER_PASSWORD` are always denied even if listed. |
 
 Generate a secret:
 
@@ -349,7 +352,7 @@ AgentPrimer has a built-in local trace viewer (the Trace Drawer in the chat UI),
 
 ### How AgentPrimer Integrates Langfuse
 
-The integration lives in `lib/langfuse.ts` and is called from `lib/agent.ts`. It follows a deliberate design pattern: **every Langfuse call is guarded by null checks, so the agent loop works identically whether Langfuse is enabled or not.**
+The integration lives in `lib/langfuse.ts` and is called from `lib/agent/loop.ts`. It follows a deliberate design pattern: **every Langfuse call is guarded by null checks, so the agent loop works identically whether Langfuse is enabled or not.**
 
 #### The Four Functions
 
@@ -383,10 +386,10 @@ The integration lives in `lib/langfuse.ts` and is called from `lib/agent.ts`. It
 
 #### Where They Are Called in the Agent Loop
 
-In `lib/agent.ts`, the call sequence looks like this:
+In `lib/agent/loop.ts` (`runAgentLoop`), the call sequence looks like this:
 
 ```
-runAgentWithStreaming()
+runAgentLoop()  (entry point: lib/agent/streaming-agent.ts → createStreamingAgent)
   │
   ├─ createAgentTrace({ sessionId, agentName, modelId, promptPreview })
   │    → langfuseTrace (or null)
@@ -438,7 +441,11 @@ function getClient(): Langfuse | null {
   if (!config.publicKey || !config.secretKey) return null;
   const key = `${config.publicKey}:${config.secretKey}:${config.baseUrl}`;
   if (!client || clientKey !== key) {
-    client = new Langfuse({ ...config });
+    client = new Langfuse({
+      publicKey: config.publicKey,
+      secretKey: config.secretKey,
+      baseUrl: config.baseUrl,
+    });
     clientKey = key;
   }
   return client;
@@ -669,12 +676,12 @@ To deeply understand the integration, read these files in order:
 | File | What to focus on |
 |------|-----------------|
 | `lib/langfuse.ts` | The entire file (~120 lines). Study how each function is guarded by null checks and how `getClient()` caches the singleton. |
-| `lib/agent.ts:544` | Where `createAgentTrace()` is called — see what metadata is captured at the trace level |
-| `lib/agent.ts:555–561` | Where `startGeneration()` is called — see the per-step input and metadata |
-| `lib/agent.ts:715–720` | Where `endGeneration()` is called on a "stop" finish (no tool calls) |
-| `lib/agent.ts:785–790` | Where `endGeneration()` is called on a "requires_approval" finish |
-| `lib/agent.ts:813–818` | Where `endGeneration()` is called on a "tool_calls" finish |
-| `lib/agent.ts:844` | Where `finalizeTrace()` is called — see how the full output and step traces are attached |
+| `lib/agent/loop.ts:176` | Where `createAgentTrace()` is called — see what metadata is captured at the trace level |
+| `lib/agent/loop.ts:197` | Where `startGeneration()` is called inside the per-step loop — see the per-step input and metadata |
+| `lib/agent/loop.ts:507` | `endGeneration()` on a "stop" finish (no tool calls) |
+| `lib/agent/loop.ts:624` | `endGeneration()` on a "requires_approval" finish |
+| `lib/agent/loop.ts:673` | `endGeneration()` on a "tool_calls" finish |
+| `lib/agent/loop.ts:760` | `finalizeTrace()` — see how the full output and step traces are attached |
 | `app/(main)/settings/page.tsx:637–700` | The Settings UI — see how the toggle, key inputs, and base URL are wired to the save logic |
 | `app/api/settings/route.ts:13–14` | Where the secret key is masked for API responses (security pattern) |
 

@@ -23,7 +23,7 @@ AgentPrimer's agent capabilities come from **four sources**, each with different
 
 ```mermaid
 graph TB
-    Agent["agent.ts\nToolSet assembly"]
+    Agent["lib/agent/streaming-agent.ts\n+ lib/agent/builtin-tools.ts\nToolSet assembly"]
 
     Builtin["Built-in Tools\n(run in main process)"]
     FuncTools["Function Tools\n(run in subprocess)"]
@@ -77,7 +77,7 @@ Built-ins have the highest priority: function tools and MCP servers cannot shado
 
 ## Built-in Tools
 
-All built-in tools live in `lib/agent.ts` (implementation) and `lib/builtin-tools-registry.ts` (metadata/enable-disable state). Agents receive the full list unless a `Tools:` allowlist is set in `data/agents/<agent>/agent.md`, or a tool has been disabled in Settings.
+All built-in tool **implementations** live in `lib/agent/builtin-tools.ts` (inside `createBuiltinTools()`); their **metadata** (label, category, enabled state, dangerous flag) lives in `lib/builtin-tools-registry.ts`. AgentPrimer ships **22 built-in tools**. Agents receive the full list unless a `Tools:` allowlist is set in `data/agents/<agent>/agent.md`, or a tool has been disabled in Settings.
 
 ### Complete Built-in Tool Reference
 
@@ -120,7 +120,7 @@ Every built-in tool defines its parameters as a **Zod schema**. Zod serves three
 
 Here is `make_directory` as a worked example.
 
-**What you write in `agent.ts`:**
+**What you write in `lib/agent/builtin-tools.ts`:**
 
 ```typescript
 make_directory: tool({
@@ -136,10 +136,10 @@ make_directory: tool({
 })
 ```
 
-Before calling the OpenAI API, `agent.ts` converts every tool's `parameters` field using `zodToOpenAISchema()`. You can trace the exact call in `toolsToOpenAIFormat()`:
+Before calling the OpenAI API, the agent loop converts every tool's `parameters` field using `toolsToOpenAIFormat()` (in [`lib/agent/schema.ts`](../lib/agent/schema.ts)):
 
 ```typescript
-// agent.ts — called once before the agent loop starts
+// lib/agent/schema.ts — called once per LLM call inside runAgentLoop
 function toolsToOpenAIFormat(tools: ToolSet): OpenAI.Chat.ChatCompletionTool[] {
   return Object.entries(tools).map(([name, t]) => ({
     type: 'function',
@@ -169,7 +169,7 @@ So `zodToOpenAISchema(t.parameters)` receives the `z.object({ dir_path: z.string
 
 The model reads the JSON Schema to know what arguments to produce. The `.describe()` call on each Zod field becomes the `"description"` key in the schema — this is the most important field for tool reliability. A vague description causes the model to guess the format; a precise one rarely does.
 
-> **Gotcha:** `zodToJsonSchema()` adds a `$schema` meta-key that the OpenAI API rejects with a 400 error. The `zodToOpenAISchema()` helper in `agent.ts` deletes it before sending:
+> **Gotcha:** `zodToJsonSchema()` adds a `$schema` meta-key that the OpenAI API rejects with a 400 error. The `zodToOpenAISchema()` helper in `lib/agent/schema.ts` deletes it before sending:
 > ```typescript
 > function zodToOpenAISchema(schema: z.ZodType): Record<string, unknown> {
 >   const json = zodToJsonSchema(schema) as Record<string, any>;
@@ -197,7 +197,7 @@ interface BuiltinToolMeta {
 
 The enabled/disabled state is stored in the `settings` SQLite table under the key `builtin_tool_enabled:<id>`. If no record exists, `defaultEnabled` is used.
 
-**Why a registry?** Rather than hard-coding which tools exist in the UI, the registry lets the Settings page dynamically render a card for every tool without knowing about the implementation. Adding a new built-in tool in `agent.ts` and registering it in `builtin-tools-registry.ts` is all that's needed for it to appear in the UI.
+**Why a registry?** Rather than hard-coding which tools exist in the UI, the registry lets the Settings page dynamically render a card for every tool without knowing about the implementation. Adding a new built-in tool in `lib/agent/builtin-tools.ts` and registering it in `lib/builtin-tools-registry.ts` is all that's needed for it to appear in the UI.
 
 ### Key Tools In Depth
 
@@ -234,7 +234,7 @@ send_file: tool({
 })
 ```
 
-**Source**: `lib/agent-files.ts` (save/serve logic), `lib/agent.ts` (tool definition), `app/api/files/[id]/route.ts` (file serving endpoint), `components/MessageBubble.tsx` (preview rendering).
+**Source**: `lib/agent-files.ts` (save/serve logic), `lib/agent/builtin-tools.ts` (tool definition), `app/api/files/[id]/route.ts` (file serving endpoint), `components/message/FileBlocks.tsx` (preview rendering, invoked from `components/MessageBubble.tsx`).
 
 #### `edit_file` — Token-Efficient Patching
 
@@ -264,7 +264,7 @@ The tool fails with a clear error if `oldString` is not found or appears more th
 - **HTML files**: rendered in a sandboxed `<iframe>` with scripts allowed, same-origin disabled, and preview CSP applied
 - **Images**: displayed with zoom controls
 - **PDFs**: displayed using the browser's built-in PDF viewer
-- **Markdown**: rendered as HTML via a markdown parser
+- **Markdown**: split view — Monaco editor on one side, live rendered preview on the other (so the agent and the user can edit collaboratively)
 
 ```typescript
 open_preview({ file_path: "data/projects/my-app/index.html" })
@@ -341,21 +341,21 @@ module.exports = {
 
 ```mermaid
 sequenceDiagram
-    participant agent.ts
+    participant agent
     participant function-tools-loader.ts
     participant function-tool-worker.js
     participant index.js
 
-    agent.ts->>function-tools-loader.ts: toolDef.execute({ expression: "2+2" })
+    agent->>function-tools-loader.ts: toolDef.execute({ expression: "2+2" })
     function-tools-loader.ts->>function-tool-worker.js: spawn('node', [WORKER_SCRIPT, '--max-old-space-size=256'])
     function-tools-loader.ts->>function-tool-worker.js: stdin: { toolPath, toolName, args }
     function-tool-worker.js->>index.js: require(toolPath)[toolName](args)
     index.js-->>function-tool-worker.js: { result: 4 }
     function-tool-worker.js-->>function-tools-loader.ts: stdout: { result: { result: 4 } }
-    function-tools-loader.ts-->>agent.ts: { result: 4 }
+    function-tools-loader.ts-->>agent: { result: 4 }
 ```
 
-The subprocess is killed after **35 seconds** if it does not respond. Memory is limited to **256 MB** via `--max-old-space-size=256`. These limits protect the main process from runaway or memory-leaking tool code.
+The subprocess is killed after **35 seconds** if it does not respond. Memory is limited to **256 MB** via `--max-old-space-size=256`. The worker also enforces its own **30-second** inner deadline, so the effective hard ceiling is 30 s. These limits protect the main process from runaway or memory-leaking tool code.
 
 **Source:** `lib/function-tools-loader.ts` (subprocess management), `lib/function-tool-worker.js` (worker entry point).
 
@@ -560,7 +560,7 @@ MCP is an open protocol (released by Anthropic in 2024) that lets any program ex
 The server runs as a **child process**. The agent communicates via stdin/stdout using JSON-RPC.
 
 ```
-agent.ts
+agent (lib/agent/loop.ts via lib/mcp-client.ts)
   └─ StdioClientTransport
        └─ spawn("node", ["server.js"])
             ├─ stdin  → JSON-RPC requests  {"method":"tools/call", ...}
@@ -572,7 +572,7 @@ agent.ts
 The server runs independently (possibly on a remote machine). The agent connects via HTTP using Server-Sent Events.
 
 ```
-agent.ts
+agent (lib/agent/loop.ts via lib/mcp-client.ts)
   └─ SSEClientTransport
        └─ HTTP GET https://my-mcp-server.example.com/sse
 ```
@@ -589,15 +589,21 @@ When the agent starts a turn, it:
 
 ### Writing a Minimal MCP Server
 
+`@modelcontextprotocol/sdk` 1.x uses **Zod request schemas** (not string method names) with `setRequestHandler`. AgentPrimer is on `^1.29.0`, so use the schema-based handlers shown below:
+
 ```javascript
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import {
+  ListToolsRequestSchema,
+  CallToolRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
 
 const server = new Server({ name: 'my-server', version: '1.0.0' }, {
   capabilities: { tools: {} }
 });
 
-server.setRequestHandler('tools/list', async () => ({
+server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [{
     name: 'greet',
     description: 'Say hello to someone',
@@ -611,7 +617,7 @@ server.setRequestHandler('tools/list', async () => ({
   }]
 }));
 
-server.setRequestHandler('tools/call', async (req) => {
+server.setRequestHandler(CallToolRequestSchema, async (req) => {
   const { name } = req.params.arguments;
   return { content: [{ type: 'text', text: `Hello, ${name}!` }] };
 });
@@ -627,7 +633,11 @@ Go to **Skills & MCP → MCP Servers → Install**. Provide one of:
 - **Command** and **Args** only, such as `npx` with a package name
 - **SSE URL** for a remote MCP server
 
-**Source:** `lib/mcp-client.ts` (connection management), `lib/installer.ts` (clone/install and command/SSE registration).
+For `stdio` servers you can also fill in **Environment variables** — a `KEY=value`-per-line textarea on the install/edit dialog — to give that specific server its own API key (e.g. `GITHUB_TOKEN=ghp_…` for the github MCP server). Values are stored in the `mcp_servers.env_json` column and forwarded only to that one server's subprocess. They are not sent back to the browser on subsequent loads; the UI shows the names of currently-configured variables but never their values. SSE servers do not receive AgentPrimer env at all (they are network-accessed, not subprocess-spawned).
+
+By default, AgentPrimer's host `process.env` is **not** forwarded to MCP subprocesses — only a small allow-list of innocuous shell variables (PATH, HOME, NODE_ENV, …). Use the per-server env field for credentials that belong to one server, or `MCP_FORWARD_ENV` (see [Module 12](./12-deployment-production.md)) for credentials shared across the whole fleet.
+
+**Source:** `lib/mcp-client.ts` (connection management + env merging), `lib/installer.ts` (clone/install and command/SSE registration).
 
 ---
 

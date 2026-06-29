@@ -757,13 +757,17 @@ export async function runAgentLoop(params: {
       usage: { promptTokens: totalUsage.input, completionTokens: totalUsage.output },
     }),
   );
-  await finalizeTrace({ trace: langfuseTrace, output: totalText, traceData: stepTraces });
   const displayUsage: TokenUsage = {
     input: lastStepInput,
     cached: lastStepCached,
     output: totalUsage.output,
     source: totalUsage.source,
   };
+  // Persist the assistant row FIRST. Bookkeeping (Langfuse trace flush,
+  // reasoning cache write) comes after — any failure in those is
+  // best-effort and must not be propagated, otherwise the caller would
+  // treat a successful turn as an error and overwrite the row with an
+  // "incomplete" notice.
   if (onFinish)
     await onFinish(
       totalText,
@@ -773,6 +777,21 @@ export async function runAgentLoop(params: {
       allParts,
       stepTraces.length > 0 ? stepTraces : undefined,
     );
+  try {
+    await finalizeTrace({ trace: langfuseTrace, output: totalText, traceData: stepTraces });
+  } catch (err) {
+    console.warn(
+      '[agent] finalizeTrace failed (ignored):',
+      err instanceof Error ? err.message : err,
+    );
+  }
   // Persist reasoning to SQLite now that streaming is done.
-  if (sessionId) persistReasoning(sessionId);
+  try {
+    if (sessionId) persistReasoning(sessionId);
+  } catch (err) {
+    console.warn(
+      '[agent] persistReasoning failed (ignored):',
+      err instanceof Error ? err.message : err,
+    );
+  }
 }

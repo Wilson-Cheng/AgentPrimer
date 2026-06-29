@@ -43,13 +43,29 @@ const MCP_TOOL_TIMEOUT_MS   = 30_000; // ms – kill a hanging MCP tool call aft
 /**
  * Build the environment passed to a stdio MCP server subprocess.
  *
- * We forward the entire `process.env` so any variable the user has set —
- * via `data/.env`, a Docker `-e` flag, the shell that launched the dev
- * server, anywhere — is visible to every MCP server. This matches what
- * users expect: "I exported `MY_THING_KEY`, why can't the MCP server see it?"
+ * We treat third-party MCP servers as **untrusted** code (they are cloned
+ * from arbitrary GitHub repos by the operator) and therefore use an
+ * allow-list of innocuous shell variables rather than forwarding all of
+ * `process.env`. A blanket forward would leak provider API keys
+ * (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `LANGFUSE_*`, `GITHUB_TOKEN`,
+ * database URLs, …) to every MCP server the operator installs.
  *
- * The only exception is AgentPrimer's own JWT secret, which we strip so a
- * third-party MCP server can't accidentally log it or echo it back.
+ * Three layers compose the final subprocess env, in order of precedence
+ * (later wins):
+ *
+ *   1. `DEFAULT_ALLOW` — innocuous shell basics the subprocess almost
+ *      certainly needs (PATH, HOME, locale, Node basics).
+ *   2. `MCP_FORWARD_ENV` — operator-supplied global allow-list extras
+ *      (comma- or whitespace-separated names). For per-deployment fleet
+ *      forwarding when many servers share the same credential.
+ *   3. The **per-server** `env_json` column on `mcp_servers` — the
+ *      preferred way to give a single MCP server its own API key without
+ *      exposing that key to every other server. Edited in the Skills/MCP
+ *      page; persisted in SQLite.
+ *
+ * AgentPrimer's own JWT secret (`AGENT_PRIMER_SECRET` /
+ * `AGENTPRIMER_SECRET`) and `CODE_SERVER_PASSWORD` are always denied,
+ * regardless of which layer tries to set them.
  */
 const INTERNAL_DENY = new Set([
   'AGENT_PRIMER_SECRET',
@@ -57,14 +73,93 @@ const INTERNAL_DENY = new Set([
   'CODE_SERVER_PASSWORD',
 ]);
 
-function childProcessEnv(): Record<string, string> {
+const DEFAULT_ALLOW = new Set([
+  // Shell / process basics
+  'PATH',
+  'HOME',
+  'USER',
+  'LOGNAME',
+  'SHELL',
+  'PWD',
+  'TMPDIR',
+  'TEMP',
+  'TMP',
+  'LANG',
+  'LC_ALL',
+  'LC_CTYPE',
+  'TZ',
+  'TERM',
+  // Node basics
+  'NODE_ENV',
+  'NODE_PATH',
+  'NODE_OPTIONS',
+  // Common platform locators that several MCP servers rely on
+  'NPM_CONFIG_PREFIX',
+  'NPM_CONFIG_CACHE',
+  'PYTHONPATH',
+  'PYTHONIOENCODING',
+  // VS Code / devcontainer signal that some servers use to choose a UI mode
+  'TERM_PROGRAM',
+  'COLORTERM',
+]);
+
+function parseAllowExtras(): Set<string> {
+  const raw = process.env.MCP_FORWARD_ENV ?? '';
+  if (!raw) return new Set();
+  return new Set(
+    raw
+      .split(/[\s,]+/)
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+}
+
+function parseServerEnv(envJson: string, serverName: string): Record<string, string> {
+  if (!envJson) return {};
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(envJson);
+  } catch (err) {
+    console.warn(
+      `[MCP] malformed env_json for server "${serverName}":`,
+      err instanceof Error ? err.message : err,
+    );
+    return {};
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    console.warn(`[MCP] env_json for server "${serverName}" is not an object — ignoring`);
+    return {};
+  }
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+    if (INTERNAL_DENY.has(k)) continue;
+    if (typeof v !== 'string' || !v) continue;
+    out[k] = v;
+  }
+  return out;
+}
+
+function childProcessEnv(server?: McpServer): Record<string, string> {
+  const extras = parseAllowExtras();
   const env: Record<string, string> = {};
   for (const [key, value] of Object.entries(process.env)) {
     if (typeof value !== 'string') continue;
     if (INTERNAL_DENY.has(key)) continue;
+    if (!DEFAULT_ALLOW.has(key) && !extras.has(key)) continue;
     env[key] = value;
   }
+  // PATH is always required for the child to find its own interpreter; we
+  // fall back to an empty string rather than `undefined` because some MCP
+  // servers crash when PATH is absent.
   env.PATH = process.env.PATH ?? '';
+
+  // Per-server env wins over the global allow-list. This is the normal way
+  // to give one MCP server its own credential — e.g. `GITHUB_TOKEN` on the
+  // github MCP server only — without exposing that credential to every
+  // other server in the fleet.
+  if (server?.env_json) {
+    Object.assign(env, parseServerEnv(server.env_json, server.name));
+  }
   return env;
 }
 
@@ -96,7 +191,7 @@ async function connectMcpServer(server: McpServer): Promise<Client> {
       command: server.command,
       args: resolvedArgs,
       cwd: server.local_path || undefined,
-      env: childProcessEnv(),
+      env: childProcessEnv(server),
     });
   } else {
     const url = new URL(server.url);
