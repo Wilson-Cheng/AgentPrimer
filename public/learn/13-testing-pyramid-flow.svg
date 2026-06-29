@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 620" role="img" aria-label="Agent Testing Pyramid">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#eff6ff"/><stop offset="0.55" stop-color="#f8fafc"/><stop offset="1" stop-color="#ecfeff"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.12"/></filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#334155"/></marker>
+  </defs>
+  <rect width="1100" height="620" rx="28" fill="url(#bg)"/>
+  <circle cx="1010" cy="80" r="130" fill="#93c5fd" opacity="0.18"/>
+  <circle cx="80" cy="550" r="120" fill="#34d399" opacity="0.14"/>
+  <text x="42" y="54" font-size="28" font-weight="900" fill="#0f172a">Agent Testing Pyramid</text>
+  <text x="42" y="84" font-size="15" font-weight="650" fill="#475569">Deterministic tests support integration tests and evals</text>
+  <g filter="url(#shadow)"><line x1="550" y1="420" x2="550" y2="370" stroke="#334155" stroke-width="2.5" marker-end="url(#arrow)"/><line x1="550" y1="290" x2="550" y2="240" stroke="#334155" stroke-width="2.5" marker-end="url(#arrow)"/><rect x="385" y="420" width="330" height="80" rx="18" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/><text x="550" y="452" text-anchor="middle" dominant-baseline="middle" font-size="14" font-weight="700" fill="#0f172a">Unit tests schemas, parsers, DB</text><text x="550" y="470" text-anchor="middle" dominant-baseline="middle" font-size="14" font-weight="700" fill="#0f172a">helpers, tool code</text><rect x="430" y="290" width="240" height="80" rx="18" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/><text x="550" y="322" text-anchor="middle" dominant-baseline="middle" font-size="14" font-weight="700" fill="#0f172a">Integration tests API + DB +</text><text x="550" y="340" text-anchor="middle" dominant-baseline="middle" font-size="14" font-weight="700" fill="#0f172a">mocked model</text><rect x="470" y="160" width="160" height="80" rx="18" fill="#fef3c7" stroke="#d97706" stroke-width="2"/><text x="550" y="184" text-anchor="middle" dominant-baseline="middle" font-size="14" font-weight="700" fill="#0f172a">Behavior evals</text><text x="550" y="202" text-anchor="middle" dominant-baseline="middle" font-size="14" font-weight="700" fill="#0f172a">realistic tasks +</text><text x="550" y="220" text-anchor="middle" dominant-baseline="middle" font-size="14" font-weight="700" fill="#0f172a">rubrics</text></g>
+</svg>

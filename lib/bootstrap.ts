@@ -241,7 +241,7 @@ function seedMcpServers(): void {
       i === 0 && !a.startsWith('/') && !a.startsWith('-') ? path.resolve(dir, a) : a,
     );
 
-    const existing = getDb().prepare('SELECT id, name, transport, command, args_json, url, enabled FROM mcp_servers WHERE github_url = ?').get(githubUrl) as { id: string; name: string; transport: 'stdio' | 'sse'; command: string; args_json: string; url: string; enabled: number } | undefined;
+    const existing = getDb().prepare('SELECT id, name, transport, command, args_json, url, enabled, env_json FROM mcp_servers WHERE github_url = ?').get(githubUrl) as { id: string; name: string; transport: 'stdio' | 'sse'; command: string; args_json: string; url: string; enabled: number; env_json: string } | undefined;
     upsertMcpServer({
       id:         existing?.id ?? randomUUID(),
       name:       existing?.name ?? meta.name ?? name,
@@ -252,6 +252,7 @@ function seedMcpServers(): void {
       args_json:  existing?.args_json ?? JSON.stringify(absArgs),
       url:        existing?.url ?? meta.url ?? '',
       enabled:    existing?.enabled ?? (meta.enabled === false ? 0 : 1),
+      env_json:   existing?.env_json ?? '{}',
     });
   }
 }
