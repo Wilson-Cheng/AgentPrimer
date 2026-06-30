@@ -260,7 +260,7 @@ export default function MessageBubble({
               if (part.type === 'text') {
                 if (soFromData) return null;
                 const xp = part as { type: 'text'; text: string };
-                if (!xp.text) return null;
+                if (!xp.text || !xp.text.trim()) return null;
                 return (
                   <div key={`t${i}`} className="group relative max-w-full rounded-xl px-4 py-3 pb-6 text-base leading-relaxed bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-sm">
                     <StreamingTextPart text={xp.text} isStreaming={isStreaming ?? false} streamingCursor={partStreaming ?? false} />
@@ -325,7 +325,7 @@ export default function MessageBubble({
         )}
 
         {/* Main content bubble: user messages + assistant without ordered parts */}
-        {(isUser || (isAssistant && !useOrderedParts && !subagentMatch)) && content && (
+        {(isUser || (isAssistant && !useOrderedParts && !subagentMatch)) && content && content.trim() && (
           <div className={`
             ${isAssistant ? 'group ' : ''}relative max-w-full rounded-xl px-4 py-3 ${isAssistant ? 'pb-8 ' : ''}text-base leading-relaxed
             ${isUser

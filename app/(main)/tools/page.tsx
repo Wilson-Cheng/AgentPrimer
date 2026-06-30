@@ -39,7 +39,7 @@ interface ToolEntry {
 }
 
 export default function ToolsPage() {
-  const [tab, setTab]                       = useState<Tab>('builtin');
+  const [tab, setTab]                       = useState<Tab>('skills');
   const [enabled, setEnabled]               = useState(true);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [builtins, setBuiltins]             = useState<ToolEntry[]>([]);
@@ -167,7 +167,31 @@ export default function ToolsPage() {
       } else if (type === 'boolean') {
         parsed[key] = val === 'true';
       } else if (type === 'array') {
-        try { parsed[key] = JSON.parse(val); } catch { parsed[key] = val; }
+        // Accept three input styles, in order:
+        //   1. Real JSON array — e.g. ["a","b"]   (strict, used as-is)
+        //   2. Newline-separated list — one entry per line → ["a","b"]
+        //   3. Bare single value — e.g. cnn.com   → ["cnn.com"]
+        //
+        // Commas are intentionally NOT used as a separator because legitimate
+        // array values (people names, file paths with commas, prose strings)
+        // often contain commas — auto-splitting on them mangles the data.
+        // Users with comma-containing values should use the JSON-array form.
+        //
+        // The pre-fix bug: the Playground sent the raw string downstream when
+        // JSON.parse failed, which the MCP server then tried to JSON.parse
+        // again — producing the confusing "Unexpected token 'h', ..." error
+        // from inside the third-party server.
+        const trimmed = val.trim();
+        try {
+          const j = JSON.parse(trimmed);
+          parsed[key] = Array.isArray(j) ? j : [j];
+        } catch {
+          const split = trimmed
+            .split(/\n+/)
+            .map(s => s.trim())
+            .filter(Boolean);
+          parsed[key] = split.length > 1 ? split : [trimmed];
+        }
       } else if (type === 'object') {
         try { parsed[key] = JSON.parse(val); } catch { parsed[key] = val; }
       } else {
@@ -260,14 +284,14 @@ export default function ToolsPage() {
                 {/* Tabs — one per tool category */}
                 <div className="flex gap-1 mb-4 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex-wrap">
                   {([
-                    { id: 'builtin'       as Tab, label: 'Built-in',      icon: HardDrive,      count: builtins.length,
-                      title: 'In-process TypeScript tools' },
                     { id: 'skills'        as Tab, label: 'Skills',         icon: BookOpen,       count: skills.length,
                       title: 'SKILL.md instruction modules (context injection)' },
                     { id: 'function_tool' as Tab, label: 'Fn Tools',       icon: FunctionSquare, count: functionTools.length,
                       title: 'OpenAI function-calling tools (subprocess)' },
                     { id: 'mcp'           as Tab, label: 'MCP',            icon: Server,         count: mcp.length,
                       title: 'Model Context Protocol tools' },
+                    { id: 'builtin'       as Tab, label: 'Built-in',      icon: HardDrive,      count: builtins.length,
+                      title: 'In-process TypeScript tools' },
                   ]).map(({ id, label, icon: Icon, title }) => (
                     <button
                       key={id}
@@ -419,6 +443,18 @@ export default function ToolsPage() {
                                       <option key={opt} value={opt}>{opt}</option>
                                     ))}
                                   </select>
+                                ) : props[key]?.type === 'array' || props[key]?.type === 'object' ? (
+                                  <textarea
+                                    value={formValues[key] ?? ''}
+                                    onChange={e => setFormValues(prev => ({ ...prev, [key]: e.target.value }))}
+                                    rows={3}
+                                    placeholder={
+                                      props[key]?.type === 'array'
+                                        ? 'JSON array, one entry per line, or a single value'
+                                        : 'JSON object'
+                                    }
+                                    className="w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-sm focus:outline-none focus:border-amber-500 font-mono resize-y"
+                                  />
                                 ) : (
                                   <input
                                     value={formValues[key] ?? ''}

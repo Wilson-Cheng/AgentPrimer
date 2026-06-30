@@ -379,7 +379,7 @@ export async function runAgentLoop(params: {
     }
 
     if (stepReasoning) allParts.push({ type: 'reasoning', reasoning: stepReasoning });
-    if (stepText) allParts.push({ type: 'text', text: stepText });
+    if (stepText && stepText.trim()) allParts.push({ type: 'text', text: stepText });
 
     // ── 3. Check finish reason ──────────────────────────────────────────────
     const completedTCs = Array.from(tcAccum.values());
