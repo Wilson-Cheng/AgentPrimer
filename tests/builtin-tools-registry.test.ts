@@ -32,30 +32,31 @@ describe('builtin-tools-registry catalogue', () => {
       expect(tool.label.length).toBeGreaterThan(0);
       expect(typeof tool.description).toBe('string');
       expect(tool.description.length).toBeGreaterThan(10); // must be a real sentence
-      expect(['filesystem', 'memory', 'agent', 'shell', 'output', 'skill'])
-        .toContain(tool.category);
+      expect(['filesystem', 'memory', 'agent', 'shell', 'output', 'skill']).toContain(
+        tool.category,
+      );
       expect(typeof tool.defaultEnabled).toBe('boolean');
     }
   });
 
   it('tool ids are unique', async () => {
     const { BUILTIN_TOOLS } = await loadRegistry();
-    const ids = BUILTIN_TOOLS.map(t => t.id);
+    const ids = BUILTIN_TOOLS.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
   it('run_shell is dangerous and disabled by default; read_file is enabled by default', async () => {
     const { BUILTIN_TOOLS } = await loadRegistry();
-    const shell = BUILTIN_TOOLS.find(t => t.id === 'run_shell');
+    const shell = BUILTIN_TOOLS.find((t) => t.id === 'run_shell');
     expect(shell).toBeDefined();
     expect(shell!.dangerous).toBe(true);
     expect(shell!.defaultEnabled).toBe(false);
 
-    const read = BUILTIN_TOOLS.find(t => t.id === 'read_file');
+    const read = BUILTIN_TOOLS.find((t) => t.id === 'read_file');
     expect(read).toBeDefined();
     expect(read!.defaultEnabled).toBe(true);
 
-    const del = BUILTIN_TOOLS.find(t => t.id === 'delete_path');
+    const del = BUILTIN_TOOLS.find((t) => t.id === 'delete_path');
     expect(del!.dangerous).toBe(true);
   });
 });
@@ -108,7 +109,7 @@ describe('listBuiltinToolsWithState', () => {
     const { listBuiltinToolsWithState, setBuiltinToolEnabled } = await loadRegistry();
     setBuiltinToolEnabled('append_memory', false);
     const list = listBuiltinToolsWithState();
-    expect(list.find(t => t.id === 'append_memory')!.enabled).toBe(false);
-    expect(list.find(t => t.id === 'read_file')!.enabled).toBe(true);
+    expect(list.find((t) => t.id === 'append_memory')!.enabled).toBe(false);
+    expect(list.find((t) => t.id === 'read_file')!.enabled).toBe(true);
   });
 });

@@ -28,7 +28,7 @@ import { cookies } from 'next/headers';
 export const USERS_FILE = path.join(/* turbopackIgnore: true */ process.cwd(), 'data', '.users');
 
 const COOKIE_NAME = 'agentprimer_session';
-const JWT_EXPIRY  = '7d';
+const JWT_EXPIRY = '7d';
 const BCRYPT_ROUNDS = 12;
 const DEV_JWT_SECRET = 'agentprimer-development-secret-do-not-use-in-production';
 
@@ -56,14 +56,14 @@ function getJwtSecret(): Uint8Array {
     warnedAboutDevSecret = true;
     console.warn(
       '\n' +
-      '====================================================================\n' +
-      ' ⚠  SECURITY WARNING: AGENT_PRIMER_SECRET is not set.\n' +
-      '    Falling back to a PUBLIC, well-known development secret.\n' +
-      '    Session tokens can be trivially forged by anyone.\n' +
-      '    Set AGENT_PRIMER_SECRET to a long random value before exposing\n' +
-      '    this instance to a network. Example:\n' +
-      '      export AGENT_PRIMER_SECRET="$(openssl rand -hex 32)"\n' +
-      '====================================================================\n',
+        '====================================================================\n' +
+        ' ⚠  SECURITY WARNING: AGENT_PRIMER_SECRET is not set.\n' +
+        '    Falling back to a PUBLIC, well-known development secret.\n' +
+        '    Session tokens can be trivially forged by anyone.\n' +
+        '    Set AGENT_PRIMER_SECRET to a long random value before exposing\n' +
+        '    this instance to a network. Example:\n' +
+        '      export AGENT_PRIMER_SECRET="$(openssl rand -hex 32)"\n' +
+        '====================================================================\n',
     );
   }
 
@@ -142,7 +142,7 @@ export function readUsersFile(): Map<string, string> {
     if (colonIdx === -1) continue;
 
     const username = trimmed.slice(0, colonIdx).trim();
-    const hash     = trimmed.slice(colonIdx + 1).trim();
+    const hash = trimmed.slice(colonIdx + 1).trim();
     if (username && hash) users.set(username, hash);
   }
 
@@ -218,7 +218,7 @@ export async function clearSession(): Promise<void> {
 // front the app with a real rate limiter (nginx, a WAF, etc.).
 
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const RATE_LIMIT_MAX_ATTEMPTS = 10;          // failed attempts per key per window
+const RATE_LIMIT_MAX_ATTEMPTS = 10; // failed attempts per key per window
 
 interface RateLimitEntry {
   count: number;

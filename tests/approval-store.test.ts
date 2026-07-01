@@ -44,7 +44,8 @@ describe('approval store', () => {
   });
 
   it('persists permanent approvals and revokes them', async () => {
-    const { grantApproval, isApproved, listPermanentApprovals, revokePermanentApproval } = await loadApprovalStore();
+    const { grantApproval, isApproved, listPermanentApprovals, revokePermanentApproval } =
+      await loadApprovalStore();
 
     grantApproval('session-1', 'run_shell', 'permanent');
 

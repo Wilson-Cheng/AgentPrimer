@@ -27,33 +27,33 @@ import Button from '@/components/ui/Button';
 export type SummaryScope = 'message' | 'session';
 
 export interface SendToRagSummaryProps {
-  mode:        'summary';
+  mode: 'summary';
   /** Title proposed for the new RAG source. User can edit before submit. */
-  defaultTitle:    string;
+  defaultTitle: string;
   /** The single assistant response text (used when scope='message'). */
-  messageContent:  string;
+  messageContent: string;
   /** Session id (used when scope='session'). When omitted scope falls back to 'message'. */
-  sessionId?:      string;
-  onClose:         () => void;
+  sessionId?: string;
+  onClose: () => void;
 }
 
 export interface SendToRagContentProps {
-  mode:        'content';
+  mode: 'content';
   defaultTitle: string;
   /** Either inline text (the common case for markdown/html/text in the
    *  preview window, where the source bytes are already loaded) — OR a URL
    *  the dialog should fetch as a binary blob and upload as a PDF. */
-  content?:     string;
+  content?: string;
   /** When set, the dialog fetches this URL as a binary blob and POSTs as
    *  multipart/form-data so the server's PDF extractor can run. Used for
    *  PDFs in the chat preview window. */
-  pdfUrl?:      string;
+  pdfUrl?: string;
   /** Filename used for the multipart upload + as the document title. */
-  filename?:    string;
+  filename?: string;
   /** mime hint stored with the source so the View panel renders it properly.
    *  Ignored for PDF (mime is inferred from the .pdf extension server-side). */
-  mime?:        string;
-  onClose:      () => void;
+  mime?: string;
+  onClose: () => void;
 }
 
 type Props = SendToRagSummaryProps | SendToRagContentProps;
@@ -61,7 +61,7 @@ type Props = SendToRagSummaryProps | SendToRagContentProps;
 type StepState = 'pending' | 'running' | 'done' | 'error' | 'cancelled';
 
 interface Step {
-  id:    string;
+  id: string;
   label: string;
   state: StepState;
   /** Sub-text shown under the step (e.g. error message, chunk count). */
@@ -75,22 +75,24 @@ export default function SendToRagDialog(props: Props) {
 
   // Pre-flight UI: pick scope + title before starting (only for 'summary' when
   // sessionId is available). For 'content' mode we still show a title field.
-  const [phase, setPhase] = useState<'configure' | 'running' | 'done' | 'cancelled' | 'failed'>('configure');
+  const [phase, setPhase] = useState<'configure' | 'running' | 'done' | 'cancelled' | 'failed'>(
+    'configure',
+  );
   const [title, setTitle] = useState(props.defaultTitle);
   const [scope, setScope] = useState<SummaryScope>('message');
 
   const initialSteps: Step[] = isSummary
     ? [
-        { id: 'summarize', label: 'Summarize chat content',          state: 'pending' },
-        { id: 'send',      label: 'Send summary to the RAG service', state: 'pending' },
-        { id: 'index',     label: 'Index the summary in RAG',        state: 'pending' },
+        { id: 'summarize', label: 'Summarize chat content', state: 'pending' },
+        { id: 'send', label: 'Send summary to the RAG service', state: 'pending' },
+        { id: 'index', label: 'Index the summary in RAG', state: 'pending' },
       ]
     : [
-        { id: 'send',  label: 'Send content to the RAG service', state: 'pending' },
-        { id: 'index', label: 'Index the content in RAG',        state: 'pending' },
+        { id: 'send', label: 'Send content to the RAG service', state: 'pending' },
+        { id: 'index', label: 'Index the content in RAG', state: 'pending' },
       ];
 
-  const [steps, setSteps]       = useState<Step[]>(initialSteps);
+  const [steps, setSteps] = useState<Step[]>(initialSteps);
   /** id of the RAG source row this dialog *created* (NOT one we adopted via
    *  the `skipped: true` path — those pre-existed and must never be rolled
    *  back). Stored in a ref because cancel/cleanup need the latest value
@@ -100,7 +102,7 @@ export default function SendToRagDialog(props: Props) {
 
   // Helpers to mutate one step
   const setStep = (id: string, patch: Partial<Step>) =>
-    setSteps(prev => prev.map(s => (s.id === id ? { ...s, ...patch } : s)));
+    setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
 
   // Roll back any RAG source created during this run. Only ever called with
   // an id we actually created — never with an adopted (skipped) id.
@@ -108,17 +110,19 @@ export default function SendToRagDialog(props: Props) {
     if (!id) return;
     try {
       await fetch(`/api/rag/sources/${id}`, { method: 'DELETE' });
-    } catch { /* best-effort */ }
+    } catch {
+      /* best-effort */
+    }
   };
 
   const handleCancel = async () => {
     // Abort any in-flight fetch, then roll back if needed
     abortRef.current?.abort();
-    setSteps(prev => prev.map(s =>
-      s.state === 'running' || s.state === 'pending'
-        ? { ...s, state: 'cancelled' }
-        : s,
-    ));
+    setSteps((prev) =>
+      prev.map((s) =>
+        s.state === 'running' || s.state === 'pending' ? { ...s, state: 'cancelled' } : s,
+      ),
+    );
     const id = createdIdRef.current;
     createdIdRef.current = null;
     if (id !== null) await rollback(id);
@@ -157,22 +161,26 @@ export default function SendToRagDialog(props: Props) {
       // ── Summary flow: step 1 — summarize ───────────────────────────────
       if (isSummary) {
         setStep('summarize', { state: 'running' });
-        const reqBody = scope === 'session' && props.sessionId
-          ? { sessionId: props.sessionId }
-          : { messageContent: props.messageContent };
+        const reqBody =
+          scope === 'session' && props.sessionId
+            ? { sessionId: props.sessionId }
+            : { messageContent: props.messageContent };
         const res = await fetch('/api/rag/summarize', {
-          method:  'POST',
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify(reqBody),
-          signal:  ac.signal,
+          body: JSON.stringify(reqBody),
+          signal: ac.signal,
         });
         if (!res.ok) {
-          const err = await res.json().catch(() => ({})) as { error?: string };
+          const err = (await res.json().catch(() => ({}))) as { error?: string };
           throw new Error(err.error ?? `Summarize failed (HTTP ${res.status})`);
         }
-        const data = await res.json() as { summary: string };
+        const data = (await res.json()) as { summary: string };
         textToIngest = data.summary;
-        setStep('summarize', { state: 'done', hint: `${textToIngest.length.toLocaleString()} characters` });
+        setStep('summarize', {
+          state: 'done',
+          hint: `${textToIngest.length.toLocaleString()} characters`,
+        });
       } else {
         // content mode — text in props.content (or PDF blob fetched below)
         textToIngest = props.content ?? '';
@@ -190,32 +198,39 @@ export default function SendToRagDialog(props: Props) {
       if (!isSummary && props.pdfUrl) {
         const blobRes = await fetch(props.pdfUrl, { signal: ac.signal });
         if (!blobRes.ok) throw new Error(`Could not load source file (HTTP ${blobRes.status})`);
-        const blob   = await blobRes.blob();
-        const fname  = props.filename || 'document.pdf';
-        const form   = new FormData();
+        const blob = await blobRes.blob();
+        const fname = props.filename || 'document.pdf';
+        const form = new FormData();
         form.append('name', finalTitle);
         form.append('file', new File([blob], fname, { type: blob.type || 'application/pdf' }));
-        sendRes = await fetch('/api/rag/sources', { method: 'POST', body: form, signal: ac.signal });
+        sendRes = await fetch('/api/rag/sources', {
+          method: 'POST',
+          body: form,
+          signal: ac.signal,
+        });
       } else {
         // Text path
         sendRes = await fetch('/api/rag/sources', {
-          method:  'POST',
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({
-            name:          finalTitle,
-            content:       textToIngest,
-            source_type:   isSummary ? 'chat_summary' : 'preview_send',
+          body: JSON.stringify({
+            name: finalTitle,
+            content: textToIngest,
+            source_type: isSummary ? 'chat_summary' : 'preview_send',
             original_mime: mime,
           }),
           signal: ac.signal,
         });
       }
       if (!sendRes.ok) {
-        const err = await sendRes.json().catch(() => ({})) as { error?: string };
+        const err = (await sendRes.json().catch(() => ({}))) as { error?: string };
         throw new Error(err.error ?? `Send failed (HTTP ${sendRes.status})`);
       }
-      const sendData = await sendRes.json() as {
-        sourceId: number; chunks: number; embedded: boolean; skipped: boolean;
+      const sendData = (await sendRes.json()) as {
+        sourceId: number;
+        chunks: number;
+        embedded: boolean;
+        skipped: boolean;
       };
       // Only adopt the id when WE created the row. The `skipped: true` path
       // returns the id of a pre-existing source — rolling that back would
@@ -223,7 +238,7 @@ export default function SendToRagDialog(props: Props) {
       if (!sendData.skipped) createdIdRef.current = sendData.sourceId;
       setStep('send', {
         state: 'done',
-        hint:  sendData.skipped ? 'Already existed (identical content)' : 'Stored on the server',
+        hint: sendData.skipped ? 'Already existed (identical content)' : 'Stored on the server',
       });
 
       if (ac.signal.aborted) throw new DOMException('Aborted', 'AbortError');
@@ -235,7 +250,7 @@ export default function SendToRagDialog(props: Props) {
       // dialog reads as a multi-step process.
       setStep('index', { state: 'running' });
       // small visual delay for clarity
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise((r) => setTimeout(r, 300));
       const indexHint = sendData.skipped
         ? 'No re-indexing needed'
         : `Indexed ${sendData.chunks} chunk${sendData.chunks !== 1 ? 's' : ''}` +
@@ -249,16 +264,23 @@ export default function SendToRagDialog(props: Props) {
       setPhase('done');
     } catch (e) {
       // Distinguish cancel vs error
-      const isAbort = e instanceof DOMException && e.name === 'AbortError'
-        || (e instanceof Error && /aborted/i.test(e.message));
+      const isAbort =
+        (e instanceof DOMException && e.name === 'AbortError') ||
+        (e instanceof Error && /aborted/i.test(e.message));
       // Mark the currently-running step
-      setSteps(prev => prev.map(s =>
-        s.state === 'running'
-          ? { ...s, state: isAbort ? 'cancelled' : 'error', hint: isAbort ? undefined : (e instanceof Error ? e.message : String(e)) }
-          : s.state === 'pending'
-            ? { ...s, state: isAbort ? 'cancelled' : 'pending' }
-            : s,
-      ));
+      setSteps((prev) =>
+        prev.map((s) =>
+          s.state === 'running'
+            ? {
+                ...s,
+                state: isAbort ? 'cancelled' : 'error',
+                hint: isAbort ? undefined : e instanceof Error ? e.message : String(e),
+              }
+            : s.state === 'pending'
+              ? { ...s, state: isAbort ? 'cancelled' : 'pending' }
+              : s,
+        ),
+      );
       // Roll back any partial source row that *we* created
       const id = createdIdRef.current;
       createdIdRef.current = null;
@@ -300,7 +322,7 @@ export default function SendToRagDialog(props: Props) {
                 <input
                   type="text"
                   value={title}
-                  onChange={e => setTitle(e.target.value)}
+                  onChange={(e) => setTitle(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
@@ -341,28 +363,38 @@ export default function SendToRagDialog(props: Props) {
               {steps.map((s, i) => (
                 <li key={s.id} className="flex items-start gap-3">
                   <span className="mt-0.5 flex h-5 w-5 items-center justify-center flex-shrink-0">
-                    {s.state === 'done'      && <Check       size={16} className="text-green-500" />}
-                    {s.state === 'running'   && <RefreshCw   size={14} className="text-teal-500 animate-spin" />}
-                    {s.state === 'error'     && <AlertCircle size={16} className="text-red-500" />}
-                    {s.state === 'cancelled' && <X           size={16} className="text-gray-400" />}
-                    {s.state === 'pending'   && (
+                    {s.state === 'done' && <Check size={16} className="text-green-500" />}
+                    {s.state === 'running' && (
+                      <RefreshCw size={14} className="text-teal-500 animate-spin" />
+                    )}
+                    {s.state === 'error' && <AlertCircle size={16} className="text-red-500" />}
+                    {s.state === 'cancelled' && <X size={16} className="text-gray-400" />}
+                    {s.state === 'pending' && (
                       <span className="h-4 w-4 rounded-full border-2 border-gray-300 dark:border-gray-600" />
                     )}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className={`text-sm font-medium ${
-                      s.state === 'error'     ? 'text-red-600 dark:text-red-400'
-                      : s.state === 'cancelled' ? 'text-gray-400'
-                      : s.state === 'done'    ? 'text-gray-900 dark:text-gray-100'
-                      : s.state === 'running' ? 'text-gray-900 dark:text-gray-100'
-                      : 'text-gray-500 dark:text-gray-400'
-                    }`}>
+                    <div
+                      className={`text-sm font-medium ${
+                        s.state === 'error'
+                          ? 'text-red-600 dark:text-red-400'
+                          : s.state === 'cancelled'
+                            ? 'text-gray-400'
+                            : s.state === 'done'
+                              ? 'text-gray-900 dark:text-gray-100'
+                              : s.state === 'running'
+                                ? 'text-gray-900 dark:text-gray-100'
+                                : 'text-gray-500 dark:text-gray-400'
+                      }`}
+                    >
                       {i + 1}. {s.label}
                     </div>
                     {s.hint && (
-                      <div className={`text-sm mt-0.5 ${
-                        s.state === 'error' ? 'text-red-500 dark:text-red-400' : 'text-gray-400'
-                      }`}>
+                      <div
+                        className={`text-sm mt-0.5 ${
+                          s.state === 'error' ? 'text-red-500 dark:text-red-400' : 'text-gray-400'
+                        }`}
+                      >
                         {s.hint}
                       </div>
                     )}
@@ -377,9 +409,13 @@ export default function SendToRagDialog(props: Props) {
         <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
           {phase === 'configure' && (
             <>
-              <Button variant="secondary" size="sm" onClick={props.onClose}>Cancel</Button>
+              <Button variant="secondary" size="sm" onClick={props.onClose}>
+                Cancel
+              </Button>
               <Button
-                variant="primary" size="sm" onClick={runPipeline}
+                variant="primary"
+                size="sm"
+                onClick={runPipeline}
                 className="bg-teal-500 hover:bg-teal-600 text-white border-transparent"
               >
                 Start
@@ -392,8 +428,12 @@ export default function SendToRagDialog(props: Props) {
             </Button>
           )}
           {(phase === 'done' || phase === 'cancelled' || phase === 'failed') && (
-            <Button variant="primary" size="sm" onClick={props.onClose}
-              className="bg-teal-500 hover:bg-teal-600 text-white border-transparent">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={props.onClose}
+              className="bg-teal-500 hover:bg-teal-600 text-white border-transparent"
+            >
               Close
             </Button>
           )}

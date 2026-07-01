@@ -101,13 +101,13 @@ function parseSkillMd(content: string): { name: string; description: string; bod
   if (closeIdx === -1) return null;
 
   const frontmatter = content.slice(3, closeIdx).trim();
-  const body        = content.slice(closeIdx + 4).trim();
+  const body = content.slice(closeIdx + 4).trim();
 
   // Match "key: value" — handles optional surrounding quotes
   const nameMatch = frontmatter.match(/^name:\s*["']?(.+?)["']?\s*$/m);
   const descMatch = frontmatter.match(/^description:\s*["']?(.+?)["']?\s*$/m);
 
-  const name        = nameMatch?.[1]?.trim() ?? '';
+  const name = nameMatch?.[1]?.trim() ?? '';
   const description = descMatch?.[1]?.trim() ?? '';
 
   if (!name || !description) return null;
@@ -131,7 +131,7 @@ function parseSkillMd(content: string): { name: string; description: string; bod
  *                     (used for per-agent tool restrictions in agent.md)
  */
 export function loadSkillContext(filterNames: string[] | 'all' = 'all'): SkillContext[] {
-  const skills  = listSkills().filter(s => s.enabled === 1);
+  const skills = listSkills().filter((s) => s.enabled === 1);
   const results: SkillContext[] = [];
 
   for (const skill of skills) {
@@ -148,11 +148,13 @@ export function loadSkillContext(filterNames: string[] | 'all' = 'all'): SkillCo
 
     try {
       // ── Stage 2: Activation — read the full instruction body ────────
-      const raw    = fs.readFileSync(skillMdPath, 'utf-8');
+      const raw = fs.readFileSync(skillMdPath, 'utf-8');
       const parsed = parseSkillMd(raw);
 
       if (!parsed) {
-        console.warn(`skills-loader: "${skill.name}" has invalid SKILL.md (missing name/description frontmatter)`);
+        console.warn(
+          `skills-loader: "${skill.name}" has invalid SKILL.md (missing name/description frontmatter)`,
+        );
         continue;
       }
 
@@ -206,18 +208,19 @@ export interface SkillDiscovery {
  *
  * Returns `{ section: '', skills: [] }` when no enabled skills match.
  */
-export function buildSkillDiscoverySection(
-  filterNames: string[] | 'all' = 'all',
-): { section: string; skills: SkillDiscovery[] } {
+export function buildSkillDiscoverySection(filterNames: string[] | 'all' = 'all'): {
+  section: string;
+  skills: SkillDiscovery[];
+} {
   const contexts = loadSkillContext(filterNames);
   if (contexts.length === 0) return { section: '', skills: [] };
 
-  const skills: SkillDiscovery[] = contexts.map(c => ({
+  const skills: SkillDiscovery[] = contexts.map((c) => ({
     name: c.name,
     description: c.description,
   }));
 
-  const list = skills.map(s => `- **${s.name}** — ${s.description}`).join('\n');
+  const list = skills.map((s) => `- **${s.name}** — ${s.description}`).join('\n');
 
   const section =
     `\n\n## Available Skills\n` +
@@ -246,7 +249,7 @@ export function loadOneSkillBody(
 ): { name: string; description: string; body: string; path: string } | null {
   if (filterNames !== 'all' && !filterNames.includes(skillName)) return null;
 
-  const dbSkill = listSkills().find(s => s.enabled === 1 && s.name === skillName);
+  const dbSkill = listSkills().find((s) => s.enabled === 1 && s.name === skillName);
   if (!dbSkill) return null;
 
   const skillMdPath = path.join(dbSkill.local_path, 'SKILL.md');
@@ -280,15 +283,14 @@ export function buildSkillContextSection(filterNames: string[] | 'all' = 'all'):
 /**
  * @deprecated See `buildSkillContextSection`.
  */
-export function buildSkillContextWithMeta(
-  filterNames: string[] | 'all' = 'all',
-): { section: string; skills: Array<{ name: string; description: string }> } {
+export function buildSkillContextWithMeta(filterNames: string[] | 'all' = 'all'): {
+  section: string;
+  skills: Array<{ name: string; description: string }>;
+} {
   const contexts = loadSkillContext(filterNames);
   if (contexts.length === 0) return { section: '', skills: [] };
 
-  const sections = contexts.map(ctx =>
-    `### Skill: ${ctx.name}\n${ctx.body}`
-  ).join('\n\n---\n\n');
+  const sections = contexts.map((ctx) => `### Skill: ${ctx.name}\n${ctx.body}`).join('\n\n---\n\n');
 
   const section =
     `\n\n## Active Skills\n` +
@@ -298,6 +300,6 @@ export function buildSkillContextWithMeta(
 
   return {
     section,
-    skills: contexts.map(c => ({ name: c.name, description: c.description })),
+    skills: contexts.map((c) => ({ name: c.name, description: c.description })),
   };
 }

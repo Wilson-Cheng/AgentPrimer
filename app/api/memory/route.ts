@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
-  if (typeof body.content !== 'string') return NextResponse.json({ error: 'content required' }, { status: 400 });
+  if (typeof body.content !== 'string')
+    return NextResponse.json({ error: 'content required' }, { status: 400 });
   const agent = typeof body.agent === 'string' && body.agent.trim() ? body.agent : undefined;
   writeMemory(body.content, agent);
   return NextResponse.json({ ok: true });

@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
   const lines = source.split('\n');
 
   // Find the start line: `    <id>: tool({`
-  const startIdx = lines.findIndex(l => new RegExp(`^\\s+${id}:\\s*tool\\s*\\(`).test(l));
+  const startIdx = lines.findIndex((l) => new RegExp(`^\\s+${id}:\\s*tool\\s*\\(`).test(l));
   if (startIdx === -1) {
     return NextResponse.json({ error: 'tool not found' }, { status: 404 });
   }

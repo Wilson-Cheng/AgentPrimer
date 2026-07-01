@@ -5,7 +5,5 @@ node_modules
 data
 .env.local
 .env*.local
-*.md
-!README.md
 coverage
 .DS_Store

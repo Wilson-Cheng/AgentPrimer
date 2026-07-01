@@ -251,8 +251,7 @@ export function isVisionRejectionError(message: string): boolean {
   return (
     lower.includes('image_url') ||
     lower.includes('input_audio') ||
-    (lower.includes('unknown variant') &&
-      (lower.includes('image') || lower.includes('audio')))
+    (lower.includes('unknown variant') && (lower.includes('image') || lower.includes('audio')))
   );
 }
 
@@ -301,10 +300,16 @@ export function resolveUploadPath(url: string): string {
   return path.join(DATA_DIR, 'uploads', path.basename(filename));
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function buildMultimodalContent(text: string, attachments: Attachment[]): Promise<any[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const parts: any[] = [];
+type MultimodalContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } }
+  | { type: 'input_audio'; input_audio: { data: string; format: string } };
+
+export async function buildMultimodalContent(
+  text: string,
+  attachments: Attachment[],
+): Promise<MultimodalContentPart[]> {
+  const parts: MultimodalContentPart[] = [];
   if (text) parts.push({ type: 'text', text });
 
   for (const att of attachments) {

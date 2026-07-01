@@ -48,7 +48,13 @@ export const runtime = 'nodejs';
  * NUL-padded — the result is a valid ustar header that GNU tar, BSD tar,
  * and 7-Zip all accept.
  */
-function makeTarHeader(name: string, size: number, mode: number, mtime: number, isDir: boolean): Buffer {
+function makeTarHeader(
+  name: string,
+  size: number,
+  mode: number,
+  mtime: number,
+  isDir: boolean,
+): Buffer {
   const header = Buffer.alloc(512);
 
   // Truncate the name field at 100 chars (we don't bother with the `prefix`
@@ -66,8 +72,8 @@ function makeTarHeader(name: string, size: number, mode: number, mtime: number, 
   };
 
   writeOctal(mode & 0o7777, 100, 8);
-  writeOctal(0, 108, 8);                // uid
-  writeOctal(0, 116, 8);                // gid
+  writeOctal(0, 108, 8); // uid
+  writeOctal(0, 116, 8); // gid
   writeOctal(isDir ? 0 : size, 124, 12);
   writeOctal(Math.floor(mtime), 136, 12);
 
@@ -101,10 +107,7 @@ function* walkForTar(absPath: string, archivePrefix: string): Generator<Buffer> 
   if (stat.isDirectory()) {
     yield makeTarHeader(archivePrefix, 0, stat.mode, stat.mtimeMs / 1000, true);
     for (const entry of fs.readdirSync(absPath, { withFileTypes: true })) {
-      yield* walkForTar(
-        path.join(absPath, entry.name),
-        path.posix.join(archivePrefix, entry.name),
-      );
+      yield* walkForTar(path.join(absPath, entry.name), path.posix.join(archivePrefix, entry.name));
     }
     return;
   }
@@ -126,7 +129,8 @@ function* tarballGenerator(absPath: string, archivePrefix: string): Generator<Bu
 export async function GET(request: NextRequest) {
   const rel = request.nextUrl.searchParams.get('path') ?? '';
   const abs = resolveDataPath(rel);
-  if (!abs || !fs.existsSync(abs)) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  if (!abs || !fs.existsSync(abs))
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
   let stat: fs.Stats;
   try {
@@ -143,11 +147,11 @@ export async function GET(request: NextRequest) {
     return new Response(webStream as unknown as ReadableStream<Uint8Array>, {
       status: 200,
       headers: {
-        'Content-Type':        'application/octet-stream',
-        'Content-Length':      String(stat.size),
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': String(stat.size),
         'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
         // Discourage proxies/CDNs from caching a personal download URL.
-        'Cache-Control':       'no-store',
+        'Cache-Control': 'no-store',
       },
     });
   }
@@ -161,15 +165,15 @@ export async function GET(request: NextRequest) {
     // 1024-byte end-of-archive trailer), pipe through gzip, then bridge
     // to a Web ReadableStream for the Response constructor.
     const tarStream = Readable.from(tarballGenerator(abs, folderName));
-    const gzipped   = tarStream.pipe(zlib.createGzip({ level: 6 }));
+    const gzipped = tarStream.pipe(zlib.createGzip({ level: 6 }));
     const webStream = Readable.toWeb(gzipped) as WebReadableStream<Uint8Array>;
 
     return new Response(webStream as unknown as ReadableStream<Uint8Array>, {
       status: 200,
       headers: {
-        'Content-Type':        'application/gzip',
+        'Content-Type': 'application/gzip',
         'Content-Disposition': `attachment; filename="${encodeURIComponent(tarballName)}"`,
-        'Cache-Control':       'no-store',
+        'Cache-Control': 'no-store',
       },
     });
   }

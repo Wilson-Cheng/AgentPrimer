@@ -1,48 +1,71 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeChatCompletionChunk, shouldExecuteToolCalls, createThinkExtractor } from '../lib/agent';
+import {
+  normalizeChatCompletionChunk,
+  shouldExecuteToolCalls,
+  createThinkExtractor,
+} from '../lib/agent';
 
 describe('normalizeChatCompletionChunk', () => {
   it('normalizes OpenAI-compatible text and tool call deltas', () => {
     const normalized = normalizeChatCompletionChunk({
-      choices: [{
-        finish_reason: 'tool_calls',
-        delta: {
-          content: 'hello',
-          tool_calls: [{
-            index: 0,
-            id: 'call_1',
-            function: { name: 'search_web', arguments: '{"query":"agent"}' },
-          }],
+      choices: [
+        {
+          finish_reason: 'tool_calls',
+          delta: {
+            content: 'hello',
+            tool_calls: [
+              {
+                index: 0,
+                id: 'call_1',
+                function: { name: 'search_web', arguments: '{"query":"agent"}' },
+              },
+            ],
+          },
         },
-      }],
+      ],
     });
 
     expect(normalized).toEqual({
       finishReason: 'tool_calls',
       textDelta: 'hello',
       reasoningDelta: '',
-      toolCallDeltas: [{ index: 0, id: 'call_1', name: 'search_web', argumentsDelta: '{"query":"agent"}' }],
+      toolCallDeltas: [
+        { index: 0, id: 'call_1', name: 'search_web', argumentsDelta: '{"query":"agent"}' },
+      ],
     });
   });
 
   it('normalizes common reasoning/thinking fields', () => {
-    expect(normalizeChatCompletionChunk({ choices: [{ delta: { reasoning_content: 'deepseek' } }] }).reasoningDelta).toBe('deepseek');
-    expect(normalizeChatCompletionChunk({ choices: [{ delta: { thinking: 'claude-compatible' } }] }).reasoningDelta).toBe('claude-compatible');
-    expect(normalizeChatCompletionChunk({ choices: [{ delta: { reasoning: 'glm-compatible' } }] }).reasoningDelta).toBe('glm-compatible');
+    expect(
+      normalizeChatCompletionChunk({ choices: [{ delta: { reasoning_content: 'deepseek' } }] })
+        .reasoningDelta,
+    ).toBe('deepseek');
+    expect(
+      normalizeChatCompletionChunk({ choices: [{ delta: { thinking: 'claude-compatible' } }] })
+        .reasoningDelta,
+    ).toBe('claude-compatible');
+    expect(
+      normalizeChatCompletionChunk({ choices: [{ delta: { reasoning: 'glm-compatible' } }] })
+        .reasoningDelta,
+    ).toBe('glm-compatible');
   });
 
   it('normalizes camelCase tool call deltas', () => {
     const normalized = normalizeChatCompletionChunk({
-      choices: [{
-        finishReason: 'tool_calls',
-        delta: {
-          toolCalls: [{
-            index: 1,
-            toolCallId: 'call_2',
-            function: { name: 'read_file', arguments_delta: '{"file_path":"x"}' },
-          }],
+      choices: [
+        {
+          finishReason: 'tool_calls',
+          delta: {
+            toolCalls: [
+              {
+                index: 1,
+                toolCallId: 'call_2',
+                function: { name: 'read_file', arguments_delta: '{"file_path":"x"}' },
+              },
+            ],
+          },
         },
-      }],
+      ],
     });
 
     expect(normalized.finishReason).toBe('tool_calls');
@@ -53,12 +76,14 @@ describe('normalizeChatCompletionChunk', () => {
 
   it('normalizes legacy function_call streaming', () => {
     const normalized = normalizeChatCompletionChunk({
-      choices: [{
-        finish_reason: 'function_call',
-        delta: {
-          function_call: { name: 'search_files', arguments: '{"pattern":"*.ts"}' },
+      choices: [
+        {
+          finish_reason: 'function_call',
+          delta: {
+            function_call: { name: 'search_files', arguments: '{"pattern":"*.ts"}' },
+          },
         },
-      }],
+      ],
     });
 
     expect(normalized.finishReason).toBe('tool_calls');
@@ -68,14 +93,26 @@ describe('normalizeChatCompletionChunk', () => {
   });
 
   it('normalizes finish reason aliases', () => {
-    expect(normalizeChatCompletionChunk({ choices: [{ finish_reason: 'max_tokens', delta: {} }] }).finishReason).toBe('length');
-    expect(normalizeChatCompletionChunk({ choices: [{ finishReason: 'end_turn', delta: {} }] }).finishReason).toBe('stop');
+    expect(
+      normalizeChatCompletionChunk({ choices: [{ finish_reason: 'max_tokens', delta: {} }] })
+        .finishReason,
+    ).toBe('length');
+    expect(
+      normalizeChatCompletionChunk({ choices: [{ finishReason: 'end_turn', delta: {} }] })
+        .finishReason,
+    ).toBe('stop');
   });
 
   it('executes complete tool calls even when a compatible provider finishes with stop', () => {
-    expect(shouldExecuteToolCalls('stop', [{ name: 'read_file', args: '{"file_path":"x"}' }], '')).toBe(true);
-    expect(shouldExecuteToolCalls('stop', [{ name: 'read_file', args: '{"file_path":"x"' }], '')).toBe(false);
-    expect(shouldExecuteToolCalls('stop', [{ name: 'read_file', args: '{"file_path":"x"}' }], 'answer')).toBe(false);
+    expect(
+      shouldExecuteToolCalls('stop', [{ name: 'read_file', args: '{"file_path":"x"}' }], ''),
+    ).toBe(true);
+    expect(
+      shouldExecuteToolCalls('stop', [{ name: 'read_file', args: '{"file_path":"x"' }], ''),
+    ).toBe(false);
+    expect(
+      shouldExecuteToolCalls('stop', [{ name: 'read_file', args: '{"file_path":"x"}' }], 'answer'),
+    ).toBe(false);
   });
 });
 

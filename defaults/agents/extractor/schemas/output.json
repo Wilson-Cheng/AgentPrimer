@@ -19,7 +19,10 @@
         "properties": {
           "name": { "type": "string", "description": "Full name or best available identifier" },
           "role": { "type": "string", "description": "Role, title, or relationship to the text" },
-          "email": { "type": "string", "description": "Email address if present, otherwise empty string" }
+          "email": {
+            "type": "string",
+            "description": "Email address if present, otherwise empty string"
+          }
         },
         "required": ["name", "role", "email"]
       }
@@ -40,7 +43,10 @@
       "items": {
         "type": "object",
         "properties": {
-          "date": { "type": "string", "description": "Date, time, or time reference as written or normalized when obvious" },
+          "date": {
+            "type": "string",
+            "description": "Date, time, or time reference as written or normalized when obvious"
+          },
           "event": { "type": "string", "description": "Associated event, deadline, or action" }
         },
         "required": ["date", "event"]
@@ -52,5 +58,13 @@
       "items": { "type": "string" }
     }
   },
-  "required": ["summary", "sentiment", "people", "organizations", "key_facts", "dates_and_events", "action_items"]
+  "required": [
+    "summary",
+    "sentiment",
+    "people",
+    "organizations",
+    "key_facts",
+    "dates_and_events",
+    "action_items"
+  ]
 }

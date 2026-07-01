@@ -26,10 +26,12 @@ describe('agent helper functions', () => {
   it('converts Zod schemas to OpenAI-compatible JSON Schema without $schema', async () => {
     const { zodToOpenAISchema } = await loadAgent();
 
-    const schema = zodToOpenAISchema(z.object({
-      path: z.string().describe('File path'),
-      count: z.number().optional(),
-    }));
+    const schema = zodToOpenAISchema(
+      z.object({
+        path: z.string().describe('File path'),
+        count: z.number().optional(),
+      }),
+    );
 
     expect(schema).not.toHaveProperty('$schema');
     expect(schema).toMatchObject({
@@ -122,7 +124,11 @@ describe('agent helper functions', () => {
     setBuiltinToolEnabled('run_shell', true);
     grantApproval('session-1', 'run_shell', 'permanent');
 
-    const tools = createBuiltinTools('worker', undefined, path.join(tempDir, 'data', 'tasks', 'task.md'));
+    const tools = createBuiltinTools(
+      'worker',
+      undefined,
+      path.join(tempDir, 'data', 'tasks', 'task.md'),
+    );
     const result = await tools.run_shell.execute({ command: 'printf subagent-shell' });
 
     expect(result).toMatchObject({ stdout: 'subagent-shell', stderr: '', exit_code: 0 });
@@ -140,7 +146,8 @@ describe('agent helper functions', () => {
     const result = await tools.run_shell.execute({ command: 'printf playground-shell' });
 
     expect(result).toMatchObject({
-      error: 'run_shell requires an interactive chat session for approval and cannot run from Tool Playground.',
+      error:
+        'run_shell requires an interactive chat session for approval and cannot run from Tool Playground.',
     });
   });
 });

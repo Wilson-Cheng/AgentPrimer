@@ -24,7 +24,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   // Derive initial session ID from the URL (SSR-safe via usePathname)
   const [activeSessionId, setActiveSessionId] = useState<string | undefined>(
-    () => pathname.match(/^\/chat\/([^/]+)$/)?.[1]
+    () => pathname.match(/^\/chat\/([^/]+)$/)?.[1],
   );
 
   // Keep in sync with Next.js navigations (router.push / browser back-forward)
@@ -80,9 +80,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           window.dispatchEvent(new CustomEvent('session-renamed', { detail: { id, title } }));
         }}
       />
-      <div className="flex flex-1 overflow-hidden min-w-0">
-        {children}
-      </div>
+      <div className="flex flex-1 overflow-hidden min-w-0">{children}</div>
     </div>
   );
 }

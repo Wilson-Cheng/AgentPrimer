@@ -9,19 +9,19 @@ import { describe, expect, it } from 'vitest';
 describe('tool-result sanitization patterns', () => {
   // Mirror the regex set from lib/agent.ts sanitizeToolResultContent.
   const patterns: Array<{ re: RegExp; replacement: string }> = [
-    { re: /<\|\s*im_start[\s|]*>[\s|]*(user)\b/gi,    replacement: '⟪chatml:user⟫' },
+    { re: /<\|\s*im_start[\s|]*>[\s|]*(user)\b/gi, replacement: '⟪chatml:user⟫' },
     { re: /<\|\s*im_start[\s|]*>[\s|]*(assistant)\b/gi, replacement: '⟪chatml:assistant⟫' },
-    { re: /<\|\s*im_start[\s|]*>[\s|]*(system)\b/gi,  replacement: '⟪chatml:system⟫' },
-    { re: /<\|\s*im_end\s*\|>/gi,                replacement: '⟪chatml:end⟫' },
-    { re: /\[INST\]\s*/gi,                         replacement: '⟪llama:inst⟫ ' },
-    { re: /\s*\[\/INST\]/gi,                       replacement: ' ⟪llama:/inst⟫' },
-    { re: /<<\s*SYS\s*>>/gi,                       replacement: '⟪llama:sys⟫' },
-    { re: /<<\s*\/SYS\s*>>/gi,                     replacement: '⟪llama:/sys⟫' },
-    { re: /^\s*###\s*Instruction:\s*$/gim,         replacement: '⟪alpaca:instruction⟫' },
-    { re: /^\s*###\s*Response:\s*$/gim,            replacement: '⟪alpaca:response⟫' },
-    { re: /<\s*system\s*>/gi,                      replacement: '⟪tag:system⟫' },
-    { re: /<\s*assistant\s*>/gi,                   replacement: '⟪tag:assistant⟫' },
-    { re: /<\s*user\s*>/gi,                        replacement: '⟪tag:user⟫' },
+    { re: /<\|\s*im_start[\s|]*>[\s|]*(system)\b/gi, replacement: '⟪chatml:system⟫' },
+    { re: /<\|\s*im_end\s*\|>/gi, replacement: '⟪chatml:end⟫' },
+    { re: /\[INST\]\s*/gi, replacement: '⟪llama:inst⟫ ' },
+    { re: /\s*\[\/INST\]/gi, replacement: ' ⟪llama:/inst⟫' },
+    { re: /<<\s*SYS\s*>>/gi, replacement: '⟪llama:sys⟫' },
+    { re: /<<\s*\/SYS\s*>>/gi, replacement: '⟪llama:/sys⟫' },
+    { re: /^\s*###\s*Instruction:\s*$/gim, replacement: '⟪alpaca:instruction⟫' },
+    { re: /^\s*###\s*Response:\s*$/gim, replacement: '⟪alpaca:response⟫' },
+    { re: /<\s*system\s*>/gi, replacement: '⟪tag:system⟫' },
+    { re: /<\s*assistant\s*>/gi, replacement: '⟪tag:assistant⟫' },
+    { re: /<\s*user\s*>/gi, replacement: '⟪tag:user⟫' },
   ];
 
   function sanitize(input: string): string {

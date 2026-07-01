@@ -25,12 +25,14 @@ import JsonView from '../ui/JsonView';
 const SENTIMENT_STYLES: Record<string, string> = {
   positive: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
   negative: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-  neutral:  'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-  mixed:    'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  neutral: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  mixed: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
 };
 
 export function StructuredOutputPanel({
-  data, schemaName, schemaLabel,
+  data,
+  schemaName,
+  schemaLabel,
 }: {
   data: unknown;
   schemaName: string;
@@ -74,7 +76,10 @@ export function StructuredOutputPanel({
       {isObject && entries.length > 0 ? (
         <div className="divide-y divide-emerald-100 dark:divide-emerald-900/40">
           {entries.map(([key, value]) => (
-            <div key={key} className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-0 px-3 py-2">
+            <div
+              key={key}
+              className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-0 px-3 py-2"
+            >
               {/* Field name */}
               <span className="text-sm font-mono font-semibold text-emerald-700 dark:text-emerald-400 sm:w-40 flex-shrink-0 pt-0.5">
                 {key}
@@ -111,18 +116,28 @@ function StructuredFieldValue({ fieldKey, value }: { fieldKey: string; value: un
   // Enum/badge fields (sentiment, status, type, etc.)
   if (typeof value === 'string' && fieldKey === 'sentiment' && SENTIMENT_STYLES[value]) {
     return (
-      <span className={`inline-block text-sm font-semibold px-2 py-0.5 rounded-full ${SENTIMENT_STYLES[value]}`}>
+      <span
+        className={`inline-block text-sm font-semibold px-2 py-0.5 rounded-full ${SENTIMENT_STYLES[value]}`}
+      >
         {value}
       </span>
     );
   }
 
   if (typeof value === 'string') {
-    return <p className="text-sm text-gray-800 dark:text-gray-200 break-words">{value || <em className="text-gray-400">—</em>}</p>;
+    return (
+      <p className="text-sm text-gray-800 dark:text-gray-200 break-words">
+        {value || <em className="text-gray-400">—</em>}
+      </p>
+    );
   }
 
   if (typeof value === 'number' || typeof value === 'boolean') {
-    return <span className="text-sm font-mono text-indigo-600 dark:text-indigo-400">{String(value)}</span>;
+    return (
+      <span className="text-sm font-mono text-indigo-600 dark:text-indigo-400">
+        {String(value)}
+      </span>
+    );
   }
 
   if (Array.isArray(value)) {
@@ -134,16 +149,19 @@ function StructuredFieldValue({ fieldKey, value }: { fieldKey: string; value: un
             <span className="text-emerald-400 mt-1 flex-shrink-0">•</span>
             {typeof item === 'object' && item !== null ? (
               <div className="min-w-0 flex-1 text-sm text-gray-800 dark:text-gray-200">
-                {Object.entries(item as Record<string, unknown>)
-                  .map(([k, v]) => (
-                    <span key={k} className="mr-2">
-                      <span className="text-sm font-mono text-emerald-600 dark:text-emerald-400">{k}:</span>{' '}
-                      <span>{String(v ?? '')}</span>
-                    </span>
-                  ))}
+                {Object.entries(item as Record<string, unknown>).map(([k, v]) => (
+                  <span key={k} className="mr-2">
+                    <span className="text-sm font-mono text-emerald-600 dark:text-emerald-400">
+                      {k}:
+                    </span>{' '}
+                    <span>{String(v ?? '')}</span>
+                  </span>
+                ))}
               </div>
             ) : (
-              <span className="text-sm text-gray-800 dark:text-gray-200 break-words">{String(item)}</span>
+              <span className="text-sm text-gray-800 dark:text-gray-200 break-words">
+                {String(item)}
+              </span>
             )}
           </li>
         ))}

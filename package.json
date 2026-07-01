@@ -1,6 +1,7 @@
 {
   "name": "agentprimer",
   "version": "0.1.0",
+  "private": true,
   "description": "A complete AI agent experience platform for learning how agentic systems work.",
   "license": "MIT",
   "author": "Wilson Cheng <728564+wilson-cheng@users.noreply.github.com>",
@@ -50,17 +51,17 @@
     "better-sqlite3": "^12.11.1",
     "jose": "^6.2.3",
     "langfuse": "^3.38.20",
-    "lucide-react": "^1.16.0",
+    "lucide-react": "^1.22.0",
     "mermaid": "^11.15.0",
-    "next": "16.2.6",
+    "next": "^16.2.9",
     "openai": "^6.39.0",
     "playwright": "^1.60.0",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "react-is": "^19.2.6",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^16.1.1",
-    "recharts": "^3.8.1",
+    "recharts": "^3.9.1",
     "rehype-katex": "^7.0.1",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
@@ -83,5 +84,12 @@
     "tailwindcss": "^4",
     "typescript": "5.9.3",
     "vitest": "^4.1.8"
+  },
+  "overrides": {
+    "next": {
+      "postcss": "8.5.15"
+    },
+    "dompurify": "3.4.11",
+    "jsondiffpatch": "0.7.2"
   }
 }

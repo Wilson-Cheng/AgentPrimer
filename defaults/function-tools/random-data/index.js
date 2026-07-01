@@ -33,28 +33,124 @@ const { randomUUID, randomBytes } = require('crypto');
 
 // ── Word bank for Lorem Ipsum generation ────────────────────────────────
 const LOREM_WORDS = [
-  'lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing',
-  'elit', 'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore',
-  'et', 'dolore', 'magna', 'aliqua', 'enim', 'ad', 'minim', 'veniam',
-  'quis', 'nostrud', 'exercitation', 'ullamco', 'laboris', 'nisi', 'aliquip',
-  'ex', 'ea', 'commodo', 'consequat', 'duis', 'aute', 'irure', 'reprehenderit',
-  'voluptate', 'velit', 'esse', 'cillum', 'fugiat', 'nulla', 'pariatur',
-  'excepteur', 'sint', 'occaecat', 'cupidatat', 'non', 'proident', 'sunt',
-  'culpa', 'qui', 'officia', 'deserunt', 'mollit', 'anim', 'id', 'est',
+  'lorem',
+  'ipsum',
+  'dolor',
+  'sit',
+  'amet',
+  'consectetur',
+  'adipiscing',
+  'elit',
+  'sed',
+  'do',
+  'eiusmod',
+  'tempor',
+  'incididunt',
+  'ut',
+  'labore',
+  'et',
+  'dolore',
+  'magna',
+  'aliqua',
+  'enim',
+  'ad',
+  'minim',
+  'veniam',
+  'quis',
+  'nostrud',
+  'exercitation',
+  'ullamco',
+  'laboris',
+  'nisi',
+  'aliquip',
+  'ex',
+  'ea',
+  'commodo',
+  'consequat',
+  'duis',
+  'aute',
+  'irure',
+  'reprehenderit',
+  'voluptate',
+  'velit',
+  'esse',
+  'cillum',
+  'fugiat',
+  'nulla',
+  'pariatur',
+  'excepteur',
+  'sint',
+  'occaecat',
+  'cupidatat',
+  'non',
+  'proident',
+  'sunt',
+  'culpa',
+  'qui',
+  'officia',
+  'deserunt',
+  'mollit',
+  'anim',
+  'id',
+  'est',
 ];
 
 // ── First and last name banks ────────────────────────────────────────────
 const FIRST_NAMES = [
-  'Alice', 'Bob', 'Carol', 'David', 'Elena', 'Frank', 'Grace', 'Henry',
-  'Isabella', 'James', 'Katherine', 'Liam', 'Maya', 'Noah', 'Olivia',
-  'Patrick', 'Quinn', 'Rachel', 'Samuel', 'Tara', 'Ursula', 'Victor',
-  'Wendy', 'Xavier', 'Yuki', 'Zara',
+  'Alice',
+  'Bob',
+  'Carol',
+  'David',
+  'Elena',
+  'Frank',
+  'Grace',
+  'Henry',
+  'Isabella',
+  'James',
+  'Katherine',
+  'Liam',
+  'Maya',
+  'Noah',
+  'Olivia',
+  'Patrick',
+  'Quinn',
+  'Rachel',
+  'Samuel',
+  'Tara',
+  'Ursula',
+  'Victor',
+  'Wendy',
+  'Xavier',
+  'Yuki',
+  'Zara',
 ];
 const LAST_NAMES = [
-  'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller',
-  'Davis', 'Wilson', 'Taylor', 'Anderson', 'Thomas', 'Jackson', 'White',
-  'Harris', 'Martin', 'Thompson', 'Young', 'Lee', 'Walker', 'Hall',
-  'Allen', 'King', 'Wright', 'Scott', 'Green',
+  'Smith',
+  'Johnson',
+  'Williams',
+  'Brown',
+  'Jones',
+  'Garcia',
+  'Miller',
+  'Davis',
+  'Wilson',
+  'Taylor',
+  'Anderson',
+  'Thomas',
+  'Jackson',
+  'White',
+  'Harris',
+  'Martin',
+  'Thompson',
+  'Young',
+  'Lee',
+  'Walker',
+  'Hall',
+  'Allen',
+  'King',
+  'Wright',
+  'Scott',
+  'Green',
 ];
 
 /** Pick a random element from an array using crypto randomness */
@@ -87,7 +183,7 @@ function generateName() {
 
 function generateEmail() {
   const first = pick(FIRST_NAMES).toLowerCase();
-  const last  = pick(LAST_NAMES).toLowerCase();
+  const last = pick(LAST_NAMES).toLowerCase();
   const domains = ['example.com', 'test.org', 'sample.net', 'demo.io'];
   const separators = ['.', '_', ''];
   const sep = separators[randInt(0, separators.length - 1)];
@@ -131,12 +227,24 @@ module.exports = {
     const items = [];
     for (let i = 0; i < n; i++) {
       switch (type) {
-        case 'uuid':    items.push(generateUUID()); break;
-        case 'name':    items.push(generateName()); break;
-        case 'email':   items.push(generateEmail()); break;
-        case 'color':   items.push(generateColor()); break;
-        case 'integer': items.push(generateInteger(options.min, options.max)); break;
-        case 'lorem':   items.push(generateLorem(options.words)); break;
+        case 'uuid':
+          items.push(generateUUID());
+          break;
+        case 'name':
+          items.push(generateName());
+          break;
+        case 'email':
+          items.push(generateEmail());
+          break;
+        case 'color':
+          items.push(generateColor());
+          break;
+        case 'integer':
+          items.push(generateInteger(options.min, options.max));
+          break;
+        case 'lorem':
+          items.push(generateLorem(options.words));
+          break;
       }
     }
 
@@ -146,9 +254,7 @@ module.exports = {
       items,
       // Convenience: single string when only one item was requested
       value: n === 1 ? items[0] : undefined,
-      summary: n === 1
-        ? `Generated ${type}: ${items[0]}`
-        : `Generated ${n} ${type} values`,
+      summary: n === 1 ? `Generated ${type}: ${items[0]}` : `Generated ${n} ${type} values`,
     };
   },
 };

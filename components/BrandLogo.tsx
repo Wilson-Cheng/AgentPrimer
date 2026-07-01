@@ -8,7 +8,11 @@ interface BrandLogoProps {
   priority?: boolean;
 }
 
-export default function BrandLogo({ variant = 'mark', className = '', priority = false }: BrandLogoProps) {
+export default function BrandLogo({
+  variant = 'mark',
+  className = '',
+  priority = false,
+}: BrandLogoProps) {
   return (
     <Image
       src={variant === 'full' ? '/logo.svg' : '/AgentPrimer-logo-only.svg'}

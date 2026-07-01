@@ -22,7 +22,12 @@ interface ChatInputProps {
  * Send on Enter (Shift+Enter for newline).
  * Files are uploaded to /api/upload immediately when attached.
  */
-export default function ChatInput({ onSend, onStop, disabled, placeholder = 'Message AgentPrimer…' }: ChatInputProps) {
+export default function ChatInput({
+  onSend,
+  onStop,
+  disabled,
+  placeholder = 'Message AgentPrimer…',
+}: ChatInputProps) {
   const [text, setText] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -81,17 +86,21 @@ export default function ChatInput({ onSend, onStop, disabled, placeholder = 'Mes
           const data = await res.json();
           uploaded.push({ name: data.name, url: data.url, mime: data.mime, size: data.size });
         }
-      } catch { /* skip failed uploads */ }
+      } catch {
+        /* skip failed uploads */
+      }
     }
 
-    setAttachments(prev => [...prev, ...uploaded]);
+    setAttachments((prev) => [...prev, ...uploaded]);
     setUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const items = Array.from(e.clipboardData.items);
-    const imageItems = items.filter(item => item.kind === 'file' && item.type.startsWith('image/'));
+    const imageItems = items.filter(
+      (item) => item.kind === 'file' && item.type.startsWith('image/'),
+    );
     if (imageItems.length === 0) return; // Let default paste handle text/other content
 
     e.preventDefault();
@@ -99,11 +108,14 @@ export default function ChatInput({ onSend, onStop, disabled, placeholder = 'Mes
     // Paste any plain text that may also be on the clipboard
     const pastedText = e.clipboardData.getData('text');
     if (pastedText) {
-      setText(prev => prev + pastedText);
+      setText((prev) => prev + pastedText);
       // Resize textarea after text insertion
       setTimeout(() => {
         const ta = textareaRef.current;
-        if (ta) { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 200) + 'px'; }
+        if (ta) {
+          ta.style.height = 'auto';
+          ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
+        }
       }, 0);
     }
 
@@ -123,15 +135,17 @@ export default function ChatInput({ onSend, onStop, disabled, placeholder = 'Mes
           const data = await res.json();
           uploaded.push({ name: data.name, url: data.url, mime: data.mime, size: data.size });
         }
-      } catch { /* skip failed uploads */ }
+      } catch {
+        /* skip failed uploads */
+      }
     }
 
-    setAttachments(prev => [...prev, ...uploaded]);
+    setAttachments((prev) => [...prev, ...uploaded]);
     setUploading(false);
   };
 
   const removeAttachment = (idx: number) => {
-    setAttachments(prev => prev.filter((_, i) => i !== idx));
+    setAttachments((prev) => prev.filter((_, i) => i !== idx));
   };
 
   return (
@@ -140,7 +154,10 @@ export default function ChatInput({ onSend, onStop, disabled, placeholder = 'Mes
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2">
           {attachments.map((att, i) => (
-            <div key={i} className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg px-2.5 py-1.5 text-sm text-gray-700 dark:text-gray-300 group">
+            <div
+              key={i}
+              className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg px-2.5 py-1.5 text-sm text-gray-700 dark:text-gray-300 group"
+            >
               {att.mime.startsWith('image/') ? <ImageIcon size={14} /> : <FileText size={14} />}
               <span className="max-w-[120px] truncate">{att.name}</span>
               <button

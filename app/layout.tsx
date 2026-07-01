@@ -15,7 +15,8 @@ const googleSansFlex = Google_Sans_Flex({
 
 export const metadata: Metadata = {
   title: 'AgentPrimer – AI Agent Platform',
-  description: 'A professional AI agent platform with skills, MCP, multi-agent support, and persistent memory.',
+  description:
+    'A professional AI agent platform with skills, MCP, multi-agent support, and persistent memory.',
 };
 
 // Prevent iOS Safari from zooming in when the user taps an input field.
@@ -41,7 +42,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Script
           id="theme-init"
           strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: `(function(){var s=localStorage.getItem('theme');if(s==='dark'||(s!=='light'&&window.matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');})();` }}
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var s=localStorage.getItem('theme');if(s==='dark'||(s!=='light'&&window.matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');})();`,
+          }}
         />
         <AuthGuard />
         {children}

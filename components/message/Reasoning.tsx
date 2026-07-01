@@ -18,17 +18,22 @@ import MarkdownContent from '../MarkdownContent';
 // ── Display caps ────────────────────────────────────────────────────────────
 // Keep DOM nodes small for large file writes. The user sees the first N chars
 // live; the full content appears the moment streaming completes.
-const DISPLAY_LIMIT = 4000;             // chars — assistant text
-const REASONING_DISPLAY_LIMIT = 8000;   // chars — chain-of-thought
+const DISPLAY_LIMIT = 4000; // chars — assistant text
+const REASONING_DISPLAY_LIMIT = 8000; // chars — chain-of-thought
 
 export function truncateForDisplay(text: string): string {
   if (text.length <= DISPLAY_LIMIT) return text;
-  return text.slice(0, DISPLAY_LIMIT) + `\n\n… (${text.length - DISPLAY_LIMIT} more chars truncated)`;
+  return (
+    text.slice(0, DISPLAY_LIMIT) + `\n\n… (${text.length - DISPLAY_LIMIT} more chars truncated)`
+  );
 }
 
 function truncateReasoning(text: string): string {
   if (text.length <= REASONING_DISPLAY_LIMIT) return text;
-  return text.slice(0, REASONING_DISPLAY_LIMIT) + `\n\n… (${text.length - REASONING_DISPLAY_LIMIT} more chars truncated)`;
+  return (
+    text.slice(0, REASONING_DISPLAY_LIMIT) +
+    `\n\n… (${text.length - REASONING_DISPLAY_LIMIT} more chars truncated)`
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -60,10 +65,7 @@ export function StreamingTextPart({
   const displayText = isCapped ? renderText.slice(0, DISPLAY_LIMIT) : renderText;
   return (
     <>
-      <MarkdownContent
-        streamingCursor={streamingCursor && !isCapped}
-        cheapRender={streamingCursor}
-      >
+      <MarkdownContent streamingCursor={streamingCursor && !isCapped} cheapRender={streamingCursor}>
         {displayText}
       </MarkdownContent>
       {isCapped && (
@@ -157,19 +159,33 @@ export function ReasoningBlock({
   return (
     <div className="rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-950/40 overflow-hidden text-sm">
       <button
-        onClick={() => setExpanded(v => !v)}
+        onClick={() => setExpanded((v) => !v)}
         className="w-full flex justify-between items-center gap-2 px-3 py-2 text-violet-700 dark:text-violet-300 font-medium hover:bg-violet-100/60 dark:hover:bg-violet-900/40 transition-colors"
       >
         <>
-        <Brain size={14} className="text-violet-500 shrink-0" />
-        {isStreaming
-          ? <span className="flex items-center gap-1.5">Thinking… <span className="inline-block w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" /></span>
-          : <span>Reasoning <span className="text-violet-400 dark:text-violet-500 font-normal">({wordCount} words)</span></span>
-        }
+          <Brain size={14} className="text-violet-500 shrink-0" />
+          {isStreaming ? (
+            <span className="flex items-center gap-1.5">
+              Thinking…{' '}
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+            </span>
+          ) : (
+            <span>
+              Reasoning{' '}
+              <span className="text-violet-400 dark:text-violet-500 font-normal">
+                ({wordCount} words)
+              </span>
+            </span>
+          )}
         </>
-        <ChevronRight size={14} className={`ml-auto transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`} />
+        <ChevronRight
+          size={14}
+          className={`ml-auto transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`}
+        />
       </button>
-      <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+      <div
+        className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+      >
         <div className="overflow-hidden">
           <div className="px-3 pb-3 border-t border-violet-200/60 dark:border-violet-800/60">
             <pre
@@ -178,7 +194,9 @@ export function ReasoningBlock({
               className="mt-2 text-sm text-violet-800/90 dark:text-violet-300/90 whitespace-pre-wrap break-words font-mono leading-relaxed overflow-x-auto max-h-72 overflow-y-auto"
             >
               {displayText}
-              {isStreaming && <span className="inline-block w-1 h-3 bg-violet-500 animate-pulse ml-0.5 align-middle" />}
+              {isStreaming && (
+                <span className="inline-block w-1 h-3 bg-violet-500 animate-pulse ml-0.5 align-middle" />
+              )}
             </pre>
           </div>
         </div>

@@ -82,17 +82,15 @@ export function grantApproval(
 
 /** Revoke a permanent approval (for settings UI / future use). */
 export function revokePermanentApproval(operation: ApprovalOperation): void {
-  getDb()
-    .prepare('DELETE FROM permanent_approvals WHERE operation = ?')
-    .run(operation);
+  getDb().prepare('DELETE FROM permanent_approvals WHERE operation = ?').run(operation);
 }
 
 /** List all permanent approvals. */
 export function listPermanentApprovals(): ApprovalOperation[] {
-  const rows = getDb()
-    .prepare('SELECT operation FROM permanent_approvals')
-    .all() as { operation: string }[];
-  return rows.map(r => r.operation as ApprovalOperation);
+  const rows = getDb().prepare('SELECT operation FROM permanent_approvals').all() as {
+    operation: string;
+  }[];
+  return rows.map((r) => r.operation as ApprovalOperation);
 }
 
 function isPermanentlyApproved(operation: string): boolean {

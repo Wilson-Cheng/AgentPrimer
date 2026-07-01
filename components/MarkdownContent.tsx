@@ -52,7 +52,10 @@ function DiffBlock({ code }: { code: string }) {
           {copied ? 'Copied!' : 'Copy'}
         </button>
       </div>
-      <div className="rounded-b-lg overflow-x-auto text-sm font-mono" style={{ background: '#1a1a2e' }}>
+      <div
+        className="rounded-b-lg overflow-x-auto text-sm font-mono"
+        style={{ background: '#1a1a2e' }}
+      >
         {lines.map((line, i) => {
           const isAdd = line.startsWith('+');
           const isDel = line.startsWith('-');
@@ -61,7 +64,13 @@ function DiffBlock({ code }: { code: string }) {
             <div
               key={i}
               style={{
-                background: isAdd ? 'rgba(0,200,80,0.15)' : isDel ? 'rgba(255,60,60,0.15)' : isHdr ? 'rgba(100,160,255,0.1)' : 'transparent',
+                background: isAdd
+                  ? 'rgba(0,200,80,0.15)'
+                  : isDel
+                    ? 'rgba(255,60,60,0.15)'
+                    : isHdr
+                      ? 'rgba(100,160,255,0.1)'
+                      : 'transparent',
                 color: isAdd ? '#86efac' : isDel ? '#fca5a5' : isHdr ? '#93c5fd' : '#d1d5db',
                 padding: '0 12px',
                 lineHeight: '1.6',
@@ -151,11 +160,15 @@ function buildComponents(streaming: boolean): Components {
     code({ className, children, ...props }) {
       const match = /language-(\w+(?:-\w+)*)/.exec(className || '');
       const lang = match ? match[1] : '';
-      const raw  = String(children).replace(/\n$/, '');
+      const raw = String(children).replace(/\n$/, '');
 
       if (!lang) {
         // Inline code
-        return <code className={className} {...props}>{children}</code>;
+        return (
+          <code className={className} {...props}>
+            {children}
+          </code>
+        );
       }
       // While streaming, render a cheap <pre> for every fenced block.
       // Prism / Mermaid / diff colouring all run on the main thread and would
@@ -196,14 +209,14 @@ function buildComponents(streaming: boolean): Components {
   };
 }
 
-const COMPONENTS_STATIC    = buildComponents(false);
+const COMPONENTS_STATIC = buildComponents(false);
 const COMPONENTS_STREAMING = buildComponents(true);
 
 // Hoisted to module scope so ReactMarkdown's plugin identity is stable across
 // renders (avoids unnecessary plugin re-initialisation on every token).
-const REMARK_PLUGINS_STATIC    = [remarkGfm, remarkMath];
+const REMARK_PLUGINS_STATIC = [remarkGfm, remarkMath];
 const REMARK_PLUGINS_STREAMING = [remarkGfm];
-const REHYPE_PLUGINS_STATIC    = [rehypeKatex];
+const REHYPE_PLUGINS_STATIC = [rehypeKatex];
 const REHYPE_PLUGINS_STREAMING: never[] = [];
 
 // ---------------------------------------------------------------------------
@@ -233,7 +246,7 @@ export default function MarkdownContent({
   streamingCursor,
   cheapRender = false,
 }: MarkdownContentProps) {
-  const components    = cheapRender ? COMPONENTS_STREAMING : COMPONENTS_STATIC;
+  const components = cheapRender ? COMPONENTS_STREAMING : COMPONENTS_STATIC;
   const remarkPlugins = cheapRender ? REMARK_PLUGINS_STREAMING : REMARK_PLUGINS_STATIC;
   const rehypePlugins = cheapRender ? REHYPE_PLUGINS_STREAMING : REHYPE_PLUGINS_STATIC;
 

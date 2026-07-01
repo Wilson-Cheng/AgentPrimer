@@ -42,7 +42,7 @@ export default function WritingGuideModal({
     >
       <div
         className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
@@ -85,7 +85,11 @@ export default function WritingGuideModal({
 type Section =
   | { kind: 'intro'; body: React.ReactNode }
   | { kind: 'rules'; title: string; items: React.ReactNode[] }
-  | { kind: 'fields'; title: string; rows: Array<{ name: string; required: boolean; description: React.ReactNode }> }
+  | {
+      kind: 'fields';
+      title: string;
+      rows: Array<{ name: string; required: boolean; description: React.ReactNode }>;
+    }
   | { kind: 'example'; title: string; code: string };
 
 function GuideSection({ section }: { section: Section }) {
@@ -119,10 +123,12 @@ function GuideSection({ section }: { section: Section }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {section.rows.map(r => (
+                {section.rows.map((r) => (
                   <tr key={r.name}>
                     <td className="px-3 py-2 align-top">
-                      <code className="font-mono text-violet-600 dark:text-violet-400">{r.name}</code>
+                      <code className="font-mono text-violet-600 dark:text-violet-400">
+                        {r.name}
+                      </code>
                     </td>
                     <td className="px-3 py-2 align-top">
                       {r.required ? (
@@ -131,7 +137,9 @@ function GuideSection({ section }: { section: Section }) {
                         <span className="text-gray-400">no</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 align-top text-gray-700 dark:text-gray-300">{r.description}</td>
+                    <td className="px-3 py-2 align-top text-gray-700 dark:text-gray-300">
+                      {r.description}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -155,7 +163,9 @@ function GuideSection({ section }: { section: Section }) {
 // ── Inline helpers used in guides ────────────────────────────────────────────
 
 const C = ({ children }: { children: React.ReactNode }) => (
-  <code className="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-700 font-mono text-sm">{children}</code>
+  <code className="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-700 font-mono text-sm">
+    {children}
+  </code>
 );
 
 // ── Per-file content ─────────────────────────────────────────────────────────
@@ -175,10 +185,10 @@ const GUIDES: Record<GuideFile, Guide> = {
         body: (
           <p>
             <FileText size={14} className="inline -mt-1 mr-1 text-amber-500" />
-            <strong>system.md</strong> is the <strong>global base</strong>{" "}of every agent&apos;s
+            <strong>system.md</strong> is the <strong>global base</strong> of every agent&apos;s
             system prompt. It&apos;s prepended <em>before</em> any agent-specific prompt from{' '}
-            <C>agent.md</C>. Use it for rules that should apply to <em>every</em> agent
-            regardless of role.
+            <C>agent.md</C>. Use it for rules that should apply to <em>every</em> agent regardless
+            of role.
           </p>
         ),
       },
@@ -187,19 +197,17 @@ const GUIDES: Record<GuideFile, Guide> = {
         title: 'Parser rules',
         items: [
           <>
-            <strong>No structure required.</strong> Markdown body is sent to the model as-is —
-            no headings, fields, or special syntax are parsed.
+            <strong>No structure required.</strong> Markdown body is sent to the model as-is — no
+            headings, fields, or special syntax are parsed.
           </>,
           <>
-            Loaded by <C>readSystemPrompt()</C> and inserted at the top of the composed prompt
-            on every turn.
+            Loaded by <C>readSystemPrompt()</C> and inserted at the top of the composed prompt on
+            every turn.
           </>,
           <>
             Concatenated with the active agent&apos;s prompt using <C>---</C> as a separator.
           </>,
-          <>
-            Empty file is fine — the agent will just use its own prompt + built-in sections.
-          </>,
+          <>Empty file is fine — the agent will just use its own prompt + built-in sections.</>,
         ],
       },
       {
@@ -207,16 +215,14 @@ const GUIDES: Record<GuideFile, Guide> = {
         title: 'Writing tips',
         items: [
           <>Keep it short. Every token here gets sent on every turn for every agent.</>,
+          <>Good fit: house style, refusal policy, output conventions, tone, formatting rules.</>,
           <>
-            Good fit: house style, refusal policy, output conventions, tone, formatting rules.
+            Bad fit: role-specific instructions (those belong in <C>agent.md</C>) or facts the agent
+            should remember across sessions (those belong in that agent&apos;s <C>memory.md</C>).
           </>,
           <>
-            Bad fit: role-specific instructions (those belong in <C>agent.md</C>) or facts
-            the agent should remember across sessions (those belong in that agent&apos;s <C>memory.md</C>).
-          </>,
-          <>
-            You can use Markdown freely — <C>##</C> subheadings, bullet lists, code blocks —
-            none of it is parsed specially.
+            You can use Markdown freely — <C>##</C> subheadings, bullet lists, code blocks — none of
+            it is parsed specially.
           </>,
         ],
       },
@@ -243,7 +249,10 @@ const GUIDES: Record<GuideFile, Guide> = {
         body: (
           <p>
             <Brain size={14} className="inline -mt-1 mr-1 text-amber-500" />
-            <strong>agent.md</strong> lives at <C>data/agents/&lt;agent&gt;/agent.md</C> and defines one selectable agent. This file is where you teach an agent to behave differently from the others: its role, workflow, tool access, model preference, and optional structured output schema.
+            <strong>agent.md</strong> lives at <C>data/agents/&lt;agent&gt;/agent.md</C> and defines
+            one selectable agent. This file is where you teach an agent to behave differently from
+            the others: its role, workflow, tool access, model preference, and optional structured
+            output schema.
           </p>
         ),
       },
@@ -252,16 +261,20 @@ const GUIDES: Record<GuideFile, Guide> = {
         title: 'File and parser rules',
         items: [
           <>
-            The first <C># </C> heading is the agent name shown in the picker. Keep it aligned with the folder name, e.g. <C>data/agents/coder/agent.md</C> starts with <C># coder</C>.
+            The first <C># </C> heading is the agent name shown in the picker. Keep it aligned with
+            the folder name, e.g. <C>data/agents/coder/agent.md</C> starts with <C># coder</C>.
           </>,
           <>
-            The parser reads labeled fields such as <C>**System Prompt:**</C>, <C>**Tools:**</C>, <C>**Model:**</C>, <C>**Output Schema:**</C>, and <C>**Output Schema File:**</C>.
+            The parser reads labeled fields such as <C>**System Prompt:**</C>, <C>**Tools:**</C>,{' '}
+            <C>**Model:**</C>, <C>**Output Schema:**</C>, and <C>**Output Schema File:**</C>.
           </>,
           <>
-            <C>**System Prompt:**</C> may span multiple lines and include Markdown headings. It ends at the next recognized field.
+            <C>**System Prompt:**</C> may span multiple lines and include Markdown headings. It ends
+            at the next recognized field.
           </>,
           <>
-            Each agent has its own neighboring memory file at <C>data/agents/&lt;agent&gt;/memory.md</C>.
+            Each agent has its own neighboring memory file at{' '}
+            <C>data/agents/&lt;agent&gt;/memory.md</C>.
           </>,
           <>
             If the requested agent is missing, AgentPrimer falls back to the <C>main</C> agent.
@@ -275,36 +288,63 @@ const GUIDES: Record<GuideFile, Guide> = {
           {
             name: '# AgentName',
             required: true,
-            description: <>The agent identifier. Prefer lowercase names with hyphens, such as <C>code-reviewer</C>.</>,
+            description: (
+              <>
+                The agent identifier. Prefer lowercase names with hyphens, such as{' '}
+                <C>code-reviewer</C>.
+              </>
+            ),
           },
           {
             name: '**System Prompt:**',
             required: true,
-            description: <>The agent&apos;s role, operating style, workflow, and behavior rules. This is the main place to make agents meaningfully different.</>,
+            description: (
+              <>
+                The agent&apos;s role, operating style, workflow, and behavior rules. This is the
+                main place to make agents meaningfully different.
+              </>
+            ),
           },
           {
             name: '**Tools:**',
             required: false,
             description: (
               <>
-                <C>all</C> grants every enabled tool. <C>none</C> grants no tools. A comma-separated list restricts this agent to specific tools, e.g. <C>read_file, search_files</C>. Non-schema agents default to <C>all</C>; schema agents default to <C>none</C>.
+                <C>all</C> grants every enabled tool. <C>none</C> grants no tools. A comma-separated
+                list restricts this agent to specific tools, e.g. <C>read_file, search_files</C>.
+                Non-schema agents default to <C>all</C>; schema agents default to <C>none</C>.
               </>
             ),
           },
           {
             name: '**Model:**',
             required: false,
-            description: <>Optional model override. Use <C>default</C> or omit the field to inherit Settings → Default Model.</>,
+            description: (
+              <>
+                Optional model override. Use <C>default</C> or omit the field to inherit Settings →
+                Default Model.
+              </>
+            ),
           },
           {
             name: '**Output Schema:**',
             required: false,
-            description: <>Human-readable schema label followed by an optional description. Use with either an inline JSON fenced block or <C>**Output Schema File:**</C>.</>,
+            description: (
+              <>
+                Human-readable schema label followed by an optional description. Use with either an
+                inline JSON fenced block or <C>**Output Schema File:**</C>.
+              </>
+            ),
           },
           {
             name: '**Output Schema File:**',
             required: false,
-            description: <>Relative path to a JSON schema inside the same agent folder, usually <C>schemas/output.json</C>. Paths outside the agent folder are rejected.</>,
+            description: (
+              <>
+                Relative path to a JSON schema inside the same agent folder, usually{' '}
+                <C>schemas/output.json</C>. Paths outside the agent folder are rejected.
+              </>
+            ),
           },
         ],
       },
@@ -312,10 +352,22 @@ const GUIDES: Record<GuideFile, Guide> = {
         kind: 'rules',
         title: 'Writing tips',
         items: [
-          <>Be specific about behavior, not just personality. Describe the agent&apos;s workflow, standards, when to use tools, and what a good answer looks like.</>,
-          <>Use sections such as <C>## Workflow</C>, <C>## Output Style</C>, <C>## Memory Behavior</C>, and <C>## Boundaries</C> for more capable agents.</>,
-          <>Keep global rules in <C>system.md</C>; keep role-specific rules here; keep durable facts and preferences in the agent&apos;s <C>memory.md</C>.</>,
-          <>Restrict tools when teaching a specialized agent. Tool policy is one of the clearest ways to demonstrate different capabilities.</>,
+          <>
+            Be specific about behavior, not just personality. Describe the agent&apos;s workflow,
+            standards, when to use tools, and what a good answer looks like.
+          </>,
+          <>
+            Use sections such as <C>## Workflow</C>, <C>## Output Style</C>,{' '}
+            <C>## Memory Behavior</C>, and <C>## Boundaries</C> for more capable agents.
+          </>,
+          <>
+            Keep global rules in <C>system.md</C>; keep role-specific rules here; keep durable facts
+            and preferences in the agent&apos;s <C>memory.md</C>.
+          </>,
+          <>
+            Restrict tools when teaching a specialized agent. Tool policy is one of the clearest
+            ways to demonstrate different capabilities.
+          </>,
         ],
       },
       {
@@ -364,10 +416,16 @@ Extracts people, organizations, key facts, dates, and action items.
               How structured-output agents work
             </p>
             <p>
-              When an agent has an output schema, AgentPrimer can make a dedicated finalize call that converts the conversation into JSON matching that schema. If <C>**Tools:** none</C>, the agent behaves like a one-shot extractor. If tools are enabled, the agent can first gather context, then AgentPrimer finalizes the result into structured JSON.
+              When an agent has an output schema, AgentPrimer can make a dedicated finalize call
+              that converts the conversation into JSON matching that schema. If{' '}
+              <C>**Tools:** none</C>, the agent behaves like a one-shot extractor. If tools are
+              enabled, the agent can first gather context, then AgentPrimer finalizes the result
+              into structured JSON.
             </p>
             <p>
-              Prefer <C>**Output Schema File:** schemas/output.json</C> for larger schemas. It keeps <C>agent.md</C> readable and lets users inspect the schema separately in the agent folder.
+              Prefer <C>**Output Schema File:** schemas/output.json</C> for larger schemas. It keeps{' '}
+              <C>agent.md</C> readable and lets users inspect the schema separately in the agent
+              folder.
             </p>
           </div>
         ),
@@ -384,7 +442,9 @@ Extracts people, organizations, key facts, dates, and action items.
         body: (
           <p>
             <FileText size={14} className="inline -mt-1 mr-1 text-amber-500" />
-            <strong>memory.md</strong> lives beside its agent at <C>data/agents/&lt;agent&gt;/memory.md</C>. It is private to that agent and is injected into that agent&apos;s system prompt on future turns.
+            <strong>memory.md</strong> lives beside its agent at{' '}
+            <C>data/agents/&lt;agent&gt;/memory.md</C>. It is private to that agent and is injected
+            into that agent&apos;s system prompt on future turns.
           </p>
         ),
       },
@@ -393,13 +453,16 @@ Extracts people, organizations, key facts, dates, and action items.
         title: 'Parser rules',
         items: [
           <>
-            <strong>Free-form Markdown.</strong> No fields are parsed. The entire file is injected under <C>## Persistent Memory</C> when the agent runs.
+            <strong>Free-form Markdown.</strong> No fields are parsed. The entire file is injected
+            under <C>## Persistent Memory</C> when the agent runs.
           </>,
           <>
-            The active agent can update its own memory with <C>append_memory</C> or, when explicitly requested, <C>replace_memory</C>.
+            The active agent can update its own memory with <C>append_memory</C> or, when explicitly
+            requested, <C>replace_memory</C>.
           </>,
           <>
-            Memory is per-agent. <C>coder/memory.md</C> does not automatically affect <C>researcher/memory.md</C>.
+            Memory is per-agent. <C>coder/memory.md</C> does not automatically affect{' '}
+            <C>researcher/memory.md</C>.
           </>,
           <>
             Empty memory is valid, but useful headings help the agent keep future updates organized.
@@ -410,8 +473,14 @@ Extracts people, organizations, key facts, dates, and action items.
         kind: 'rules',
         title: 'What belongs in memory',
         items: [
-          <>Durable user preferences, recurring workflows, stable project context, and reusable lessons learned.</>,
-          <>Agent-specific operating notes, such as source preferences for a researcher or repository conventions for a coder.</>,
+          <>
+            Durable user preferences, recurring workflows, stable project context, and reusable
+            lessons learned.
+          </>,
+          <>
+            Agent-specific operating notes, such as source preferences for a researcher or
+            repository conventions for a coder.
+          </>,
           <>Important decisions or constraints likely to matter in future conversations.</>,
           <>Do not store secrets, API keys, passwords, or one-off temporary details.</>,
         ],
@@ -420,9 +489,18 @@ Extracts people, organizations, key facts, dates, and action items.
         kind: 'rules',
         title: 'Writing tips',
         items: [
-          <>Use stable headings such as <C>## User Preferences</C>, <C>## Important Context</C>, <C>## Repository Conventions</C>, or <C>## Learned Facts</C>.</>,
-          <>Keep entries concise and reusable. Memory is sent to the model, so bloated memory makes every turn more expensive.</>,
-          <>Prefer facts and lessons over transcripts. Summarize what matters, not everything that happened.</>,
+          <>
+            Use stable headings such as <C>## User Preferences</C>, <C>## Important Context</C>,{' '}
+            <C>## Repository Conventions</C>, or <C>## Learned Facts</C>.
+          </>,
+          <>
+            Keep entries concise and reusable. Memory is sent to the model, so bloated memory makes
+            every turn more expensive.
+          </>,
+          <>
+            Prefer facts and lessons over transcripts. Summarize what matters, not everything that
+            happened.
+          </>,
           <>Periodically ask the agent to consolidate or prune stale memory.</>,
         ],
       },

@@ -104,7 +104,7 @@ return createDataStreamResponse({
 });
 ```
 
-The tool-call loop is hand-written inside `lib/agent.ts`. After each tool executes, the result is appended to the message history and the LLM is called again — up to a configurable iteration limit (default: 100 rounds). This approach chains multiple tool calls:
+The tool-call loop is hand-written inside `lib/agent/loop.ts`. After each tool executes, the result is appended to the message history and the LLM is called again — up to a configurable iteration limit (default: 100 rounds). This approach chains multiple tool calls:
 
 ```
 User: "What's 2+2 and what's the weather in Tokyo?"
@@ -731,13 +731,13 @@ proxy.ts               ← validates JWT session cookie for page routes
   ▼
 app/api/chat/route.ts  ← saves user message to SQLite
   ▼
-lib/agent.ts           ← createStreamingAgent()
+lib/agent/streaming-agent.ts  ← createStreamingAgent()
   │ ├── getAgentConfig()        from data/agents/<agent>/agent.md
   │ ├── readMemory()            from data/agents/<agent>/memory.md
   │ ├── buildSkillDiscoverySection() from lib/skills-loader.ts
   │ ├── loadFunctionTools()     from lib/function-tools-loader.ts
   │ ├── loadMcpTools()          from lib/mcp-client.ts
-  │ └── createBuiltinTools()    from lib/agent.ts + builtin-tools-registry.ts
+  │ └── createBuiltinTools()    from lib/agent/builtin-tools.ts + builtin-tools-registry.ts
   │
   ▼
 openai.chat.completions.create({ stream: true, model, messages, tools })
@@ -1026,7 +1026,7 @@ When the user attaches a file:
 
 1. The file is uploaded to `/api/upload` and saved to `data/uploads/`
 2. The URL is stored in the message's `attachments_json`
-3. When the message is sent to the LLM, `buildMultimodalContent()` in `lib/agent.ts` converts attachments to the appropriate OpenAI API content parts
+3. When the message is sent to the LLM, `buildMultimodalContent()` in `lib/agent/messages.ts` converts attachments to the appropriate OpenAI API content parts
 4. The model receives the image/audio/text as part of its context
 
 ### Example: Image Analysis
@@ -1092,7 +1092,7 @@ After compaction (keep 5 exchanges):
    kept   "System: older messages dropped"                         most recent
 ```
 
-**Where it runs:** In [lib/agent.ts](lib/agent.ts), the `compactConversation()` function is called after messages are converted to OpenAI format and before they're sent to the LLM.
+**Where it runs:** In [lib/agent/messages.ts](lib/agent/messages.ts), the `compactConversation()` function is called after messages are converted to OpenAI format and before they're sent to the LLM.
 
 **How to configure:** Go to **Settings → Chat Behavior → Context Window Compaction** and set the number of recent exchanges to keep. Set to `0` (default) to disable.
 
@@ -1110,7 +1110,7 @@ After compaction (keep 5 exchanges):
 **When to use:** Long-running conversations where early context becomes irrelevant (e.g., a coding assistant that only needs the current task, not the full project history).
 
 ```typescript
-// ── The core sliding-window algorithm (from lib/agent.ts) ──
+// ── The core sliding-window algorithm (from lib/agent/messages.ts) ──
 
 function compactConversation(
   apiMessages: OpenAI.Chat.ChatCompletionMessageParam[],
@@ -1290,6 +1290,6 @@ function estimateMessageTokens(msgs: Message[]): number {
 
 ### In AgentPrimer
 
-AgentPrimer implements **Strategy 1 (Sliding Window)** with a configurable exchange count via Settings → Chat Behavior → Context Window Compaction. The implementation is in [lib/agent.ts](lib/agent.ts) with the `compactConversation()` function called automatically before each agent loop execution.
+AgentPrimer implements **Strategy 1 (Sliding Window)** with a configurable exchange count via Settings → Chat Behavior → Context Window Compaction. The implementation is in [lib/agent/messages.ts](lib/agent/messages.ts) with the `compactConversation()` function called automatically before each agent loop execution.
 
 To experiment with the other strategies, you can extend the `compactConversation()` function or add a pre-flight check in the `createStreamingAgent()` function. The architecture is designed to make these additions straightforward — the message array passes through a single pipeline before reaching the LLM.

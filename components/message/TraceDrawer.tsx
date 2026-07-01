@@ -24,50 +24,61 @@ import JsonView from '../ui/JsonView';
 // TokenUsageBadge – compact token count display below assistant messages
 // ---------------------------------------------------------------------------
 export function TokenUsageBadge({
-  usage, contextLength, outputLength,
+  usage,
+  contextLength,
+  outputLength,
 }: {
   usage: MessageTokenUsage;
   contextLength?: number;
   outputLength?: number;
 }) {
-  const input  = usage.input  ?? 0;
+  const input = usage.input ?? 0;
   const cached = usage.cached ?? 0;
   const output = usage.output ?? 0;
-  const total  = input + output;
+  const total = input + output;
   const sourceJson = usage.source ? JSON.stringify(usage.source, null, 2) : '';
 
   // context gauge — input tokens represent consumed context
   const pct = contextLength ? Math.min(100, (input / contextLength) * 100) : null;
   const outputPct = outputLength ? Math.min(100, (output / outputLength) * 100) : null;
   const gaugeColor =
-    pct === null ? '' :
-    pct > 80    ? 'bg-red-500' :
-    pct > 50    ? 'bg-amber-400' :
-                  'bg-blue-500';
+    pct === null ? '' : pct > 80 ? 'bg-red-500' : pct > 50 ? 'bg-amber-400' : 'bg-blue-500';
   const outputGaugeColor =
-    outputPct === null ? '' :
-    outputPct > 80    ? 'bg-red-500' :
-    outputPct > 50    ? 'bg-amber-400' :
-                        'bg-violet-500';
+    outputPct === null
+      ? ''
+      : outputPct > 80
+        ? 'bg-red-500'
+        : outputPct > 50
+          ? 'bg-amber-400'
+          : 'bg-violet-500';
 
   const fmtCtx = (n: number) =>
-    n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` :
-    n >= 1_000     ? `${Math.round(n / 1_000)}k` :
-    String(n);
+    n >= 1_000_000
+      ? `${(n / 1_000_000).toFixed(1)}M`
+      : n >= 1_000
+        ? `${Math.round(n / 1_000)}k`
+        : String(n);
 
   return (
     <div className="mt-0.5 flex items-center gap-2 flex flex-wrap mb-2">
       {/* Token counts pill */}
       <span
         className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-sm font-mono bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700"
-        title={sourceJson || `Input: ${input.toLocaleString()}${cached > 0 ? ` (cached: ${cached.toLocaleString()})` : ''}  |  Output: ${output.toLocaleString()}  |  Total: ${total.toLocaleString()}`}
+        title={
+          sourceJson ||
+          `Input: ${input.toLocaleString()}${cached > 0 ? ` (cached: ${cached.toLocaleString()})` : ''}  |  Output: ${output.toLocaleString()}  |  Total: ${total.toLocaleString()}`
+        }
       >
         <span className="flex items-center gap-1 text-nowrap">
           <span className="text-blue-400 text-nowrap">↑</span>
-          {cached > 0
-            ? <>{input.toLocaleString()} <span className="text-emerald-400">({cached.toLocaleString()})</span></>
-            : input.toLocaleString()
-          }
+          {cached > 0 ? (
+            <>
+              {input.toLocaleString()}{' '}
+              <span className="text-emerald-400">({cached.toLocaleString()})</span>
+            </>
+          ) : (
+            input.toLocaleString()
+          )}
         </span>
         <span className="text-gray-300 dark:text-gray-600">·</span>
         <span className="flex items-center gap-1">
@@ -93,7 +104,9 @@ export function TokenUsageBadge({
             />
           </span>
           <span className="tabular-nums">
-            {fmtCtx(input)}<span className="opacity-50">/</span>{fmtCtx(contextLength)}
+            {fmtCtx(input)}
+            <span className="opacity-50">/</span>
+            {fmtCtx(contextLength)}
           </span>
         </span>
       )}
@@ -110,7 +123,9 @@ export function TokenUsageBadge({
             />
           </span>
           <span className="tabular-nums">
-            ↓{fmtCtx(output)}<span className="opacity-50">/</span>{fmtCtx(outputLength)}
+            ↓{fmtCtx(output)}
+            <span className="opacity-50">/</span>
+            {fmtCtx(outputLength)}
           </span>
         </span>
       )}
@@ -133,25 +148,26 @@ function TraceStat({ label, value }: { label: string; value: string }) {
 // ---------------------------------------------------------------------------
 // TraceDrawer – per-step agent loop trace viewer (modal)
 // ---------------------------------------------------------------------------
-export function TraceDrawer({
-  trace, onClose,
-}: {
-  trace: AgentStepTrace[];
-  onClose: () => void;
-}) {
+export function TraceDrawer({ trace, onClose }: { trace: AgentStepTrace[]; onClose: () => void }) {
   const [expandedStep, setExpandedStep] = useState<number | null>(null);
-  const totalTokens = trace.reduce((sum, s) => ({
-    input: sum.input + (s.token_usage?.input ?? 0),
-    output: sum.output + (s.token_usage?.output ?? 0),
-    cached: sum.cached + (s.token_usage?.cached ?? 0),
-  }), { input: 0, cached: 0, output: 0 });
+  const totalTokens = trace.reduce(
+    (sum, s) => ({
+      input: sum.input + (s.token_usage?.input ?? 0),
+      output: sum.output + (s.token_usage?.output ?? 0),
+      cached: sum.cached + (s.token_usage?.cached ?? 0),
+    }),
+    { input: 0, cached: 0, output: 0 },
+  );
   const totalDuration = trace.reduce((sum, s) => sum + s.duration_ms, 0);
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
       <div
         className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
@@ -162,7 +178,8 @@ export function TraceDrawer({
             <div>
               <h2 className="font-700 text-gray-900 dark:text-gray-100">Agent Trace</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {trace.length} step{trace.length !== 1 ? 's' : ''} · {totalDuration}ms total · ∑ {totalTokens.input.toLocaleString()}↑ {totalTokens.output.toLocaleString()}↓
+                {trace.length} step{trace.length !== 1 ? 's' : ''} · {totalDuration}ms total · ∑{' '}
+                {totalTokens.input.toLocaleString()}↑ {totalTokens.output.toLocaleString()}↓
               </p>
             </div>
           </div>
@@ -179,7 +196,10 @@ export function TraceDrawer({
           {trace.map((step, i) => {
             const open = expandedStep === i;
             return (
-              <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+              <div
+                key={i}
+                className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden"
+              >
                 {/* Step header */}
                 <button
                   onClick={() => setExpandedStep(open ? null : i)}
@@ -191,19 +211,29 @@ export function TraceDrawer({
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-600 text-gray-800 dark:text-gray-200">
                       Step {step.step_index + 1}
-                      <span className="ml-2 text-sm font-mono text-gray-400">{step.finish_reason}</span>
+                      <span className="ml-2 text-sm font-mono text-gray-400">
+                        {step.finish_reason}
+                      </span>
                     </p>
                     <p className="text-sm text-gray-400">
-                      {step.duration_ms}ms · ↑{step.token_usage?.input ?? 0} · ↓{step.token_usage?.output ?? 0}
+                      {step.duration_ms}ms · ↑{step.token_usage?.input ?? 0} · ↓
+                      {step.token_usage?.output ?? 0}
                       {step.token_usage?.cached ? ` (${step.token_usage.cached})` : ''}
-                      {step.tool_calls.length > 0 ? ` · ${step.tool_calls.length} tool call${step.tool_calls.length !== 1 ? 's' : ''}` : ''}
+                      {step.tool_calls.length > 0
+                        ? ` · ${step.tool_calls.length} tool call${step.tool_calls.length !== 1 ? 's' : ''}`
+                        : ''}
                     </p>
                   </div>
-                  <ChevronRight size={15} className={`text-gray-400 transition-transform ${open ? 'rotate-90' : ''}`} />
+                  <ChevronRight
+                    size={15}
+                    className={`text-gray-400 transition-transform ${open ? 'rotate-90' : ''}`}
+                  />
                 </button>
 
                 {/* Expanded details */}
-                <div className={`grid transition-[grid-template-rows] ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                <div
+                  className={`grid transition-[grid-template-rows] ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+                >
                   <div className="overflow-hidden">
                     <div className="px-4 pb-3 space-y-3 border-t border-gray-200 dark:border-gray-700">
                       <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
@@ -214,48 +244,80 @@ export function TraceDrawer({
 
                       {step.request && (
                         <div>
-                          <p className="text-sm font-600 text-gray-500 dark:text-gray-400 mb-1">LLM Request Messages</p>
+                          <p className="text-sm font-600 text-gray-500 dark:text-gray-400 mb-1">
+                            LLM Request Messages
+                          </p>
                           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-2">
-                            <JsonView value={step.request.messages} initialDepth={1} maxHeight="max-h-80" />
+                            <JsonView
+                              value={step.request.messages}
+                              initialDepth={1}
+                              maxHeight="max-h-80"
+                            />
                           </div>
                         </div>
                       )}
 
                       {step.request?.tools !== undefined && (
                         <div>
-                          <p className="text-sm font-600 text-gray-500 dark:text-gray-400 mb-1">Available Tools Sent to LLM</p>
+                          <p className="text-sm font-600 text-gray-500 dark:text-gray-400 mb-1">
+                            Available Tools Sent to LLM
+                          </p>
                           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-2">
-                            <JsonView value={step.request.tools} initialDepth={1} maxHeight="max-h-64" />
+                            <JsonView
+                              value={step.request.tools}
+                              initialDepth={1}
+                              maxHeight="max-h-64"
+                            />
                           </div>
                         </div>
                       )}
 
                       {step.token_usage && (step.token_usage.input || step.token_usage.output) && (
                         <div>
-                          <p className="text-sm font-600 text-gray-500 dark:text-gray-400 mb-1">Token Usage</p>
+                          <p className="text-sm font-600 text-gray-500 dark:text-gray-400 mb-1">
+                            Token Usage
+                          </p>
                           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-2">
-                            <JsonView value={step.token_usage} initialDepth={2} maxHeight="max-h-32" hideToolbar />
+                            <JsonView
+                              value={step.token_usage}
+                              initialDepth={2}
+                              maxHeight="max-h-32"
+                              hideToolbar
+                            />
                           </div>
                         </div>
                       )}
 
                       {step.tool_calls.length > 0 && (
                         <div>
-                          <p className="text-sm font-600 text-gray-500 dark:text-gray-400 mb-1">Tool Calls</p>
+                          <p className="text-sm font-600 text-gray-500 dark:text-gray-400 mb-1">
+                            Tool Calls
+                          </p>
                           {step.tool_calls.map((tc, j) => (
                             <div key={j} className="mb-2 last:mb-0">
-                              <p className="text-sm font-mono font-600 text-amber-700 dark:text-amber-300 mb-0.5">{tc.toolName}</p>
+                              <p className="text-sm font-mono font-600 text-amber-700 dark:text-amber-300 mb-0.5">
+                                {tc.toolName}
+                              </p>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                 <div>
                                   <p className="text-sm text-gray-400 mb-0.5">Input JSON</p>
                                   <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-1.5">
-                                    <JsonView value={tc.args} initialDepth={1} maxHeight="max-h-48" />
+                                    <JsonView
+                                      value={tc.args}
+                                      initialDepth={1}
+                                      maxHeight="max-h-48"
+                                    />
                                   </div>
                                 </div>
                                 <div>
                                   <p className="text-sm text-gray-400 mb-0.5">Output JSON</p>
                                   <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-1.5">
-                                    <JsonView value={tc.result} stringPassthrough initialDepth={1} maxHeight="max-h-48" />
+                                    <JsonView
+                                      value={tc.result}
+                                      stringPassthrough
+                                      initialDepth={1}
+                                      maxHeight="max-h-48"
+                                    />
                                   </div>
                                 </div>
                               </div>

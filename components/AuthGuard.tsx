@@ -15,13 +15,13 @@ const PUBLIC_PATHS = ['/login', '/register'];
  * Renders nothing – purely a side-effect component.
  */
 export default function AuthGuard() {
-  const router   = useRouter();
+  const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) return;
+    if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) return;
     fetch('/api/auth/setup')
-      .then(r => r.json())
+      .then((r) => r.json())
       .then(({ needsSetup }: { needsSetup: boolean }) => {
         if (needsSetup) router.replace('/register');
       })

@@ -12,7 +12,7 @@ const SKILLS_ROOT = path.resolve(/* turbopackIgnore: true */ process.cwd(), 'dat
 // GET /api/skills – list all registered + discovered SKILL.md skills
 export async function GET() {
   // Registered skills from DB
-  const registered = listSkills().map(s => {
+  const registered = listSkills().map((s) => {
     // manifest_json now stores the raw SKILL.md content (not JSON).
     // Extract basic info via frontmatter regex so it displays correctly.
     let name = s.name;
@@ -41,7 +41,7 @@ export async function GET() {
   });
 
   // Discover unregistered skills in data/skills/<name>/SKILL.md
-  const registeredPaths = new Set(listSkills().map(s => s.local_path));
+  const registeredPaths = new Set(listSkills().map((s) => s.local_path));
   const skillsDir = path.join(/* turbopackIgnore: true */ process.cwd(), 'data', 'skills');
   const discovered: Array<Record<string, unknown>> = [];
 
@@ -89,12 +89,19 @@ export async function GET() {
 // POST /api/skills – install a skill from GitHub or register a local directory
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
-  const { githubUrl, localPath, enabled } = body as { githubUrl?: string; localPath?: string; enabled?: boolean };
+  const { githubUrl, localPath, enabled } = body as {
+    githubUrl?: string;
+    localPath?: string;
+    enabled?: boolean;
+  };
 
   if (localPath) {
     const resolved = path.resolve(localPath);
     if (!isInsideRoot(SKILLS_ROOT, resolved)) {
-      return NextResponse.json({ error: 'Local skills must be inside data/skills' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Local skills must be inside data/skills' },
+        { status: 403 },
+      );
     }
 
     const skillMdPath = path.join(resolved, 'SKILL.md');
@@ -111,7 +118,8 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  if (!githubUrl) return NextResponse.json({ error: 'githubUrl or localPath is required' }, { status: 400 });
+  if (!githubUrl)
+    return NextResponse.json({ error: 'githubUrl or localPath is required' }, { status: 400 });
 
   try {
     const result = installSkill(githubUrl);
@@ -138,7 +146,8 @@ export async function DELETE(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const { id, enabled } = body as { id?: string; enabled?: boolean };
-  if (!id || enabled === undefined) return NextResponse.json({ error: 'id and enabled required' }, { status: 400 });
+  if (!id || enabled === undefined)
+    return NextResponse.json({ error: 'id and enabled required' }, { status: 400 });
   setSkillEnabled(id, enabled);
   return NextResponse.json({ ok: true });
 }

@@ -71,7 +71,7 @@ export type AgentStepTrace = {
 
 /** Token usage summary attached to a single message. */
 export interface MessageTokenUsage {
-  input:  number;
+  input: number;
   cached: number;
   output: number;
   source?: unknown;

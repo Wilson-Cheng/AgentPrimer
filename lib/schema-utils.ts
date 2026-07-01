@@ -32,12 +32,23 @@ export function jsonSchemaToZod(schema: Record<string, unknown>): z.ZodTypeAny {
     let fieldSchema: z.ZodTypeAny;
 
     switch (prop.type) {
-      case 'string':  fieldSchema = z.string(); break;
-      case 'number':  fieldSchema = z.number(); break;
-      case 'integer': fieldSchema = z.number().int(); break;
-      case 'boolean': fieldSchema = z.boolean(); break;
-      case 'array':   fieldSchema = z.array(z.any()); break;
-      default:        fieldSchema = z.any();
+      case 'string':
+        fieldSchema = z.string();
+        break;
+      case 'number':
+        fieldSchema = z.number();
+        break;
+      case 'integer':
+        fieldSchema = z.number().int();
+        break;
+      case 'boolean':
+        fieldSchema = z.boolean();
+        break;
+      case 'array':
+        fieldSchema = z.array(z.any());
+        break;
+      default:
+        fieldSchema = z.any();
     }
 
     if (prop.description) fieldSchema = fieldSchema.describe(prop.description as string);

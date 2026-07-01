@@ -17,7 +17,10 @@ export async function POST(request: NextRequest) {
   // Only allow safe characters in the username
   if (!/^[a-zA-Z0-9_\-]{1,64}$/.test(username)) {
     return NextResponse.json(
-      { error: 'Username may only contain letters, numbers, underscores, and hyphens (max 64 chars).' },
+      {
+        error:
+          'Username may only contain letters, numbers, underscores, and hyphens (max 64 chars).',
+      },
       { status: 400 },
     );
   }
@@ -29,7 +32,10 @@ export async function POST(request: NextRequest) {
   try {
     await registerFirstUser(username, password);
   } catch {
-    return NextResponse.json({ error: 'Registration failed – setup may already be complete.' }, { status: 409 });
+    return NextResponse.json(
+      { error: 'Registration failed – setup may already be complete.' },
+      { status: 409 },
+    );
   }
 
   await issueSession(username);

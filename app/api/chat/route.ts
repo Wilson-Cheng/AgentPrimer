@@ -20,11 +20,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { formatDataStreamPart } from 'ai';
 import { createStreamingAgent } from '@/lib/agent';
-import { saveMessage, touchSession, getSession, updateSessionTitle, createSession, upsertAssistantMessage } from '@/lib/db';
+import {
+  saveMessage,
+  touchSession,
+  getSession,
+  updateSessionTitle,
+  createSession,
+  upsertAssistantMessage,
+} from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 
 export const runtime = 'nodejs'; // Required: we use Node.js APIs (fs, sqlite, child_process)
-export const maxDuration = 120;  // Allow up to 2 minutes for long agent runs
+export const maxDuration = 120; // Allow up to 2 minutes for long agent runs
 
 /**
  * AI SDK data-stream keep-alive heartbeat.
@@ -44,9 +51,7 @@ function wrapWithHeartbeat(
 ): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
-  const heartbeat = encoder.encode(formatDataStreamPart('data', [
-    { type: 'heartbeat' as const },
-  ]));
+  const heartbeat = encoder.encode(formatDataStreamPart('data', [{ type: 'heartbeat' as const }]));
   let buffer = '';
   let lastFlushAt = Date.now();
   let interval: ReturnType<typeof setInterval> | null = null;
@@ -58,7 +63,11 @@ function wrapWithHeartbeat(
       interval = null;
     }
     if (upstreamReader) {
-      try { upstreamReader.cancel(); } catch { /* already cancelled */ }
+      try {
+        upstreamReader.cancel();
+      } catch {
+        /* already cancelled */
+      }
       upstreamReader = null;
     }
   };
@@ -69,7 +78,11 @@ function wrapWithHeartbeat(
     async start(controller) {
       interval = setInterval(() => {
         if (Date.now() - lastFlushAt >= HEARTBEAT_INTERVAL_MS) {
-          try { controller.enqueue(heartbeat); } catch { stop(); }
+          try {
+            controller.enqueue(heartbeat);
+          } catch {
+            stop();
+          }
           lastFlushAt = Date.now();
         }
       }, HEARTBEAT_INTERVAL_MS);
@@ -131,9 +144,7 @@ function stripIncompleteNotice(content: string): string {
   // collapsed by `trimEnd()`. We do NOT try to preserve a leading `\n\n`
   // separator: an inline notice always sits at the end of the assistant
   // text in our format, so removing the entire block is safe.
-  return content
-    .replace(/(?:^|\n\n)>\s*⚠️[^\n]*(?:\n>[^\n]*)*\n?/g, '')
-    .trimEnd();
+  return content.replace(/(?:^|\n\n)>\s*⚠️[^\n]*(?:\n>[^\n]*)*\n?/g, '').trimEnd();
 }
 
 /**
@@ -143,13 +154,19 @@ function stripIncompleteNotice(content: string): string {
  * error). Used to decide whether the next user message should be rewritten
  * as an explicit "continue from where you left off" instruction.
  */
-function findLastAssistantIncomplete(messages: Array<{ role: string; parts?: unknown; content?: unknown }>): { reason: string } | null {
+function findLastAssistantIncomplete(
+  messages: Array<{ role: string; parts?: unknown; content?: unknown }>,
+): { reason: string } | null {
   for (let i = messages.length - 1; i >= 0; i--) {
     const m = messages[i];
     if (m.role !== 'assistant') continue;
     const parts = Array.isArray(m.parts) ? m.parts : [];
     for (const p of parts) {
-      if (p && typeof p === 'object' && (p as Record<string, unknown>).type === 'incomplete-marker') {
+      if (
+        p &&
+        typeof p === 'object' &&
+        (p as Record<string, unknown>).type === 'incomplete-marker'
+      ) {
         return { reason: String((p as Record<string, unknown>).reason ?? 'unknown') };
       }
     }
@@ -164,7 +181,9 @@ function findLastAssistantIncomplete(messages: Array<{ role: string; parts?: unk
 function isContinueIntent(text: string): boolean {
   const trimmed = text.trim().toLowerCase();
   if (!trimmed) return false;
-  return /^(continue|go on|keep going|carry on|please continue|繼續|继续|続けて|계속)\.?!?$/i.test(trimmed);
+  return /^(continue|go on|keep going|carry on|please continue|繼續|继续|続けて|계속)\.?!?$/i.test(
+    trimmed,
+  );
 }
 
 export async function POST(request: NextRequest) {
@@ -205,12 +224,13 @@ export async function POST(request: NextRequest) {
     }
     return undefined;
   })();
-  const lastUserText = typeof lastUserMessageRaw?.content === 'string' ? lastUserMessageRaw.content : '';
+  const lastUserText =
+    typeof lastUserMessageRaw?.content === 'string' ? lastUserMessageRaw.content : '';
   const incompleteInfo = findLastAssistantIncomplete(messages);
   const shouldResume = !!resumeFrom || (incompleteInfo && isContinueIntent(lastUserText));
 
   // Get the last user message to save it
-  const userMessages = messages.filter(m => m.role === 'user');
+  const userMessages = messages.filter((m) => m.role === 'user');
   const lastUserMessage = userMessages[userMessages.length - 1];
 
   // Save the user message to the database FIRST, while messages still hold
@@ -227,10 +247,12 @@ export async function POST(request: NextRequest) {
     // we send to the LLM is intentionally NOT saved — the chat history
     // should reflect the user's intent, not the prompt-engineering details.
     const persistedContent = shouldResume
-      ? (resumeFrom && !isContinueIntent(lastUserText) ? '[Continue]' : (lastUserText || '[Continue]'))
-      : (typeof lastUserMessage.content === 'string'
-          ? lastUserMessage.content
-          : JSON.stringify(lastUserMessage.content));
+      ? resumeFrom && !isContinueIntent(lastUserText)
+        ? '[Continue]'
+        : lastUserText || '[Continue]'
+      : typeof lastUserMessage.content === 'string'
+        ? lastUserMessage.content
+        : JSON.stringify(lastUserMessage.content);
 
     saveMessage({
       // Reuse the client-supplied message id (allocated by the AI SDK's
@@ -239,7 +261,10 @@ export async function POST(request: NextRequest) {
       // post-stream merge would treat the persisted row as new and render
       // a duplicate user bubble. Falls back to a fresh UUID for legacy
       // clients that don't send `sendExtraMessageFields`.
-      id: typeof lastUserMessage.id === 'string' && lastUserMessage.id ? lastUserMessage.id : uuidv4(),
+      id:
+        typeof lastUserMessage.id === 'string' && lastUserMessage.id
+          ? lastUserMessage.id
+          : uuidv4(),
       session_id: sessionId,
       role: 'user',
       content: persistedContent,
@@ -322,7 +347,7 @@ export async function POST(request: NextRequest) {
   });
 
   const headers = new Headers(agentResponse.headers);
-  headers.set('X-Accel-Buffering', 'no');           // nginx: disable proxy buffering
+  headers.set('X-Accel-Buffering', 'no'); // nginx: disable proxy buffering
   headers.set('Cache-Control', 'no-cache, no-transform'); // prevent compression buffering
 
   // Wrap the upstream body so a valid AI SDK data-stream heartbeat is emitted

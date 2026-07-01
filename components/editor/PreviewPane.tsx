@@ -37,7 +37,7 @@ function previewUrl(filePath: string, refreshKey: number): string {
   const encoded = filePath
     .replace(/^\/+/, '')
     .split('/')
-    .map(part => encodeURIComponent(part))
+    .map((part) => encodeURIComponent(part))
     .join('/');
   return `/api/editor/preview/${encoded}?v=${refreshKey}`;
 }
@@ -48,8 +48,8 @@ export default function PreviewPane({ path, refreshKey, isDark }: Props) {
 
   // Fetched body for markdown previews. Stored so the swap is instant when
   // refreshKey bumps mid-stream (no flash of empty preview).
-  const [mdBody, setMdBody]       = useState<string>('');
-  const [mdError, setMdError]     = useState<string | null>(null);
+  const [mdBody, setMdBody] = useState<string>('');
+  const [mdError, setMdError] = useState<string | null>(null);
   const [mdLoading, setMdLoading] = useState(false);
 
   useEffect(() => {
@@ -58,10 +58,22 @@ export default function PreviewPane({ path, refreshKey, isDark }: Props) {
     setMdLoading(true);
     setMdError(null);
     fetch(src)
-      .then(r => r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`)))
-      .then(text => { if (!cancelled) { setMdBody(text); setMdLoading(false); } })
-      .catch(err => { if (!cancelled) { setMdError(String(err.message ?? err)); setMdLoading(false); } });
-    return () => { cancelled = true; };
+      .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((text) => {
+        if (!cancelled) {
+          setMdBody(text);
+          setMdLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setMdError(String(err.message ?? err));
+          setMdLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [src, kind]);
 
   // ── Unsupported extension ────────────────────────────────────────────────
@@ -70,8 +82,13 @@ export default function PreviewPane({ path, refreshKey, isDark }: Props) {
     return (
       <div className="h-full w-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 gap-2 p-4 text-center text-sm">
         <Eye size={24} className="opacity-30" />
-        <p>No preview for <span className="font-mono">.{ext || '(no extension)'}</span> files</p>
-        <p className="text-sm opacity-70">Supported: md, html, png, jpg, jpeg, gif, svg, webp, pdf, mp4, webm, mov, mp3, wav, ogg, flac, m4a</p>
+        <p>
+          No preview for <span className="font-mono">.{ext || '(no extension)'}</span> files
+        </p>
+        <p className="text-sm opacity-70">
+          Supported: md, html, png, jpg, jpeg, gif, svg, webp, pdf, mp4, webm, mov, mp3, wav, ogg,
+          flac, m4a
+        </p>
       </div>
     );
   }
@@ -96,7 +113,9 @@ export default function PreviewPane({ path, refreshKey, isDark }: Props) {
   // ── Image ────────────────────────────────────────────────────────────────
   if (kind === 'image') {
     return (
-      <div className={`h-full w-full overflow-auto flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <div
+        className={`h-full w-full overflow-auto flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={src} alt={basename(path)} className="max-w-full max-h-full object-contain" />
       </div>
@@ -130,21 +149,26 @@ export default function PreviewPane({ path, refreshKey, isDark }: Props) {
       <div className="h-full w-full flex flex-col items-center justify-center gap-6 p-8 bg-gray-50 dark:bg-gray-900">
         <div className="flex flex-col items-center gap-3 text-gray-500 dark:text-gray-400">
           <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 dark:from-blue-600 dark:to-purple-700 flex items-center justify-center shadow-lg">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M9 18V5l12-2v13" />
               <circle cx="6" cy="18" r="3" />
               <circle cx="18" cy="16" r="3" />
             </svg>
           </div>
-          <p className="text-sm font-medium max-w-xs truncate" title={filename}>{filename}</p>
+          <p className="text-sm font-medium max-w-xs truncate" title={filename}>
+            {filename}
+          </p>
         </div>
-        <audio
-          key={kind}
-          src={src}
-          controls
-          preload="metadata"
-          className="w-full max-w-xl"
-        >
+        <audio key={kind} src={src} controls preload="metadata" className="w-full max-w-xl">
           Your browser does not support inline audio playback.
         </audio>
       </div>

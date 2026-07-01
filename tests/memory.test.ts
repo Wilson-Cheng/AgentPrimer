@@ -39,7 +39,9 @@ describe('memory and agent config helpers', () => {
 
     expect(readMemory('coder')).toBe('coder memory');
     expect(readMemory('researcher')).toBe('researcher memory');
-    expect(getAgentMemoryRelativePath('Coder Agent')).toBe(path.join('agents', 'coder-agent', 'memory.md'));
+    expect(getAgentMemoryRelativePath('Coder Agent')).toBe(
+      path.join('agents', 'coder-agent', 'memory.md'),
+    );
     expect(fs.existsSync(path.join(tempDir, 'data', 'agents', 'coder', 'memory.md'))).toBe(true);
   });
 
@@ -61,7 +63,9 @@ describe('memory and agent config helpers', () => {
       'utf-8',
     );
 
-    writeAgent('analyst', `# analyst
+    writeAgent(
+      'analyst',
+      `# analyst
 **System Prompt:** First line.
 ## Keep this subheading
 Second line.
@@ -70,12 +74,13 @@ Extracts people and key facts.
 **Output Schema File:** schemas/output.json
 **Tools:** read_file, write_file, skill__tool
 **Model:** analyst-model
-`);
+`,
+    );
 
     const agents = parseAgentsConfig();
     const analyst = getAgentConfig('analyst');
 
-    expect(agents.map(a => a.name)).toContain('analyst');
+    expect(agents.map((a) => a.name)).toContain('analyst');
     expect(analyst.systemPrompt).toContain('## Keep this subheading');
     expect(analyst.tools).toEqual(['read_file', 'write_file', 'skill__tool']);
     expect(analyst.model).toBe('analyst-model');
@@ -93,7 +98,9 @@ Extracts people and key facts.
     const { writeAgent, getAgentConfig } = await loadMemory();
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    writeAgent('bad', `# bad
+    writeAgent(
+      'bad',
+      `# bad
 **System Prompt:** Bad schema agent.
 **Output Schema:** Broken
 A description.
@@ -101,7 +108,8 @@ A description.
 { not valid json
 \`\`\`
 **Tools:** all
-`);
+`,
+    );
 
     const bad = getAgentConfig('bad');
     expect(bad.outputSchema).toBeUndefined();
@@ -111,10 +119,13 @@ A description.
   it('falls back to the main agent when an agent is missing', async () => {
     const { writeAgent, parseAgentsConfig, getAgentConfig } = await loadMemory();
 
-    writeAgent('specialist', `# specialist
+    writeAgent(
+      'specialist',
+      `# specialist
 **System Prompt:** Specialist only.
 **Tools:** append_memory
-`);
+`,
+    );
 
     expect(parseAgentsConfig()[0].name).toBe('main');
     expect(getAgentConfig('missing').name).toBe('main');

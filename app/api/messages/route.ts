@@ -25,7 +25,10 @@
  */
 
 import {
-  countMessages, getAgentTask, getMessagesAfter, getMessagesPage,
+  countMessages,
+  getAgentTask,
+  getMessagesAfter,
+  getMessagesPage,
   getPendingNotifications,
 } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
@@ -45,7 +48,8 @@ export async function GET(request: NextRequest) {
   const sessionId = request.nextUrl.searchParams.get('sessionId');
   if (!sessionId) return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
 
-  const limit = parseIntParam(request.nextUrl.searchParams.get('limit'), DEFAULT_LIMIT) ?? DEFAULT_LIMIT;
+  const limit =
+    parseIntParam(request.nextUrl.searchParams.get('limit'), DEFAULT_LIMIT) ?? DEFAULT_LIMIT;
   const before = parseIntParam(request.nextUrl.searchParams.get('before'));
   const after = parseIntParam(request.nextUrl.searchParams.get('after'));
   const includePending = request.nextUrl.searchParams.get('pending') !== '0';
@@ -72,19 +76,30 @@ export async function GET(request: NextRequest) {
   // Sub-agent notification rows are synthetic (no DB row, no rowid) and
   // should only ride along on the FIRST page so the chat tail shows pending
   // bubbles. Older pages never include them.
-  let messages: Array<typeof page.messages[number] | {
-    id: string; session_id: string; role: 'assistant'; content: string;
-    attachments_json: string; tool_calls_json: string; token_usage_json: string;
-    reasoning_json: string; parts_json: string; trace_json: string;
-    created_at: number; _rowid: number;
-  }> = page.messages;
+  let messages: Array<
+    | (typeof page.messages)[number]
+    | {
+        id: string;
+        session_id: string;
+        role: 'assistant';
+        content: string;
+        attachments_json: string;
+        tool_calls_json: string;
+        token_usage_json: string;
+        reasoning_json: string;
+        parts_json: string;
+        trace_json: string;
+        created_at: number;
+        _rowid: number;
+      }
+  > = page.messages;
   if (includePending && before === undefined) {
     const existingTaskIds = new Set(
-      messages.map(m => m.content.match(/Task: ([0-9a-f-]{36})/)?.[1]).filter(Boolean),
+      messages.map((m) => m.content.match(/Task: ([0-9a-f-]{36})/)?.[1]).filter(Boolean),
     );
     const pending = getPendingNotifications(sessionId)
-      .filter(n => !existingTaskIds.has(n.task_id))
-      .map(n => {
+      .filter((n) => !existingTaskIds.has(n.task_id))
+      .map((n) => {
         const task = getAgentTask(n.task_id);
         return {
           id: `notification:${n.id}`,

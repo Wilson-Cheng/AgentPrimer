@@ -23,8 +23,8 @@ import fs from 'fs';
 // Path helpers – DATA_DIR is the single mount-point for persistent files
 // ---------------------------------------------------------------------------
 export const DATA_DIR = path.join(/* turbopackIgnore: true */ process.cwd(), 'data');
-export const DB_DIR   = path.join(DATA_DIR, 'db');
-export const DB_PATH  = path.join(DB_DIR, 'agent.db');
+export const DB_DIR = path.join(DATA_DIR, 'db');
+export const DB_PATH = path.join(DB_DIR, 'agent.db');
 
 // Ensure the data and db directories exist at module load time
 if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
@@ -45,8 +45,8 @@ export function getDb(): Database.Database {
     // exist" on the very next getDb() call.
     if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
     _db = new Database(DB_PATH);
-    _db.pragma('journal_mode = WAL');    // Write-ahead logging for better concurrency
-    _db.pragma('busy_timeout = 5000');   // Wait up to 5s instead of throwing SQLITE_BUSY
+    _db.pragma('journal_mode = WAL'); // Write-ahead logging for better concurrency
+    _db.pragma('busy_timeout = 5000'); // Wait up to 5s instead of throwing SQLITE_BUSY
     _db.pragma('foreign_keys = ON');
     // Checkpoint any leftover WAL data from a previous abrupt shutdown
     _db.pragma('wal_checkpoint(TRUNCATE)');
@@ -59,10 +59,21 @@ export function getDb(): Database.Database {
 // Also exported so the `/api/reset` endpoint can close the connection before
 // nuking data/db/ (deleting an open SQLite file is undefined on Windows and
 // orphans inflight writes on Linux/Mac).
-export function closeDb() { if (_db) { _db.close(); _db = null; } }
+export function closeDb() {
+  if (_db) {
+    _db.close();
+    _db = null;
+  }
+}
 process.on('exit', closeDb);
-process.on('SIGINT', () => { closeDb(); process.exit(0); });
-process.on('SIGTERM', () => { closeDb(); process.exit(0); });
+process.on('SIGINT', () => {
+  closeDb();
+  process.exit(0);
+});
+process.on('SIGTERM', () => {
+  closeDb();
+  process.exit(0);
+});
 
 // ---------------------------------------------------------------------------
 // Schema migration – idempotent (CREATE TABLE IF NOT EXISTS)
@@ -239,10 +250,14 @@ function migrate(db: Database.Database): void {
 
   // Any tasks that were 'running' when the server last stopped cannot resume.
   // Mark them as 'interrupted' so callers can detect the gap.
-  db.exec("UPDATE agent_tasks SET status = 'interrupted', finished_at = unixepoch() WHERE status = 'running'");
+  db.exec(
+    "UPDATE agent_tasks SET status = 'interrupted', finished_at = unixepoch() WHERE status = 'running'",
+  );
 
   // Add token_usage_json column to messages if it doesn't exist (backward-compatible)
-  const msgCols = (db.prepare('PRAGMA table_info(messages)').all() as Array<{ name: string }>).map(c => c.name);
+  const msgCols = (db.prepare('PRAGMA table_info(messages)').all() as Array<{ name: string }>).map(
+    (c) => c.name,
+  );
   if (!msgCols.includes('token_usage_json')) {
     db.exec("ALTER TABLE messages ADD COLUMN token_usage_json TEXT NOT NULL DEFAULT '{}'");
   }
@@ -269,7 +284,9 @@ function migrate(db: Database.Database): void {
   db.exec('CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id)');
 
   // Add pinned_chat and pinned_prompt columns to sessions (backward-compatible)
-  const sessCols = (db.prepare('PRAGMA table_info(sessions)').all() as Array<{ name: string }>).map(c => c.name);
+  const sessCols = (db.prepare('PRAGMA table_info(sessions)').all() as Array<{ name: string }>).map(
+    (c) => c.name,
+  );
   if (!sessCols.includes('pinned_chat')) {
     db.exec('ALTER TABLE sessions ADD COLUMN pinned_chat INTEGER NOT NULL DEFAULT 0');
   }
@@ -286,7 +303,9 @@ function migrate(db: Database.Database): void {
   //   • original_content (TEXT) — verbatim text for text/markdown/html.
   //   • original_blob    (BLOB) — raw bytes for PDFs (no base64 inflation).
   //   • original_mime    (TEXT) — content-type that drives the View panel.
-  const ksCols = (db.prepare('PRAGMA table_info(knowledge_sources)').all() as Array<{ name: string }>).map(c => c.name);
+  const ksCols = (
+    db.prepare('PRAGMA table_info(knowledge_sources)').all() as Array<{ name: string }>
+  ).map((c) => c.name);
   if (!ksCols.includes('original_content')) {
     db.exec('ALTER TABLE knowledge_sources ADD COLUMN original_content TEXT');
   }
@@ -300,7 +319,9 @@ function migrate(db: Database.Database): void {
   // Per-MCP-server environment variables. Lets the user supply an MCP
   // server-specific API key (e.g. GITHUB_TOKEN for the github MCP server)
   // without exposing it to every other MCP server they install.
-  const mcpCols = (db.prepare('PRAGMA table_info(mcp_servers)').all() as Array<{ name: string }>).map(c => c.name);
+  const mcpCols = (
+    db.prepare('PRAGMA table_info(mcp_servers)').all() as Array<{ name: string }>
+  ).map((c) => c.name);
   if (!mcpCols.includes('env_json')) {
     db.exec("ALTER TABLE mcp_servers ADD COLUMN env_json TEXT NOT NULL DEFAULT '{}'");
   }
@@ -343,19 +364,25 @@ function migrate(db: Database.Database): void {
 // ---------------------------------------------------------------------------
 export function getSetting(key: string): string {
   const db = getDb();
-  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined;
+  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as
+    { value: string } | undefined;
   return row?.value ?? '';
 }
 
 export function setSetting(key: string, value: string): void {
-  getDb().prepare(
-    'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
-  ).run(key, value);
+  getDb()
+    .prepare(
+      'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+    )
+    .run(key, value);
 }
 
 export function getAllSettings(): Record<string, string> {
-  const rows = getDb().prepare('SELECT key, value FROM settings').all() as { key: string; value: string }[];
-  return Object.fromEntries(rows.map(r => [r.key, r.value]));
+  const rows = getDb().prepare('SELECT key, value FROM settings').all() as {
+    key: string;
+    value: string;
+  }[];
+  return Object.fromEntries(rows.map((r) => [r.key, r.value]));
 }
 
 // ---------------------------------------------------------------------------
@@ -367,16 +394,18 @@ export interface Session {
   agent_name: string;
   created_at: number;
   updated_at: number;
-  pinned_chat: number;       // 0 | 1 – whether this session is pinned in the sidebar
+  pinned_chat: number; // 0 | 1 – whether this session is pinned in the sidebar
   pinned_prompt: string | null; // text of the first user message if pinned as a prompt
   preview_state_json: string;
 }
 
 export function createSession(id: string, title: string, agentName = 'main'): Session {
   const db = getDb();
-  db.prepare(
-    'INSERT INTO sessions (id, title, agent_name) VALUES (?, ?, ?)'
-  ).run(id, title, agentName);
+  db.prepare('INSERT INTO sessions (id, title, agent_name) VALUES (?, ?, ?)').run(
+    id,
+    title,
+    agentName,
+  );
   return getSession(id)!;
 }
 
@@ -389,11 +418,15 @@ export function listSessions(): Session[] {
 }
 
 export function updateSessionTitle(id: string, title: string): void {
-  getDb().prepare('UPDATE sessions SET title = ?, updated_at = unixepoch() WHERE id = ?').run(title, id);
+  getDb()
+    .prepare('UPDATE sessions SET title = ?, updated_at = unixepoch() WHERE id = ?')
+    .run(title, id);
 }
 
 export function updateSessionAgent(id: string, agentName: string): void {
-  getDb().prepare('UPDATE sessions SET agent_name = ?, updated_at = unixepoch() WHERE id = ?').run(agentName, id);
+  getDb()
+    .prepare('UPDATE sessions SET agent_name = ?, updated_at = unixepoch() WHERE id = ?')
+    .run(agentName, id);
 }
 
 export function touchSession(id: string): void {
@@ -405,7 +438,9 @@ export function deleteSession(id: string): void {
 }
 
 export function pinSessionChat(id: string, pinned: boolean): void {
-  getDb().prepare('UPDATE sessions SET pinned_chat = ? WHERE id = ?').run(pinned ? 1 : 0, id);
+  getDb()
+    .prepare('UPDATE sessions SET pinned_chat = ? WHERE id = ?')
+    .run(pinned ? 1 : 0, id);
 }
 
 export function setPinnedPrompt(id: string, text: string | null): void {
@@ -413,13 +448,17 @@ export function setPinnedPrompt(id: string, text: string | null): void {
 }
 
 export function updateSessionPreviewState(id: string, previewStateJson: string): void {
-  getDb().prepare('UPDATE sessions SET preview_state_json = ? WHERE id = ?').run(previewStateJson, id);
+  getDb()
+    .prepare('UPDATE sessions SET preview_state_json = ? WHERE id = ?')
+    .run(previewStateJson, id);
 }
 
 export function getFirstUserMessage(sessionId: string): string | null {
-  const row = getDb().prepare(
-    "SELECT content FROM messages WHERE session_id = ? AND role = 'user' ORDER BY created_at ASC LIMIT 1"
-  ).get(sessionId) as { content: string } | undefined;
+  const row = getDb()
+    .prepare(
+      "SELECT content FROM messages WHERE session_id = ? AND role = 'user' ORDER BY created_at ASC LIMIT 1",
+    )
+    .get(sessionId) as { content: string } | undefined;
   return row?.content ?? null;
 }
 
@@ -450,8 +489,19 @@ export function saveMessage(msg: Omit<Message, 'created_at'>): void {
   const db = getDb();
   db.prepare(
     `INSERT INTO messages (id, session_id, role, content, attachments_json, tool_calls_json, token_usage_json, reasoning_json, parts_json, trace_json)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(msg.id, msg.session_id, msg.role, msg.content, msg.attachments_json, msg.tool_calls_json, msg.token_usage_json ?? '{}', msg.reasoning_json ?? '', msg.parts_json ?? '[]', msg.trace_json ?? '[]');
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    msg.id,
+    msg.session_id,
+    msg.role,
+    msg.content,
+    msg.attachments_json,
+    msg.tool_calls_json,
+    msg.token_usage_json ?? '{}',
+    msg.reasoning_json ?? '',
+    msg.parts_json ?? '[]',
+    msg.trace_json ?? '[]',
+  );
 
   // Also write to the persistent token usage log so stats survive message/session deletion
   recordAssistantTokenUsage(msg);
@@ -466,15 +516,23 @@ export function saveMessage(msg: Omit<Message, 'created_at'>): void {
 function recordAssistantTokenUsage(msg: Omit<Message, 'created_at'>): void {
   if (msg.role !== 'assistant') return;
   try {
-    const usage = JSON.parse(msg.token_usage_json ?? '{}') as { input?: number; cached?: number; output?: number };
+    const usage = JSON.parse(msg.token_usage_json ?? '{}') as {
+      input?: number;
+      cached?: number;
+      output?: number;
+    };
     const inp = usage.input ?? 0;
     const out = usage.output ?? 0;
     if (inp <= 0 && out <= 0) return;
-    getDb().prepare(
-      `INSERT OR IGNORE INTO token_usage_log (id, day, input, cached, output)
-       VALUES (?, date('now', 'localtime'), ?, ?, ?)`
-    ).run(msg.id, inp, usage.cached ?? 0, out);
-  } catch { /* ignore JSON parse errors */ }
+    getDb()
+      .prepare(
+        `INSERT OR IGNORE INTO token_usage_log (id, day, input, cached, output)
+       VALUES (?, date('now', 'localtime'), ?, ?, ?)`,
+      )
+      .run(msg.id, inp, usage.cached ?? 0, out);
+  } catch {
+    /* ignore JSON parse errors */
+  }
 }
 
 /**
@@ -500,20 +558,26 @@ export function upsertAssistantMessage(msg: Omit<Message, 'created_at'>): void {
        token_usage_json = excluded.token_usage_json,
        reasoning_json   = excluded.reasoning_json,
        parts_json       = excluded.parts_json,
-       trace_json       = excluded.trace_json`
+       trace_json       = excluded.trace_json`,
   ).run(
-    msg.id, msg.session_id, msg.role, msg.content,
-    msg.attachments_json, msg.tool_calls_json,
-    msg.token_usage_json ?? '{}', msg.reasoning_json ?? '',
-    msg.parts_json ?? '[]', msg.trace_json ?? '[]',
+    msg.id,
+    msg.session_id,
+    msg.role,
+    msg.content,
+    msg.attachments_json,
+    msg.tool_calls_json,
+    msg.token_usage_json ?? '{}',
+    msg.reasoning_json ?? '',
+    msg.parts_json ?? '[]',
+    msg.trace_json ?? '[]',
   );
   recordAssistantTokenUsage(msg);
 }
 
 export function getMessages(sessionId: string): Message[] {
-  return getDb().prepare(
-    'SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC'
-  ).all(sessionId) as Message[];
+  return getDb()
+    .prepare('SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC')
+    .all(sessionId) as Message[];
 }
 
 /**
@@ -521,9 +585,9 @@ export function getMessages(sessionId: string): Message[] {
  * the frontend whether more rows exist before the currently-loaded window.
  */
 export function countMessages(sessionId: string): number {
-  const row = getDb().prepare(
-    'SELECT COUNT(*) AS n FROM messages WHERE session_id = ?'
-  ).get(sessionId) as { n: number } | undefined;
+  const row = getDb()
+    .prepare('SELECT COUNT(*) AS n FROM messages WHERE session_id = ?')
+    .get(sessionId) as { n: number } | undefined;
   return row?.n ?? 0;
 }
 
@@ -559,16 +623,20 @@ export function getMessagesPage(
   // instead of the newest messages.
   const hasCursor = before !== undefined && before !== null;
   const rows = hasCursor
-    ? db.prepare(
-        `SELECT *, rowid AS _rowid FROM messages
+    ? (db
+        .prepare(
+          `SELECT *, rowid AS _rowid FROM messages
          WHERE session_id = ? AND rowid < ?
-         ORDER BY rowid DESC LIMIT ?`
-      ).all(sessionId, before, cap + 1) as Array<Message & { _rowid: number }>
-    : db.prepare(
-        `SELECT *, rowid AS _rowid FROM messages
+         ORDER BY rowid DESC LIMIT ?`,
+        )
+        .all(sessionId, before, cap + 1) as Array<Message & { _rowid: number }>)
+    : (db
+        .prepare(
+          `SELECT *, rowid AS _rowid FROM messages
          WHERE session_id = ?
-         ORDER BY rowid DESC LIMIT ?`
-      ).all(sessionId, cap + 1) as Array<Message & { _rowid: number }>;
+         ORDER BY rowid DESC LIMIT ?`,
+        )
+        .all(sessionId, cap + 1) as Array<Message & { _rowid: number }>);
 
   const hasMore = rows.length > cap;
   const messages = (hasMore ? rows.slice(0, cap) : rows).reverse();
@@ -589,11 +657,13 @@ export function getMessagesAfter(
   limit = 200,
 ): Array<Message & { _rowid: number }> {
   const cap = Math.max(1, Math.min(limit, 500));
-  return getDb().prepare(
-    `SELECT *, rowid AS _rowid FROM messages
+  return getDb()
+    .prepare(
+      `SELECT *, rowid AS _rowid FROM messages
      WHERE session_id = ? AND rowid > ?
-     ORDER BY rowid ASC LIMIT ?`
-  ).all(sessionId, after, cap) as Array<Message & { _rowid: number }>;
+     ORDER BY rowid ASC LIMIT ?`,
+    )
+    .all(sessionId, after, cap) as Array<Message & { _rowid: number }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -622,7 +692,8 @@ export function upsertSkill(skill: Skill): void {
   // potential name collision first: reuse the existing row's id so that the
   // subsequent upsert hits the ON CONFLICT(id) path instead of the name
   // UNIQUE constraint.
-  const existing = db.prepare('SELECT id FROM skills WHERE name = ?').get(skill.name) as { id: string } | undefined;
+  const existing = db.prepare('SELECT id FROM skills WHERE name = ?').get(skill.name) as
+    { id: string } | undefined;
   const id = existing?.id ?? skill.id;
   db.prepare(
     `INSERT INTO skills (id, name, github_url, local_path, enabled, manifest_json)
@@ -632,12 +703,14 @@ export function upsertSkill(skill: Skill): void {
        github_url = excluded.github_url,
        local_path = excluded.local_path,
        enabled = excluded.enabled,
-       manifest_json = excluded.manifest_json`
+       manifest_json = excluded.manifest_json`,
   ).run(id, skill.name, skill.github_url, skill.local_path, skill.enabled, skill.manifest_json);
 }
 
 export function setSkillEnabled(id: string, enabled: boolean): void {
-  getDb().prepare('UPDATE skills SET enabled = ? WHERE id = ?').run(enabled ? 1 : 0, id);
+  getDb()
+    .prepare('UPDATE skills SET enabled = ? WHERE id = ?')
+    .run(enabled ? 1 : 0, id);
 }
 
 export function deleteSkill(id: string): void {
@@ -661,12 +734,14 @@ export function listFunctionTools(): FunctionTool[] {
 }
 
 export function getFunctionTool(id: string): FunctionTool | undefined {
-  return getDb().prepare('SELECT * FROM function_tools WHERE id = ?').get(id) as FunctionTool | undefined;
+  return getDb().prepare('SELECT * FROM function_tools WHERE id = ?').get(id) as
+    FunctionTool | undefined;
 }
 
 export function upsertFunctionTool(ft: FunctionTool): void {
   const db = getDb();
-  const existing = db.prepare('SELECT id FROM function_tools WHERE name = ?').get(ft.name) as { id: string } | undefined;
+  const existing = db.prepare('SELECT id FROM function_tools WHERE name = ?').get(ft.name) as
+    { id: string } | undefined;
   const id = existing?.id ?? ft.id;
   db.prepare(
     `INSERT INTO function_tools (id, name, github_url, local_path, enabled, manifest_json)
@@ -676,12 +751,14 @@ export function upsertFunctionTool(ft: FunctionTool): void {
        github_url = excluded.github_url,
        local_path = excluded.local_path,
        enabled = excluded.enabled,
-       manifest_json = excluded.manifest_json`
+       manifest_json = excluded.manifest_json`,
   ).run(id, ft.name, ft.github_url, ft.local_path, ft.enabled, ft.manifest_json);
 }
 
 export function setFunctionToolEnabled(id: string, enabled: boolean): void {
-  getDb().prepare('UPDATE function_tools SET enabled = ? WHERE id = ?').run(enabled ? 1 : 0, id);
+  getDb()
+    .prepare('UPDATE function_tools SET enabled = ? WHERE id = ?')
+    .run(enabled ? 1 : 0, id);
 }
 
 export function deleteFunctionTool(id: string): void {
@@ -719,8 +796,9 @@ export function getMcpServer(id: string): McpServer | undefined {
 }
 
 export function upsertMcpServer(server: McpServer): void {
-  getDb().prepare(
-    `INSERT INTO mcp_servers (id, name, github_url, local_path, transport, command, args_json, url, enabled, env_json)
+  getDb()
+    .prepare(
+      `INSERT INTO mcp_servers (id, name, github_url, local_path, transport, command, args_json, url, enabled, env_json)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        name = excluded.name,
@@ -731,23 +809,26 @@ export function upsertMcpServer(server: McpServer): void {
        args_json = excluded.args_json,
        url = excluded.url,
        enabled = excluded.enabled,
-       env_json = excluded.env_json`
-  ).run(
-    server.id,
-    server.name,
-    server.github_url,
-    server.local_path,
-    server.transport,
-    server.command,
-    server.args_json,
-    server.url,
-    server.enabled,
-    server.env_json ?? '{}',
-  );
+       env_json = excluded.env_json`,
+    )
+    .run(
+      server.id,
+      server.name,
+      server.github_url,
+      server.local_path,
+      server.transport,
+      server.command,
+      server.args_json,
+      server.url,
+      server.enabled,
+      server.env_json ?? '{}',
+    );
 }
 
 export function setMcpServerEnabled(id: string, enabled: boolean): void {
-  getDb().prepare('UPDATE mcp_servers SET enabled = ? WHERE id = ?').run(enabled ? 1 : 0, id);
+  getDb()
+    .prepare('UPDATE mcp_servers SET enabled = ? WHERE id = ?')
+    .run(enabled ? 1 : 0, id);
 }
 
 export function deleteMcpServer(id: string): void {
@@ -759,7 +840,7 @@ export function deleteMcpServer(id: string): void {
 // ---------------------------------------------------------------------------
 
 export interface DailyTokenStats {
-  day: string;         // 'YYYY-MM-DD'
+  day: string; // 'YYYY-MM-DD'
   input: number;
   cached: number;
   output: number;
@@ -772,7 +853,9 @@ export interface DailyTokenStats {
  */
 export function getDailyTokenStats(days: number): DailyTokenStats[] {
   const db = getDb();
-  const rows = db.prepare(`
+  const rows = db
+    .prepare(
+      `
     SELECT
       day,
       CAST(SUM(input)  AS INTEGER) AS input,
@@ -782,11 +865,13 @@ export function getDailyTokenStats(days: number): DailyTokenStats[] {
     WHERE created_at >= unixepoch('now', ?)
     GROUP BY day
     ORDER BY day ASC
-  `).all(`-${days} days`) as DailyTokenStats[];
+  `,
+    )
+    .all(`-${days} days`) as DailyTokenStats[];
 
   // Fill in every calendar day in the requested range with zeros so the chart
   // always spans the full window — days with no activity should show as empty bars.
-  const byDay = new Map(rows.map(r => [r.day, r]));
+  const byDay = new Map(rows.map((r) => [r.day, r]));
   const filled: DailyTokenStats[] = [];
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date();
@@ -802,14 +887,18 @@ export function getDailyTokenStats(days: number): DailyTokenStats[] {
  */
 export function getTotalTokenStats(days: number): TokenUsage {
   const db = getDb();
-  const row = db.prepare(`
+  const row = db
+    .prepare(
+      `
     SELECT
       CAST(COALESCE(SUM(input),  0) AS INTEGER) AS input,
       CAST(COALESCE(SUM(cached), 0) AS INTEGER) AS cached,
       CAST(COALESCE(SUM(output), 0) AS INTEGER) AS output
     FROM token_usage_log
     WHERE created_at >= unixepoch('now', ?)
-  `).get(`-${days} days`) as TokenUsage | undefined;
+  `,
+    )
+    .get(`-${days} days`) as TokenUsage | undefined;
   return row ?? { input: 0, cached: 0, output: 0 };
 }
 
@@ -839,14 +928,14 @@ export function createAgentTask(
 ): void {
   getDb()
     .prepare(
-      'INSERT INTO agent_tasks (id, project_folder, assigner, assignee, prompt, task_file) VALUES (?, ?, ?, ?, ?, ?)'
+      'INSERT INTO agent_tasks (id, project_folder, assigner, assignee, prompt, task_file) VALUES (?, ?, ?, ?, ?, ?)',
     )
     .run(id, projectFolder, assigner, assignee, prompt, taskFile);
 }
 
 export function finishAgentTask(id: string, status: 'finished' | 'error' | 'interrupted'): void {
   getDb()
-    .prepare("UPDATE agent_tasks SET status = ?, finished_at = unixepoch() WHERE id = ?")
+    .prepare('UPDATE agent_tasks SET status = ?, finished_at = unixepoch() WHERE id = ?')
     .run(status, id);
 }
 
@@ -857,7 +946,7 @@ export function getAgentTask(id: string): AgentTask | undefined {
 export function listAgentTasksByAgent(agentName: string): AgentTask[] {
   return getDb()
     .prepare(
-      'SELECT * FROM agent_tasks WHERE assigner = ? OR assignee = ? ORDER BY created_at DESC LIMIT 100'
+      'SELECT * FROM agent_tasks WHERE assigner = ? OR assignee = ? ORDER BY created_at DESC LIMIT 100',
     )
     .all(agentName, agentName) as AgentTask[];
 }
@@ -885,7 +974,7 @@ export function createAgentNotification(
 ): void {
   getDb()
     .prepare(
-      'INSERT INTO agent_notifications (id, session_id, task_id, task_file, summary) VALUES (?, ?, ?, ?, ?)'
+      'INSERT INTO agent_notifications (id, session_id, task_id, task_file, summary) VALUES (?, ?, ?, ?, ?)',
     )
     .run(id, sessionId, taskId, taskFile, summary);
 }
@@ -893,7 +982,7 @@ export function createAgentNotification(
 export function getPendingNotifications(sessionId: string): AgentNotification[] {
   return getDb()
     .prepare(
-      'SELECT * FROM agent_notifications WHERE session_id = ? AND read_at IS NULL ORDER BY created_at ASC'
+      'SELECT * FROM agent_notifications WHERE session_id = ? AND read_at IS NULL ORDER BY created_at ASC',
     )
     .all(sessionId) as AgentNotification[];
 }
@@ -901,7 +990,7 @@ export function getPendingNotifications(sessionId: string): AgentNotification[] 
 export function markNotificationsRead(sessionId: string): void {
   getDb()
     .prepare(
-      'UPDATE agent_notifications SET read_at = unixepoch() WHERE session_id = ? AND read_at IS NULL'
+      'UPDATE agent_notifications SET read_at = unixepoch() WHERE session_id = ? AND read_at IS NULL',
     )
     .run(sessionId);
 }
@@ -922,7 +1011,10 @@ export function listLessonProgress(username: string): LessonProgress[] {
     .all(username) as LessonProgress[];
 }
 
-export function getLessonProgress(username: string, lessonSlug: string): LessonProgress | undefined {
+export function getLessonProgress(
+  username: string,
+  lessonSlug: string,
+): LessonProgress | undefined {
   return getDb()
     .prepare('SELECT * FROM lesson_progress WHERE username = ? AND lesson_slug = ?')
     .get(username, lessonSlug) as LessonProgress | undefined;
@@ -947,7 +1039,7 @@ export function upsertLessonProgress(
          completed_at = CASE
            WHEN excluded.status = 'completed' THEN COALESCE(lesson_progress.completed_at, unixepoch())
            ELSE lesson_progress.completed_at
-         END`
+         END`,
     )
     .run(username, lessonSlug, status, quizScore ?? null, quizTotal ?? null, status);
   return getLessonProgress(username, lessonSlug)!;

@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAgentConfig, getAgentMemoryRelativePath, getAgentRelativePath, readMemory, readSystemPrompt, hasNoTools, MAIN_AGENT_NAME } from '@/lib/memory';
-import { getPendingNotifications } from '@/lib/db';
 import {
-  buildSystemPrompt,
-  createBuiltinTools,
-  toolsToOpenAIFormat,
-} from '@/lib/agent';
+  getAgentConfig,
+  getAgentMemoryRelativePath,
+  getAgentRelativePath,
+  readMemory,
+  readSystemPrompt,
+  hasNoTools,
+  MAIN_AGENT_NAME,
+} from '@/lib/memory';
+import { getPendingNotifications } from '@/lib/db';
+import { buildSystemPrompt, createBuiltinTools, toolsToOpenAIFormat } from '@/lib/agent';
 import { loadFunctionTools } from '@/lib/function-tools-loader';
 import { loadMcpTools } from '@/lib/mcp-client';
 import { getSetting } from '@/lib/db';
@@ -65,9 +69,9 @@ export async function GET(request: NextRequest) {
       // actually receives on a name collision (mcp beats function, builtin
       // beats both).
       const sourceMap = new Map<string, ToolSource>();
-      Object.keys(functionTools).forEach(n => sourceMap.set(n, 'function'));
-      Object.keys(mcpTools).forEach(n => sourceMap.set(n, 'mcp'));
-      Object.keys(builtins).forEach(n => sourceMap.set(n, 'builtin'));
+      Object.keys(functionTools).forEach((n) => sourceMap.set(n, 'function'));
+      Object.keys(mcpTools).forEach((n) => sourceMap.set(n, 'mcp'));
+      Object.keys(builtins).forEach((n) => sourceMap.set(n, 'builtin'));
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const merged = { ...functionTools, ...mcpTools, ...builtins } as any;
@@ -76,7 +80,7 @@ export async function GET(request: NextRequest) {
       // type widens to the union ChatCompletionFunctionTool | ChatCompletionCustomTool.
       // Narrow once here so the `.function.name` access below is type-safe.
       toolsJSON = toolsToOpenAIFormat(merged);
-      toolSources = (toolsJSON as Array<{ function: { name: string } }>).map(t => ({
+      toolSources = (toolsJSON as Array<{ function: { name: string } }>).map((t) => ({
         name: t.function.name,
         source: sourceMap.get(t.function.name) ?? 'builtin',
       }));

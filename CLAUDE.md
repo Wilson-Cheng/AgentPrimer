@@ -15,12 +15,12 @@ Local RAG embeddings run in-process via `@huggingface/transformers` (the `all-Mi
 
 ## Architecture Overview
 
-AgentPrimer is a **full-stack AI agent platform** built on Next.js 16 (App Router) with a hand-written ReAct agent loop. It uses the `openai` npm package directly (not `@ai-sdk/openai`) to preserve vendor-specific fields like `reasoning_content`. The Vercel AI SDK is used only for the browser data stream protocol (`createDataStreamResponse` + `useChat`).
+AgentPrimer is a **full-stack AI agent platform** built on Next.js 16 (App Router) with a hand-written ReAct agent loop. It uses the `openai` npm package directly (not `@ai-sdk/openai`) to preserve vendor-specific fields like `reasoning_content`. The AI SDK supplies the browser chat hook and stream primitives; AgentPrimer adapts its hand-written loop to that UI stream protocol.
 
 ### Key Design Decisions
 
 - **Auth middleware** must be named `proxy.ts` (not `middleware.ts`) — Next.js 16 silently ignores `middleware.ts`
-- **Agent loop** is hand-written in [lib/agent.ts](lib/agent.ts): the for loop that checks `finish_reason`, accumulates streaming tool call fragments, and re-calls the LLM with tool results
+- **Agent loop** is hand-written in [lib/agent/loop.ts](lib/agent/loop.ts): the for loop that checks `finish_reason`, accumulates streaming tool call fragments, and re-calls the LLM with tool results
 - **API key** stored in SQLite settings table, not env vars — supports runtime provider switching
 - **Skills (SKILL.md)** are instruction modules injected into the system prompt — not callable functions. Use **function tools** (`function.json` + `index.js`) for callable code; they run in `child_process.spawn()` with a 256 MB memory cap and 35s timeout
 - **All persistent state** lives under `data/` directory — single Docker volume mount point
@@ -29,7 +29,9 @@ AgentPrimer is a **full-stack AI agent platform** built on Next.js 16 (App Route
 
 ```
 app/api/chat/route.ts     — POST /api/chat streaming entry point
-lib/agent.ts              — ★ Core agent loop (ReAct, streaming, tool dispatch, structured output)
+lib/agent.ts              — Barrel export for lib/agent/*
+lib/agent/streaming-agent.ts — ★ createStreamingAgent entry point
+lib/agent/loop.ts         — ★ Core agent loop (ReAct, streaming, tool dispatch, structured output)
 lib/db.ts                 — SQLite layer (better-sqlite3, WAL mode, auto-migration)
 lib/memory.ts             — agents/<agent>/memory.md / agents/<agent>/agent.md / system.md helpers
 lib/auth.ts               — JWT auth (jose), bcrypt password hashing
@@ -78,7 +80,7 @@ Database file: `data/db/agent.db`. All migrations are additive (`CREATE TABLE IF
 |-------|-----------|
 | Framework | Next.js 16 (App Router) |
 | LLM API | `openai` npm package (direct, not Vercel adapter) |
-| Stream wire | Vercel AI SDK (`ai@4.3.19`) — wire protocol only |
+| Stream wire | AI SDK (`ai@6.x`, `@ai-sdk/react@3.x`) — UI stream protocol |
 | Database | `better-sqlite3` (synchronous, WAL mode) |
 | Auth | JWT via `jose` (httpOnly cookies) |
 | Validation | Zod + zod-to-json-schema |
@@ -111,4 +113,4 @@ Five agents ship by default: `main`, `researcher`, `coder`, `extractor`, and `ex
 2. **API key in DB**: Not in `.env` — read from SQLite `settings` table
 3. **Streaming headers**: Add `X-Accel-Buffering: no` and `Cache-Control: no-cache, no-transform` to SSE responses when behind nginx
 4. **`serverExternalPackages`** in [next.config.ts](next.config.ts): `better-sqlite3`, `@modelcontextprotocol/sdk`, `simple-git` must be external (not bundled)
-5. **`zod-to-json-schema` adds `$schema`**: Must delete `$schema` from the output before sending to OpenAI (see `zodToOpenAISchema` in [lib/agent.ts](lib/agent.ts))
+5. **`zod-to-json-schema` adds `$schema`**: Must delete `$schema` from the output before sending to OpenAI (see `zodToOpenAISchema` in [lib/agent/schema.ts](lib/agent/schema.ts))

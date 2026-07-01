@@ -15,19 +15,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { listFunctionTools, upsertFunctionTool, deleteFunctionTool, setFunctionToolEnabled } from '@/lib/db';
+import {
+  listFunctionTools,
+  upsertFunctionTool,
+  deleteFunctionTool,
+  setFunctionToolEnabled,
+} from '@/lib/db';
 import { isInsideRoot } from '@/lib/path-security';
 import { randomUUID } from 'crypto';
 
 export const runtime = 'nodejs';
 
-const FUNCTION_TOOLS_ROOT = path.resolve(/* turbopackIgnore: true */ process.cwd(), 'data', 'function-tools');
+const FUNCTION_TOOLS_ROOT = path.resolve(
+  /* turbopackIgnore: true */ process.cwd(),
+  'data',
+  'function-tools',
+);
 
 // GET /api/function-tools – list all registered + discovered function tools
 export async function GET() {
-  const registered = listFunctionTools().map(ft => {
+  const registered = listFunctionTools().map((ft) => {
     let manifest: Record<string, unknown> = {};
-    try { manifest = JSON.parse(ft.manifest_json); } catch { /* ignore parse errors */ }
+    try {
+      manifest = JSON.parse(ft.manifest_json);
+    } catch {
+      /* ignore parse errors */
+    }
     return {
       id: ft.id,
       name: ft.name,
@@ -43,7 +56,7 @@ export async function GET() {
   });
 
   // Discover unregistered function tools in data/function-tools/<name>/function.json
-  const registeredPaths = new Set(listFunctionTools().map(ft => ft.local_path));
+  const registeredPaths = new Set(listFunctionTools().map((ft) => ft.local_path));
   const toolsDir = path.join(/* turbopackIgnore: true */ process.cwd(), 'data', 'function-tools');
   const discovered: Array<Record<string, unknown>> = [];
 
@@ -90,18 +103,27 @@ export async function POST(request: NextRequest) {
 
   const dir = path.resolve(localPath);
   if (!isInsideRoot(FUNCTION_TOOLS_ROOT, dir)) {
-    return NextResponse.json({ error: 'Local function tools must be inside data/function-tools' }, { status: 403 });
+    return NextResponse.json(
+      { error: 'Local function tools must be inside data/function-tools' },
+      { status: 403 },
+    );
   }
 
   const manifestPath = path.join(dir, 'function.json');
   const indexPath = path.join(dir, 'index.js');
   if (!fs.existsSync(manifestPath) || !fs.existsSync(indexPath)) {
-    return NextResponse.json({ error: 'Directory must contain function.json and index.js' }, { status: 422 });
+    return NextResponse.json(
+      { error: 'Directory must contain function.json and index.js' },
+      { status: 422 },
+    );
   }
 
   let manifest: Record<string, unknown>;
-  try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8')); }
-  catch { return NextResponse.json({ error: 'Invalid function.json' }, { status: 422 }); }
+  try {
+    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  } catch {
+    return NextResponse.json({ error: 'Invalid function.json' }, { status: 422 });
+  }
 
   if (!manifest.name) {
     return NextResponse.json({ error: 'function.json must have a name field' }, { status: 422 });

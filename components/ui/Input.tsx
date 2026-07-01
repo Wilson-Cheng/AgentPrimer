@@ -17,9 +17,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, icon, className = '', ...props }, ref) => {
     return (
       <div className="flex flex-col gap-1.5">
-        {label && (
-          <label className="text-sm font-600 text-gray-700 tracking-wide">{label}</label>
-        )}
+        {label && <label className="text-sm font-600 text-gray-700 tracking-wide">{label}</label>}
         <div className="relative">
           {icon && (
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
@@ -45,7 +43,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
       </div>
     );
-  }
+  },
 );
 
 Input.displayName = 'Input';
@@ -59,9 +57,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, error, className = '', ...props }, ref) => {
     return (
       <div className="flex flex-col gap-1.5">
-        {label && (
-          <label className="text-sm font-semibold text-gray-700">{label}</label>
-        )}
+        {label && <label className="text-sm font-semibold text-gray-700">{label}</label>}
         <textarea
           ref={ref}
           className={`
@@ -80,7 +76,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
       </div>
     );
-  }
+  },
 );
 
 Textarea.displayName = 'Textarea';

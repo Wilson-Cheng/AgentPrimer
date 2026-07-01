@@ -15,7 +15,7 @@ import { DATA_DIR } from './db';
 export const MAIN_AGENT_NAME = 'main';
 
 export const SYSTEM_FILE = path.join(DATA_DIR, 'system.md');
-export const AGENTS_DIR  = path.join(DATA_DIR, 'agents');
+export const AGENTS_DIR = path.join(DATA_DIR, 'agents');
 
 const DEFAULT_MEMORY = `# Agent Memory
 
@@ -118,7 +118,6 @@ export function writeMemory(content: string, agentName = MAIN_AGENT_NAME): void 
   fs.writeFileSync(getAgentMemoryFile(agentName), content, 'utf-8');
 }
 
-
 export interface OutputSchema {
   label: string;
   description: string;
@@ -134,12 +133,14 @@ export interface AgentConfig {
 }
 
 export function hasNoTools(tools: AgentConfig['tools']): boolean {
-  return Array.isArray(tools)
-    && tools.length === 1
-    && tools[0].toLowerCase() === 'none';
+  return Array.isArray(tools) && tools.length === 1 && tools[0].toLowerCase() === 'none';
 }
 
-function parseOutputSchema(block: string, agentDir: string, name: string): OutputSchema | undefined {
+function parseOutputSchema(
+  block: string,
+  agentDir: string,
+  name: string,
+): OutputSchema | undefined {
   const labelMatch = block.match(
     /\*\*Output Schema:\*\*\s*([^\n]+)\n([\s\S]*?)(?=\n\*\*(?:System Prompt|Tools|Model|Output Schema|Output Schema File):\*\*|$)/i,
   );
@@ -149,10 +150,11 @@ function parseOutputSchema(block: string, agentDir: string, name: string): Outpu
   const label = labelMatch?.[1]?.trim() || 'Output Schema';
   const afterLabel = labelMatch?.[2] ?? '';
   const beforeFence = afterLabel.split(/```json/i)[0];
-  const description = beforeFence
-    .split('\n')
-    .map(l => l.trim())
-    .find(l => l.length > 0) ?? '';
+  const description =
+    beforeFence
+      .split('\n')
+      .map((l) => l.trim())
+      .find((l) => l.length > 0) ?? '';
 
   let schemaRaw = '';
   if (schemaFileMatch) {
@@ -165,7 +167,9 @@ function parseOutputSchema(block: string, agentDir: string, name: string): Outpu
     try {
       schemaRaw = fs.readFileSync(resolved, 'utf-8');
     } catch (err) {
-      console.warn(`[agent] Failed to read schema file for "${name}": ${err instanceof Error ? err.message : String(err)}.`);
+      console.warn(
+        `[agent] Failed to read schema file for "${name}": ${err instanceof Error ? err.message : String(err)}.`,
+      );
       return undefined;
     }
   } else {
@@ -180,7 +184,7 @@ function parseOutputSchema(block: string, agentDir: string, name: string): Outpu
   } catch (err) {
     console.warn(
       `[agent] Failed to parse JSON schema for agent "${name}": ${err instanceof Error ? err.message : String(err)}. ` +
-      `Agent will fall back to the regular ReAct loop.`,
+        `Agent will fall back to the regular ReAct loop.`,
     );
     return undefined;
   }
@@ -195,15 +199,21 @@ export function parseAgentConfig(agentName: string): AgentConfig | null {
   const headingName = firstLine.startsWith('#') ? firstLine.replace(/^#+\s*/, '').trim() : '';
   const name = headingName || safeAgentDirName(agentName);
 
-  const systemPromptMatch = block.match(/\*\*System Prompt:\*\*[ \t]*([\s\S]*?)(?=\n\*\*(?:Tools|Model|Output Schema|Output Schema File):\*\*|$)/i);
+  const systemPromptMatch = block.match(
+    /\*\*System Prompt:\*\*[ \t]*([\s\S]*?)(?=\n\*\*(?:Tools|Model|Output Schema|Output Schema File):\*\*|$)/i,
+  );
   const systemPrompt = systemPromptMatch ? systemPromptMatch[1].trim() : '';
 
   const hasSchema = /\*\*(?:Output Schema|Output Schema File):\*\*/i.test(block);
   const toolsMatch = block.match(/\*\*Tools:\*\*\s*([^\n]+)/i);
-  const toolsRaw = toolsMatch ? toolsMatch[1].trim() : (hasSchema ? 'none' : 'all');
-  const tools: string[] | 'all' = toolsRaw.toLowerCase() === 'all'
-    ? 'all'
-    : toolsRaw.split(',').map(t => t.trim()).filter(Boolean);
+  const toolsRaw = toolsMatch ? toolsMatch[1].trim() : hasSchema ? 'none' : 'all';
+  const tools: string[] | 'all' =
+    toolsRaw.toLowerCase() === 'all'
+      ? 'all'
+      : toolsRaw
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean);
 
   const modelMatch = block.match(/\*\*Model:\*\*\s*([^\n]+)/i);
   const modelRaw = modelMatch ? modelMatch[1].trim() : '';
@@ -217,9 +227,10 @@ export function parseAgentConfig(agentName: string): AgentConfig | null {
 export function listAgentNames(): string[] {
   ensureMainAgent();
   if (!fs.existsSync(AGENTS_DIR)) return [MAIN_AGENT_NAME];
-  const names = fs.readdirSync(AGENTS_DIR, { withFileTypes: true })
-    .filter(e => e.isDirectory() && fs.existsSync(path.join(AGENTS_DIR, e.name, 'agent.md')))
-    .map(e => parseAgentConfig(e.name)?.name ?? e.name)
+  const names = fs
+    .readdirSync(AGENTS_DIR, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && fs.existsSync(path.join(AGENTS_DIR, e.name, 'agent.md')))
+    .map((e) => parseAgentConfig(e.name)?.name ?? e.name)
     .filter(Boolean)
     .sort((a, b) => {
       if (a === MAIN_AGENT_NAME) return -1;
@@ -231,14 +242,17 @@ export function listAgentNames(): string[] {
 
 export function parseAgentsConfig(): AgentConfig[] {
   return listAgentNames()
-    .map(name => parseAgentConfig(name))
+    .map((name) => parseAgentConfig(name))
     .filter((agent): agent is AgentConfig => agent !== null);
 }
 
 export function getAgentConfig(name: string): AgentConfig {
-  return parseAgentConfig(name) ?? parseAgentConfig(MAIN_AGENT_NAME) ?? {
-    name: MAIN_AGENT_NAME,
-    systemPrompt: '',
-    tools: 'all',
-  };
+  return (
+    parseAgentConfig(name) ??
+    parseAgentConfig(MAIN_AGENT_NAME) ?? {
+      name: MAIN_AGENT_NAME,
+      systemPrompt: '',
+      tools: 'all',
+    }
+  );
 }

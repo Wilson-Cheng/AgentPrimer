@@ -40,11 +40,13 @@ export default function CustomDropDown({
 
   const filtered = useMemo(() => {
     const trimmed = query.trim().toLowerCase();
-    return trimmed ? models.filter(m => m.toLowerCase().includes(trimmed)) : models;
+    return trimmed ? models.filter((m) => m.toLowerCase().includes(trimmed)) : models;
   }, [models, query]);
 
   const openPicker = () => {
-    setMobilePopup(typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+    setMobilePopup(
+      typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches,
+    );
     setOpen(true);
   };
 
@@ -56,7 +58,11 @@ export default function CustomDropDown({
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
-      if (!mobilePopup && containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        !mobilePopup &&
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         closePicker();
       }
     };
@@ -67,7 +73,7 @@ export default function CustomDropDown({
   useEffect(() => {
     if (open) {
       setTimeout(() => searchRef.current?.focus(), 0);
-      const selectedIndex = filtered.findIndex(m => m === value);
+      const selectedIndex = filtered.findIndex((m) => m === value);
       setHighlighted(selectedIndex >= 0 ? selectedIndex : 0);
     }
   }, [filtered, open, value]);
@@ -91,13 +97,27 @@ export default function CustomDropDown({
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') { closePicker(); return; }
-    if (e.key === 'ArrowDown') { e.preventDefault(); setHighlighted(h => Math.min(h + 1, filtered.length - 1)); return; }
-    if (e.key === 'ArrowUp')   { e.preventDefault(); setHighlighted(h => Math.max(h - 1, 0)); return; }
+    if (e.key === 'Escape') {
+      closePicker();
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlighted((h) => Math.min(h + 1, filtered.length - 1));
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlighted((h) => Math.max(h - 1, 0));
+      return;
+    }
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (filtered[highlighted]) { select(filtered[highlighted]); }
-      else if (allowFreeText && query.trim()) { select(query.trim()); }
+      if (filtered[highlighted]) {
+        select(filtered[highlighted]);
+      } else if (allowFreeText && query.trim()) {
+        select(query.trim());
+      }
     }
   };
 
@@ -105,11 +125,17 @@ export default function CustomDropDown({
     <>
       <div className="p-2 border-b border-gray-100 dark:border-gray-700">
         <div className="relative">
-          <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <Search
+            size={15}
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+          />
           <input
             ref={searchRef}
             value={query}
-            onChange={e => { setQuery(e.target.value); setHighlighted(0); }}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setHighlighted(0);
+            }}
             onKeyDown={handleSearchKeyDown}
             placeholder={searchPlaceholder}
             className="w-full h-9 pl-7 pr-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm rounded-lg border border-gray-200 dark:border-gray-600 focus:outline-none focus:border-blue-500 transition-colors"
@@ -119,7 +145,10 @@ export default function CustomDropDown({
       <div ref={listRef} className="max-h-[55dvh] md:max-h-72 overflow-y-auto py-1">
         {filtered.length === 0 ? (
           allowFreeText && query.trim() ? (
-            <button onClick={() => select(query.trim())} className="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+            <button
+              onClick={() => select(query.trim())}
+              className="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+            >
               Use &ldquo;{query.trim()}&rdquo;
             </button>
           ) : (
@@ -143,7 +172,8 @@ export default function CustomDropDown({
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/60'
                 }`}
               >
-                {isSelected && <span className="mr-1.5 text-blue-500">✓</span>}{m}
+                {isSelected && <span className="mr-1.5 text-blue-500">✓</span>}
+                {m}
               </button>
             );
           })
@@ -158,10 +188,13 @@ export default function CustomDropDown({
   );
 
   return (
-    <div ref={containerRef} className={`relative ${compact ? 'w-full' : 'min-w-[180px]'} ${className}`}>
+    <div
+      ref={containerRef}
+      className={`relative ${compact ? 'w-full' : 'min-w-[180px]'} ${className}`}
+    >
       <button
         type="button"
-        onClick={() => open ? closePicker() : openPicker()}
+        onClick={() => (open ? closePicker() : openPicker())}
         onKeyDown={handleTriggerKeyDown}
         className={`
           w-full h-9 pl-9 pr-8 text-left
@@ -177,9 +210,14 @@ export default function CustomDropDown({
             {icon}
           </span>
         ) : (
-          <Cpu size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <Cpu
+            size={14}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+          />
         )}
-        <span className="truncate">{value || <span className="text-gray-400">{placeholder}</span>}</span>
+        <span className="truncate">
+          {value || <span className="text-gray-400">{placeholder}</span>}
+        </span>
         <ChevronDown
           size={14}
           className={`absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none transition-transform ${open ? 'rotate-180' : ''}`}
@@ -187,17 +225,33 @@ export default function CustomDropDown({
       </button>
 
       {open && !mobilePopup && (
-        <div className={`absolute z-50 mt-1 ${align === 'left' ? 'left-0' : 'right-0'} w-full min-w-[260px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-2xl overflow-hidden`}>
+        <div
+          className={`absolute z-50 mt-1 ${align === 'left' ? 'left-0' : 'right-0'} w-full min-w-[260px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-2xl overflow-hidden`}
+        >
           {panel}
         </div>
       )}
 
       {open && mobilePopup && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/45 backdrop-blur-sm" onClick={closePicker}>
-          <div className="w-full max-w-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/45 backdrop-blur-sm"
+          onClick={closePicker}
+        >
+          <div
+            className="w-full max-w-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-2xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-              <p className="text-sm font-800 text-gray-900 dark:text-gray-100">Select {noun.singular}</p>
-              <button type="button" onClick={closePicker} className="h-8 w-8 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200">×</button>
+              <p className="text-sm font-800 text-gray-900 dark:text-gray-100">
+                Select {noun.singular}
+              </p>
+              <button
+                type="button"
+                onClick={closePicker}
+                className="h-8 w-8 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200"
+              >
+                ×
+              </button>
             </div>
             {panel}
           </div>

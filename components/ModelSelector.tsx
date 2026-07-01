@@ -15,7 +15,12 @@ interface ModelSelectorProps {
 /**
  * ModelSelector – fetches model list from /api/models and renders a searchable dropdown.
  */
-export default function ModelSelector({ value, onChange, className = '', compact = false }: ModelSelectorProps) {
+export default function ModelSelector({
+  value,
+  onChange,
+  className = '',
+  compact = false,
+}: ModelSelectorProps) {
   const [models, setModels] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -37,9 +42,7 @@ export default function ModelSelector({ value, onChange, className = '', compact
         // Only auto-select when the current value is empty or not in the list
         if (!value || !list.includes(value)) {
           const defaultModel: string = settingsData.settings?.default_model ?? '';
-          const best = (defaultModel && list.includes(defaultModel))
-            ? defaultModel
-            : list[0];
+          const best = defaultModel && list.includes(defaultModel) ? defaultModel : list[0];
           onChange(best);
         }
       } else {
@@ -61,12 +64,16 @@ export default function ModelSelector({ value, onChange, className = '', compact
   useEffect(() => {
     const cancelled = { current: false };
     doFetch(cancelled);
-    return () => { cancelled.current = true; };
+    return () => {
+      cancelled.current = true;
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (
-      <div className={`flex items-center gap-2 h-9 px-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-400 text-sm ${compact ? 'w-full' : 'min-w-[180px]'} ${className}`}>
+      <div
+        className={`flex items-center gap-2 h-9 px-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-400 text-sm ${compact ? 'w-full' : 'min-w-[180px]'} ${className}`}
+      >
         <Cpu size={14} className="flex-shrink-0" />
         <span className="truncate">Loading models…</span>
       </div>
@@ -76,7 +83,10 @@ export default function ModelSelector({ value, onChange, className = '', compact
   if (error) {
     return (
       <div className={`flex items-center gap-1.5 ${className}`}>
-        <div className={`h-9 px-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg text-red-600 dark:text-red-400 text-sm flex items-center ${compact ? 'flex-1 min-w-0' : 'max-w-[220px]'}`} title={error}>
+        <div
+          className={`h-9 px-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg text-red-600 dark:text-red-400 text-sm flex items-center ${compact ? 'flex-1 min-w-0' : 'max-w-[220px]'}`}
+          title={error}
+        >
           <Cpu size={14} className="flex-shrink-0 mr-1.5" />
           <span className="truncate">{error}</span>
         </div>

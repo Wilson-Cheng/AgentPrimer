@@ -1,4 +1,9 @@
-import { validateCredentials, issueSession, checkLoginRateLimit, resetLoginRateLimit } from '@/lib/auth';
+import {
+  validateCredentials,
+  issueSession,
+  checkLoginRateLimit,
+  resetLoginRateLimit,
+} from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 function clientKey(request: NextRequest): string {

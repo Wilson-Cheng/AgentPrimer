@@ -22,10 +22,12 @@ function isValidTopLevelFile(name: string): boolean {
 }
 
 function isValidAgentFile(name: string): boolean {
-  return /^agents\/[a-zA-Z0-9_\-]+\/[a-zA-Z0-9_\- /.]+\.(md|json)$/.test(name)
-    && !name.includes('..')
-    && !name.includes('\\')
-    && !name.split('/').some(part => part === '');
+  return (
+    /^agents\/[a-zA-Z0-9_\-]+\/[a-zA-Z0-9_\- /.]+\.(md|json)$/.test(name) &&
+    !name.includes('..') &&
+    !name.includes('\\') &&
+    !name.split('/').some((part) => part === '')
+  );
 }
 
 function isValidFile(name: string): boolean {
@@ -76,7 +78,9 @@ export async function GET(request: NextRequest) {
   }
 
   const entries = fs.readdirSync(DATA_ROOT, { withFileTypes: true });
-  const topLevelFiles = entries.filter(e => e.isFile() && e.name.endsWith('.md')).map(e => e.name);
+  const topLevelFiles = entries
+    .filter((e) => e.isFile() && e.name.endsWith('.md'))
+    .map((e) => e.name);
   const agentFiles = listFilesRecursive(AGENTS_DIR, 'agents');
   return NextResponse.json({ files: sortFiles([...topLevelFiles, ...agentFiles]) });
 }
@@ -86,7 +90,8 @@ export async function PUT(request: NextRequest) {
   const { file, content } = body;
 
   if (!isValidFile(file)) return NextResponse.json({ error: 'Invalid filename' }, { status: 400 });
-  if (typeof content !== 'string') return NextResponse.json({ error: 'content required' }, { status: 400 });
+  if (typeof content !== 'string')
+    return NextResponse.json({ error: 'content required' }, { status: 400 });
 
   const filePath = resolveDataPath(file);
   if (!filePath) return NextResponse.json({ error: 'Invalid filename' }, { status: 400 });

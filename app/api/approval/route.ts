@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { grantApproval, listPermanentApprovals, revokePermanentApproval } from '@/lib/approval-store';
+import {
+  grantApproval,
+  listPermanentApprovals,
+  revokePermanentApproval,
+} from '@/lib/approval-store';
 import type { ApprovalOperation, ApprovalScope } from '@/lib/approval-store';
 
 export const runtime = 'nodejs';

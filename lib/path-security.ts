@@ -5,7 +5,9 @@ export const DATA_ROOT = path.join(/* turbopackIgnore: true */ process.cwd(), 'd
 
 export function isInsideRoot(root: string, target: string): boolean {
   const relative = path.relative(path.resolve(root), path.resolve(target));
-  return relative === '' || (!!relative && !relative.startsWith('..') && !path.isAbsolute(relative));
+  return (
+    relative === '' || (!!relative && !relative.startsWith('..') && !path.isAbsolute(relative))
+  );
 }
 
 function realpathIfExists(p: string): string | null {
@@ -26,7 +28,11 @@ function nearestExistingPath(target: string): string | null {
   return current;
 }
 
-function resolvePathWithinRoot(root: string, target: string, allowMissingLeaf = false): string | null {
+function resolvePathWithinRoot(
+  root: string,
+  target: string,
+  allowMissingLeaf = false,
+): string | null {
   const resolvedRoot = path.resolve(root);
   const resolvedTarget = path.resolve(target);
   if (!isInsideRoot(resolvedRoot, resolvedTarget)) return null;

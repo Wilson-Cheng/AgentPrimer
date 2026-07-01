@@ -8,18 +8,18 @@ import BrandLogo from '@/components/BrandLogo';
 export default function RegisterPage() {
   const router = useRouter();
 
-  const [username, setUsername]         = useState('');
-  const [password, setPassword]         = useState('');
-  const [confirm, setConfirm]           = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading]           = useState(false);
-  const [checking, setChecking]         = useState(true);
-  const [error, setError]               = useState('');
+  const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [error, setError] = useState('');
 
   // If setup is already done, redirect to login
   useEffect(() => {
     fetch('/api/auth/setup')
-      .then(r => r.json())
+      .then((r) => r.json())
       .then(({ needsSetup }) => {
         if (!needsSetup) router.replace('/login');
         else setChecking(false);
@@ -110,18 +110,23 @@ export default function RegisterPage() {
           <h1 className="text-3xl font-800 text-gray-900 tracking-tight mb-1">Create account</h1>
           <p className="text-gray-500 text-sm mb-8">
             <span className="hidden lg:inline">Set up your admin credentials to continue</span>
-            <span className="lg:hidden">Create your admin account to get started with your AI agent workspace.</span>
+            <span className="lg:hidden">
+              Create your admin account to get started with your AI agent workspace.
+            </span>
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-600 text-gray-700">Username</label>
               <div className="relative">
-                <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <User
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
                 <input
                   type="text"
                   value={username}
-                  onChange={e => setUsername(e.target.value)}
+                  onChange={(e) => setUsername(e.target.value)}
                   placeholder="admin"
                   autoComplete="username"
                   required
@@ -138,11 +143,14 @@ export default function RegisterPage() {
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-600 text-gray-700">Password</label>
               <div className="relative">
-                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Lock
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   autoComplete="new-password"
                   required
@@ -166,11 +174,14 @@ export default function RegisterPage() {
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-600 text-gray-700">Confirm password</label>
               <div className="relative">
-                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Lock
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={confirm}
-                  onChange={e => setConfirm(e.target.value)}
+                  onChange={(e) => setConfirm(e.target.value)}
                   placeholder="••••••••"
                   autoComplete="new-password"
                   required

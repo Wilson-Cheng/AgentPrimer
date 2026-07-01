@@ -12,10 +12,7 @@
 'use client';
 
 import { memo, useMemo } from 'react';
-import MessageBubble, {
-  type LiveToolInvocation,
-  type UIPart,
-} from '@/components/MessageBubble';
+import MessageBubble, { type LiveToolInvocation, type UIPart } from '@/components/MessageBubble';
 import { detectIncomplete } from './helpers';
 import type { ExtendedMessage } from './types';
 
@@ -29,10 +26,7 @@ interface MessageRowProps {
   showTrace: boolean;
   contextLength: number | undefined;
   outputLength: number | undefined;
-  onApprovalGranted: (
-    inv: LiveToolInvocation,
-    scope: 'once' | 'session' | 'permanent',
-  ) => void;
+  onApprovalGranted: (inv: LiveToolInvocation, scope: 'once' | 'session' | 'permanent') => void;
   onApprovalDenied: (inv: LiveToolInvocation) => void;
   /** Resume callback — only meaningful for the LAST assistant message. */
   onContinue?: () => void;
@@ -117,8 +111,7 @@ export const MessageRow = memo(function MessageRow({
   }, [showTokenUsage, msg.role, msg.token_usage_json]);
 
   const incomplete = useMemo(
-    () =>
-      detectIncomplete(isLast, msg.role, isStreaming, partsForRender, msg.data, msg.content),
+    () => detectIncomplete(isLast, msg.role, isStreaming, partsForRender, msg.data, msg.content),
     [isLast, msg.role, isStreaming, partsForRender, msg.data, msg.content],
   );
 

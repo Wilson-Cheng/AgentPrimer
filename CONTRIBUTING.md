@@ -59,7 +59,7 @@ behaviour changes. If you add a new module under `lib/`, add a matching
 - **TypeScript** — Match the surrounding code's style. Prefer named exports
   over default exports for shared utilities; use a single default export for
   React page/component files.
-- **Tools** — New built-in tools go in [lib/agent.ts](./lib/agent.ts) and
+- **Tools** — New built-in tools go in [lib/agent/builtin-tools.ts](./lib/agent/builtin-tools.ts) and
   must be registered in
   [lib/builtin-tools-registry.ts](./lib/builtin-tools-registry.ts) with a
   meaningful description (the description is what the model reads).

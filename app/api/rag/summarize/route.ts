@@ -22,8 +22,8 @@ export async function POST(req: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = await req.json().catch(() => null) as {
-    sessionId?:      string;
+  const body = (await req.json().catch(() => null)) as {
+    sessionId?: string;
     messageContent?: string;
   } | null;
   if (!body) return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
@@ -36,8 +36,8 @@ export async function POST(req: Request) {
   } else if (body.sessionId?.trim()) {
     const msgs = getMessages(body.sessionId);
     input = msgs
-      .filter(m => m.role === 'user' || m.role === 'assistant')
-      .map(m => `### ${m.role.toUpperCase()}\n\n${m.content}`)
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .map((m) => `### ${m.role.toUpperCase()}\n\n${m.content}`)
       .join('\n\n---\n\n');
   } else {
     return NextResponse.json({ error: 'messageContent or sessionId is required' }, { status: 400 });
@@ -49,8 +49,8 @@ export async function POST(req: Request) {
 
   // Configured chat provider — same settings the agent loop uses
   const baseURL = getSetting('endpoint');
-  const apiKey  = getSetting('api_key') || 'sk-no-key';
-  const model   = getSetting('default_model');
+  const apiKey = getSetting('api_key') || 'sk-no-key';
+  const model = getSetting('default_model');
   if (!baseURL) {
     return NextResponse.json(
       { error: 'No API endpoint configured. Open Settings → Base URL.' },
@@ -70,9 +70,8 @@ export async function POST(req: Request) {
   // ≈ 6k tokens which is comfortable on every supported provider, and the
   // resulting summary is still high-quality for the RAG pipeline.
   const MAX_INPUT_CHARS = 24_000;
-  const truncatedInput = input.length > MAX_INPUT_CHARS
-    ? input.slice(0, MAX_INPUT_CHARS) + '\n\n[…truncated…]'
-    : input;
+  const truncatedInput =
+    input.length > MAX_INPUT_CHARS ? input.slice(0, MAX_INPUT_CHARS) + '\n\n[…truncated…]' : input;
 
   const systemPrompt =
     'You are a precise summarizer. Produce a self-contained summary that ' +
@@ -86,7 +85,7 @@ export async function POST(req: Request) {
         model,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user',   content: truncatedInput },
+          { role: 'user', content: truncatedInput },
         ],
         temperature: 0.2,
       },

@@ -13,7 +13,6 @@
  * content area and the optional preview panel.
  */
 
-
 import { useChat, type Message as UIMessage } from 'ai/react';
 import { useEffect, useRef, useState, useCallback, useMemo, useDeferredValue } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -24,14 +23,27 @@ import ModelSelector from '@/components/ModelSelector';
 import CustomDropDown from '@/components/ui/CustomDropDown';
 import PreviewPanel, { type PreviewFile } from '@/components/PreviewPanel';
 import SystemPromptModal from '@/components/SystemPromptModal';
-import { Bot, ChevronLeft, ChevronRight, PanelRight, PanelRightClose, Pin, PinOff, Bookmark, BookmarkX, MessageSquare, Brain, MoreHorizontal, Pencil, Trash2, ChevronDown } from 'lucide-react';
+import {
+  Bot,
+  ChevronLeft,
+  ChevronRight,
+  PanelRight,
+  PanelRightClose,
+  Pin,
+  PinOff,
+  Bookmark,
+  BookmarkX,
+  MessageSquare,
+  Brain,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  ChevronDown,
+} from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { getContextLength, getOutputLength } from '@/lib/model-lengths';
 import { MessageRow } from '@/components/chat/MessageRow';
-import {
-  INITIAL_PAGE_SIZE,
-  OLDER_PAGE_SIZE,
-} from '@/components/chat/constants';
+import { INITIAL_PAGE_SIZE, OLDER_PAGE_SIZE } from '@/components/chat/constants';
 import {
   getActionMenuPosition,
   parseJsonArray,
@@ -46,7 +58,6 @@ import type {
   Props,
   StoredMessage,
 } from '@/components/chat/types';
-
 
 export default function ChatInterface({ initialSessionId }: Props) {
   const pathname = usePathname();
@@ -107,10 +118,21 @@ export default function ChatInterface({ initialSessionId }: Props) {
   const [showTokenUsage, setShowTokenUsage] = useState(true);
   const [showTrace, setShowTrace] = useState(true);
   // Pinned sessions for new-chat empty state
-  const [pinnedSessions, setPinnedSessions] = useState<Array<{
-    id: string; title: string; agent_name?: string; pinned_chat: number; pinned_prompt: string | null;
-  }>>([]);
-  const [newChatContextMenu, setNewChatContextMenu] = useState<{ id: string; mode: 'chat' | 'prompt'; x: number; y: number } | null>(null);
+  const [pinnedSessions, setPinnedSessions] = useState<
+    Array<{
+      id: string;
+      title: string;
+      agent_name?: string;
+      pinned_chat: number;
+      pinned_prompt: string | null;
+    }>
+  >([]);
+  const [newChatContextMenu, setNewChatContextMenu] = useState<{
+    id: string;
+    mode: 'chat' | 'prompt';
+    x: number;
+    y: number;
+  } | null>(null);
   // New-chat layout: which sections to show and their order
   const [newChatShowSuggestions] = useState(true);
   const [newChatShowPinnedChat] = useState(true);
@@ -137,52 +159,85 @@ export default function ChatInterface({ initialSessionId }: Props) {
     const res = await fetch('/api/sessions');
     if (!res.ok) return;
     const d = await res.json();
-    setPinnedSessions((d.sessions ?? []).filter((s: { pinned_chat: number; pinned_prompt: string | null }) => s.pinned_chat || s.pinned_prompt));
+    setPinnedSessions(
+      (d.sessions ?? []).filter(
+        (s: { pinned_chat: number; pinned_prompt: string | null }) =>
+          s.pinned_chat || s.pinned_prompt,
+      ),
+    );
   }, []);
 
-  const patchPinnedSession = useCallback(async (id: string, body: Record<string, unknown>) => {
-    await fetch('/api/sessions', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, ...body }),
-    });
-    await refreshPinnedSessions();
-    window.dispatchEvent(new Event('sessions-changed'));
-  }, [refreshPinnedSessions]);
+  const patchPinnedSession = useCallback(
+    async (id: string, body: Record<string, unknown>) => {
+      await fetch('/api/sessions', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...body }),
+      });
+      await refreshPinnedSessions();
+      window.dispatchEvent(new Event('sessions-changed'));
+    },
+    [refreshPinnedSessions],
+  );
 
-  const deletePinnedSession = useCallback(async (id: string) => {
-    await fetch(`/api/sessions?id=${id}`, { method: 'DELETE' });
-    await refreshPinnedSessions();
-    window.dispatchEvent(new Event('sessions-changed'));
-  }, [refreshPinnedSessions]);
+  const deletePinnedSession = useCallback(
+    async (id: string) => {
+      await fetch(`/api/sessions?id=${id}`, { method: 'DELETE' });
+      await refreshPinnedSessions();
+      window.dispatchEvent(new Event('sessions-changed'));
+    },
+    [refreshPinnedSessions],
+  );
 
-  const persistPreviewState = useCallback((state: PreviewState) => {
-    if (!sessionId) return;
-    fetch('/api/sessions', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: sessionId, previewState: state }),
-    }).catch(() => {});
-  }, [sessionId]);
+  const persistPreviewState = useCallback(
+    (state: PreviewState) => {
+      if (!sessionId) return;
+      fetch('/api/sessions', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: sessionId, previewState: state }),
+      }).catch(() => {});
+    },
+    [sessionId],
+  );
 
-  const selectPreview = useCallback((file: PreviewFile, history: PreviewFile[], index: number, open = true) => {
-    const nextFile = { ...file, version: (previewFile?.version ?? 0) + 1 };
-    setPreviewHistoryIndex(index);
-    setPreviewFile(nextFile);
-    setPreviewOpen(open);
-    persistPreviewState({ open, file: nextFile, history, index });
-  }, [persistPreviewState, previewFile?.version]);
+  const selectPreview = useCallback(
+    (file: PreviewFile, history: PreviewFile[], index: number, open = true) => {
+      const nextFile = { ...file, version: (previewFile?.version ?? 0) + 1 };
+      setPreviewHistoryIndex(index);
+      setPreviewFile(nextFile);
+      setPreviewOpen(open);
+      persistPreviewState({ open, file: nextFile, history, index });
+    },
+    [persistPreviewState, previewFile?.version],
+  );
 
-  const setPreviewOpenPersisted = useCallback((open: boolean) => {
-    setPreviewOpen(open);
-    persistPreviewState({ open, file: previewFile, history: previewHistory, index: previewHistoryIndex });
-  }, [persistPreviewState, previewFile, previewHistory, previewHistoryIndex]);
+  const setPreviewOpenPersisted = useCallback(
+    (open: boolean) => {
+      setPreviewOpen(open);
+      persistPreviewState({
+        open,
+        file: previewFile,
+        history: previewHistory,
+        index: previewHistoryIndex,
+      });
+    },
+    [persistPreviewState, previewFile, previewHistory, previewHistoryIndex],
+  );
 
   // ---------------------------------------------------------------------------
   // Vercel AI SDK useChat hook
   // Manages message state + streaming connection to /api/chat
   // ---------------------------------------------------------------------------
-  const { messages, append, isLoading, stop, setMessages, error: chatError, data: streamData } = useChat({
+  const {
+    messages,
+    append,
+    isLoading,
+    stop,
+    setMessages,
+    error: chatError,
+    data: streamData,
+  } = useChat({
     api: '/api/chat',
     // Forward the SDK-allocated message id (and other extra fields) along
     // with each request so the server can persist user messages under the
@@ -220,7 +275,8 @@ export default function ChatInterface({ initialSessionId }: Props) {
     if (!wasLoading || isLoading) return; // only act on the true→false edge
 
     if (!streamData?.length) return;
-    let tokenUsage: { input: number; cached: number; output: number; source?: unknown } | null = null;
+    let tokenUsage: { input: number; cached: number; output: number; source?: unknown } | null =
+      null;
     let traceData: unknown[] | null = null;
     // Structured-output agents stream the finalize-call request payload and
     // the parsed JSON result as `data` events. The Vercel SDK aggregates
@@ -244,13 +300,21 @@ export default function ChatInterface({ initialSessionId }: Props) {
       try {
         const parsed = (typeof d === 'string' ? JSON.parse(d) : d) as Record<string, unknown>;
         if (parsed?.type === 'token_usage' && !tokenUsage) {
-          tokenUsage = { input: (parsed.input as number) ?? 0, cached: (parsed.cached as number) ?? 0, output: (parsed.output as number) ?? 0, source: parsed.source };
+          tokenUsage = {
+            input: (parsed.input as number) ?? 0,
+            cached: (parsed.cached as number) ?? 0,
+            output: (parsed.output as number) ?? 0,
+            source: parsed.source,
+          };
         }
         if (parsed?.type === 'agent_trace' && !traceData) {
           traceData = parsed.trace as unknown[];
         }
         if (parsed?.type === 'finalize_call' && !finalizeCall) {
-          finalizeCall = { schemaLabel: parsed.schemaLabel as string | undefined, payload: parsed.payload };
+          finalizeCall = {
+            schemaLabel: parsed.schemaLabel as string | undefined,
+            payload: parsed.payload,
+          };
         }
         if (parsed?.type === 'structured_output' && !structuredOutput) {
           structuredOutput = {
@@ -259,10 +323,12 @@ export default function ChatInterface({ initialSessionId }: Props) {
             schemaLabel: parsed.schemaLabel as string,
           };
         }
-      } catch { /* skip malformed entries */ }
+      } catch {
+        /* skip malformed entries */
+      }
     }
     if (!tokenUsage && !traceData && !finalizeCall && !structuredOutput) return;
-    setMessages(prev => {
+    setMessages((prev) => {
       const updated = [...prev];
       for (let j = updated.length - 1; j >= 0; j--) {
         if (updated[j].role === 'assistant') {
@@ -272,18 +338,23 @@ export default function ChatInterface({ initialSessionId }: Props) {
               JSON.stringify(tokenUsage);
           }
           if (traceData) {
-            (newMsg as unknown as { trace_json: string }).trace_json =
-              JSON.stringify(traceData);
+            (newMsg as unknown as { trace_json: string }).trace_json = JSON.stringify(traceData);
           }
           // Push our custom data events onto msg.data so MessageBubble's
           // `soFromData` / `finalizeFromData` selectors (which scan
           // msg.data, not streamData) can see them.
           if (finalizeCall || structuredOutput) {
             const existing = ((newMsg as unknown as { data?: unknown[] }).data ?? []).slice();
-            if (finalizeCall && !existing.some(d => (d as Record<string, unknown>)?.type === 'finalize_call')) {
+            if (
+              finalizeCall &&
+              !existing.some((d) => (d as Record<string, unknown>)?.type === 'finalize_call')
+            ) {
               existing.push({ type: 'finalize_call', ...finalizeCall });
             }
-            if (structuredOutput && !existing.some(d => (d as Record<string, unknown>)?.type === 'structured_output')) {
+            if (
+              structuredOutput &&
+              !existing.some((d) => (d as Record<string, unknown>)?.type === 'structured_output')
+            ) {
               existing.push({ type: 'structured_output', ...structuredOutput });
             }
             (newMsg as unknown as { data: unknown[] }).data = existing;
@@ -310,139 +381,152 @@ export default function ChatInterface({ initialSessionId }: Props) {
   // Both responses are merged into `messages` by id; new ids are appended,
   // existing ids are updated in place. The visible "older history"
   // window is never disturbed.
-  const mergeServerUpdates = useCallback(async (sid: string) => {
-    if (!sid) return;
-    const maxRowid = (() => {
-      let m = 0;
-      for (const v of messageRowidsRef.current.values()) if (v > m) m = v;
-      return m;
-    })();
+  const mergeServerUpdates = useCallback(
+    async (sid: string) => {
+      if (!sid) return;
+      const maxRowid = (() => {
+        let m = 0;
+        for (const v of messageRowidsRef.current.values()) if (v > m) m = v;
+        return m;
+      })();
 
-    const requests: Array<Promise<MessagesPage | null>> = [];
-    if (maxRowid > 0) {
+      const requests: Array<Promise<MessagesPage | null>> = [];
+      if (maxRowid > 0) {
+        requests.push(
+          fetch(`/api/messages?sessionId=${sid}&after=${maxRowid}&pending=0`)
+            .then((r) => (r.ok ? (r.json() as Promise<MessagesPage>) : null))
+            .catch(() => null),
+        );
+      } else {
+        requests.push(Promise.resolve(null));
+      }
+      // Small head-page so we can pick up: (a) sub-agent notification rows,
+      // (b) checkpoint updates to the most recent assistant message. Limit
+      // matches the initial page so the wire footprint stays predictable.
       requests.push(
-        fetch(`/api/messages?sessionId=${sid}&after=${maxRowid}&pending=0`)
-          .then(r => r.ok ? r.json() as Promise<MessagesPage> : null)
+        fetch(`/api/messages?sessionId=${sid}&limit=${INITIAL_PAGE_SIZE}`)
+          .then((r) => (r.ok ? (r.json() as Promise<MessagesPage>) : null))
           .catch(() => null),
       );
-    } else {
-      requests.push(Promise.resolve(null));
-    }
-    // Small head-page so we can pick up: (a) sub-agent notification rows,
-    // (b) checkpoint updates to the most recent assistant message. Limit
-    // matches the initial page so the wire footprint stays predictable.
-    requests.push(
-      fetch(`/api/messages?sessionId=${sid}&limit=${INITIAL_PAGE_SIZE}`)
-        .then(r => r.ok ? r.json() as Promise<MessagesPage> : null)
-        .catch(() => null),
-    );
 
-    const [afterPage, headPage] = await Promise.all(requests);
+      const [afterPage, headPage] = await Promise.all(requests);
 
-    // Aggregate every row we just learned about. The order doesn't matter
-    // because we merge by id; head-page wins on conflict because it has
-    // the freshest checkpoint data.
-    const incoming = new Map<string, StoredMessage>();
-    for (const row of afterPage?.messages ?? []) incoming.set(row.id, row);
-    for (const row of headPage?.messages ?? []) incoming.set(row.id, row);
-    if (incoming.size === 0) return;
+      // Aggregate every row we just learned about. The order doesn't matter
+      // because we merge by id; head-page wins on conflict because it has
+      // the freshest checkpoint data.
+      const incoming = new Map<string, StoredMessage>();
+      for (const row of afterPage?.messages ?? []) incoming.set(row.id, row);
+      for (const row of headPage?.messages ?? []) incoming.set(row.id, row);
+      if (incoming.size === 0) return;
 
-    // Update the rowid cursor map for any real (non-synthetic) rows so the
-    // next merge call narrows the after-cursor query further.
-    for (const row of incoming.values()) {
-      if (row._rowid && row._rowid > 0) messageRowidsRef.current.set(row.id, row._rowid);
-    }
-
-    // Update totalCount + hasMoreOlder when the head-page tells us about it.
-    if (headPage) {
-      if (typeof headPage.totalCount === 'number') setTotalMessageCount(headPage.totalCount);
-      // Only adjust hasMoreOlder when we still have the original cursor
-      // unmodified — otherwise "Load earlier" pagination ordering wins.
-      if (olderCursor === null && headPage.nextCursor !== null) {
-        setOlderCursor(headPage.nextCursor);
-        setHasMoreOlder(!!headPage.hasMore);
+      // Update the rowid cursor map for any real (non-synthetic) rows so the
+      // next merge call narrows the after-cursor query further.
+      for (const row of incoming.values()) {
+        if (row._rowid && row._rowid > 0) messageRowidsRef.current.set(row.id, row._rowid);
       }
-    }
 
-    setMessages(prev => {
-      const byId = new Map<string, ExtendedMessage>();
-      for (const m of prev) byId.set(m.id, m as ExtendedMessage);
-      let touched = false;
-
-      for (const [id, row] of incoming) {
-        const existing = byId.get(id);
-        if (!existing) {
-          byId.set(id, toExtendedMessage(row));
-          touched = true;
-          continue;
+      // Update totalCount + hasMoreOlder when the head-page tells us about it.
+      if (headPage) {
+        if (typeof headPage.totalCount === 'number') setTotalMessageCount(headPage.totalCount);
+        // Only adjust hasMoreOlder when we still have the original cursor
+        // unmodified — otherwise "Load earlier" pagination ordering wins.
+        if (olderCursor === null && headPage.nextCursor !== null) {
+          setOlderCursor(headPage.nextCursor);
+          setHasMoreOlder(!!headPage.hasMore);
         }
-        // Don't overwrite a freshly-streamed message that the SDK is still
-        // holding live `parts` for. The server may have a stale snapshot.
-        const isLiveStreaming = isLoading
-          && prev.length > 0
-          && prev[prev.length - 1].id === id
-          && Array.isArray((existing as { parts?: unknown[] }).parts)
-          && ((existing as { parts?: unknown[] }).parts ?? []).length > 0;
-        if (isLiveStreaming) continue;
-        // Bail out when none of the persisted-only fields differ. This
-        // matters for the 10-second polling effect: without this guard
-        // every poll allocates fresh refs for every row in the head page,
-        // forcing React.memo on MessageRow to discard its bailout and
-        // re-render every visible message twice a minute.
-        const samePersistedFields =
-          existing.content === row.content &&
-          (existing.token_usage_json ?? '{}') === (row.token_usage_json || '{}') &&
-          (existing.tool_calls_json ?? '[]') === (row.tool_calls_json || '[]') &&
-          (existing.reasoning ?? '') === (row.reasoning_json || '') &&
-          (existing.parts_raw ?? '[]') === (row.parts_json || '[]') &&
-          (existing.trace_json ?? '[]') === (row.trace_json || '[]');
-        if (samePersistedFields) continue;
-        const merged: ExtendedMessage = {
-          ...existing,
-          content: row.content,
-          experimental_attachments: parseJsonArray<Attachment>(row.attachments_json),
-          token_usage_json: row.token_usage_json || '{}',
-          tool_calls_json: row.tool_calls_json || '[]',
-          reasoning: row.reasoning_json || '',
-          parts_raw: row.parts_json || '[]',
-          trace_json: row.trace_json || '[]',
-        };
-        byId.set(id, merged);
-        touched = true;
       }
-      if (!touched) return prev;
 
-      // Preserve the previous render order; append any brand-new ids at
-      // the end (server returns them in chronological order so the head-
-      // page tail order matches what we want).
-      const out: ExtendedMessage[] = [];
-      const seen = new Set<string>();
-      for (const m of prev) {
-        const next = byId.get(m.id);
-        if (next) { out.push(next); seen.add(m.id); }
-      }
-      // Append rows we hadn't seen before. Respect the server's order:
-      // afterPage rows are oldest→newest already, head-page rows are too.
-      const newIds: string[] = [];
-      for (const row of afterPage?.messages ?? []) {
-        if (!seen.has(row.id)) { newIds.push(row.id); seen.add(row.id); }
-      }
-      for (const row of headPage?.messages ?? []) {
-        if (!seen.has(row.id)) { newIds.push(row.id); seen.add(row.id); }
-      }
-      for (const id of newIds) {
-        const m = byId.get(id);
-        if (m) out.push(m);
-      }
-      // useChat types setMessages' callback as `Message[] -> Message[]`,
-      // and `ExtendedMessage` is a structural superset of `Message` (the
-      // extra string-typed persistence fields are all optional). The cast
-      // is needed only because TypeScript treats function-form setStates
-      // as invariant in their return type, and our local `UIPart` is a
-      // looser union than the SDK's typed parts.
-      return out as unknown as UIMessage[];
-    });
-  }, [isLoading, olderCursor, setMessages]);
+      setMessages((prev) => {
+        const byId = new Map<string, ExtendedMessage>();
+        for (const m of prev) byId.set(m.id, m as ExtendedMessage);
+        let touched = false;
+
+        for (const [id, row] of incoming) {
+          const existing = byId.get(id);
+          if (!existing) {
+            byId.set(id, toExtendedMessage(row));
+            touched = true;
+            continue;
+          }
+          // Don't overwrite a freshly-streamed message that the SDK is still
+          // holding live `parts` for. The server may have a stale snapshot.
+          const isLiveStreaming =
+            isLoading &&
+            prev.length > 0 &&
+            prev[prev.length - 1].id === id &&
+            Array.isArray((existing as { parts?: unknown[] }).parts) &&
+            ((existing as { parts?: unknown[] }).parts ?? []).length > 0;
+          if (isLiveStreaming) continue;
+          // Bail out when none of the persisted-only fields differ. This
+          // matters for the 10-second polling effect: without this guard
+          // every poll allocates fresh refs for every row in the head page,
+          // forcing React.memo on MessageRow to discard its bailout and
+          // re-render every visible message twice a minute.
+          const samePersistedFields =
+            existing.content === row.content &&
+            (existing.token_usage_json ?? '{}') === (row.token_usage_json || '{}') &&
+            (existing.tool_calls_json ?? '[]') === (row.tool_calls_json || '[]') &&
+            (existing.reasoning ?? '') === (row.reasoning_json || '') &&
+            (existing.parts_raw ?? '[]') === (row.parts_json || '[]') &&
+            (existing.trace_json ?? '[]') === (row.trace_json || '[]');
+          if (samePersistedFields) continue;
+          const merged: ExtendedMessage = {
+            ...existing,
+            content: row.content,
+            experimental_attachments: parseJsonArray<Attachment>(row.attachments_json),
+            token_usage_json: row.token_usage_json || '{}',
+            tool_calls_json: row.tool_calls_json || '[]',
+            reasoning: row.reasoning_json || '',
+            parts_raw: row.parts_json || '[]',
+            trace_json: row.trace_json || '[]',
+          };
+          byId.set(id, merged);
+          touched = true;
+        }
+        if (!touched) return prev;
+
+        // Preserve the previous render order; append any brand-new ids at
+        // the end (server returns them in chronological order so the head-
+        // page tail order matches what we want).
+        const out: ExtendedMessage[] = [];
+        const seen = new Set<string>();
+        for (const m of prev) {
+          const next = byId.get(m.id);
+          if (next) {
+            out.push(next);
+            seen.add(m.id);
+          }
+        }
+        // Append rows we hadn't seen before. Respect the server's order:
+        // afterPage rows are oldest→newest already, head-page rows are too.
+        const newIds: string[] = [];
+        for (const row of afterPage?.messages ?? []) {
+          if (!seen.has(row.id)) {
+            newIds.push(row.id);
+            seen.add(row.id);
+          }
+        }
+        for (const row of headPage?.messages ?? []) {
+          if (!seen.has(row.id)) {
+            newIds.push(row.id);
+            seen.add(row.id);
+          }
+        }
+        for (const id of newIds) {
+          const m = byId.get(id);
+          if (m) out.push(m);
+        }
+        // useChat types setMessages' callback as `Message[] -> Message[]`,
+        // and `ExtendedMessage` is a structural superset of `Message` (the
+        // extra string-typed persistence fields are all optional). The cast
+        // is needed only because TypeScript treats function-form setStates
+        // as invariant in their return type, and our local `UIPart` is a
+        // looser union than the SDK's typed parts.
+        return out as unknown as UIMessage[];
+      });
+    },
+    [isLoading, olderCursor, setMessages],
+  );
 
   // After every stream completion (whether finished cleanly, errored, or
   // the connection dropped) re-fetch any messages that were appended
@@ -491,8 +575,8 @@ export default function ChatInterface({ initialSessionId }: Props) {
     initSession();
     fetchAgentNames();
     fetch('/api/settings')
-      .then(r => r.json())
-      .then(d => {
+      .then((r) => r.json())
+      .then((d) => {
         setExpandByDefault(d.settings?.expand_tool_details !== 'false');
         setShowTokenUsage(d.settings?.show_token_usage !== 'false');
         setShowTrace(d.settings?.show_trace !== 'false');
@@ -502,7 +586,9 @@ export default function ChatInterface({ initialSessionId }: Props) {
 
   // Re-fetch pinned sessions whenever sidebar pin/unpin changes
   useEffect(() => {
-    const handler = () => { refreshPinnedSessions().catch(() => {}); };
+    const handler = () => {
+      refreshPinnedSessions().catch(() => {});
+    };
     window.addEventListener('sessions-changed', handler);
     return () => window.removeEventListener('sessions-changed', handler);
   }, [refreshPinnedSessions]);
@@ -519,7 +605,8 @@ export default function ChatInterface({ initialSessionId }: Props) {
       const parts = (msg as unknown as { parts?: unknown[] }).parts ?? [];
       for (const part of parts) {
         if (
-          typeof part === 'object' && part !== null &&
+          typeof part === 'object' &&
+          part !== null &&
           (part as Record<string, unknown>).type === 'tool-invocation'
         ) {
           const inv = (part as Record<string, unknown>).toolInvocation as Record<string, unknown>;
@@ -550,7 +637,9 @@ export default function ChatInterface({ initialSessionId }: Props) {
         try {
           const tc = (msg as unknown as { tool_calls_json?: string }).tool_calls_json;
           return tc ? JSON.parse(tc) : [];
-        } catch { return []; }
+        } catch {
+          return [];
+        }
       })();
       for (const tc of toolCalls) {
         if (tc?.name === 'open_preview' && tc?.result?.type === 'open_preview') {
@@ -674,9 +763,13 @@ export default function ChatInterface({ initialSessionId }: Props) {
 
     const sessRes = await fetch('/api/sessions');
     const sessData = await sessRes.json();
-    const sess = sessData.sessions?.find((s: { id: string; title: string; preview_state_json?: string }) => s.id === id);
+    const sess = sessData.sessions?.find(
+      (s: { id: string; title: string; preview_state_json?: string }) => s.id === id,
+    );
     try {
-      restoredPreviewStateRef.current = sess?.preview_state_json ? JSON.parse(sess.preview_state_json) as PreviewState : null;
+      restoredPreviewStateRef.current = sess?.preview_state_json
+        ? (JSON.parse(sess.preview_state_json) as PreviewState)
+        : null;
     } catch {
       restoredPreviewStateRef.current = null;
     }
@@ -730,16 +823,16 @@ export default function ChatInterface({ initialSessionId }: Props) {
       const older = (data.messages ?? []).map(toExtendedMessage);
       // Update the rowid map BEFORE setMessages — the polling effect reads
       // it on every message-list change.
-      for (const m of (data.messages ?? [])) {
+      for (const m of data.messages ?? []) {
         if (m._rowid && m._rowid > 0) {
           messageRowidsRef.current.set(m.id, m._rowid);
         }
       }
-      setMessages(prev => {
+      setMessages((prev) => {
         // Dedupe defensively — if the user clicks twice quickly we'd
         // otherwise insert the same window twice.
-        const existing = new Set(prev.map(m => m.id));
-        const fresh = older.filter(m => !existing.has(m.id));
+        const existing = new Set(prev.map((m) => m.id));
+        const fresh = older.filter((m) => !existing.has(m.id));
         if (fresh.length === 0) return prev;
         // Same invariance dance as mergeServerUpdates — see comment there.
         return [...fresh, ...prev] as unknown as UIMessage[];
@@ -787,7 +880,12 @@ export default function ChatInterface({ initialSessionId }: Props) {
           setAvailableModels(data.models as string[]);
           const ctx: Record<string, number> = {};
           const out: Record<string, number> = {};
-          for (const [id, detail] of Object.entries((data.details ?? {}) as Record<string, { context_length?: number; max_output_tokens?: number }>)) {
+          for (const [id, detail] of Object.entries(
+            (data.details ?? {}) as Record<
+              string,
+              { context_length?: number; max_output_tokens?: number }
+            >,
+          )) {
             if (typeof detail.context_length === 'number') ctx[id] = detail.context_length;
             if (typeof detail.max_output_tokens === 'number') out[id] = detail.max_output_tokens;
           }
@@ -829,9 +927,10 @@ export default function ChatInterface({ initialSessionId }: Props) {
     if (availableModels.length === 0) return;
 
     const preferred = agentModels[agentName];
-    const fallback  = (settingsDefaultModel && availableModels.includes(settingsDefaultModel))
-      ? settingsDefaultModel
-      : availableModels[0] ?? '';
+    const fallback =
+      settingsDefaultModel && availableModels.includes(settingsDefaultModel)
+        ? settingsDefaultModel
+        : (availableModels[0] ?? '');
 
     if (!preferred) {
       // Agent doesn't pin a model (or said `default`) — show the settings default.
@@ -846,7 +945,7 @@ export default function ChatInterface({ initialSessionId }: Props) {
     // settings default and warn so the operator notices the stale agent.md entry.
     console.warn(
       `Agent "${agentName}" specifies model "${preferred}" which is not ` +
-      `available on the configured endpoint. Falling back to "${fallback || '<none>'}".`,
+        `available on the configured endpoint. Falling back to "${fallback || '<none>'}".`,
     );
     setModelId(fallback);
   }, [agentName, agentModels, availableModels, settingsDefaultModel]);
@@ -915,12 +1014,15 @@ export default function ChatInterface({ initialSessionId }: Props) {
 
   // Cancel any pending pin on unmount so we don't leak a frame after the
   // component is gone.
-  useEffect(() => () => {
-    if (pendingPinRef.current !== null) {
-      cancelAnimationFrame(pendingPinRef.current);
-      pendingPinRef.current = null;
-    }
-  }, []);
+  useEffect(
+    () => () => {
+      if (pendingPinRef.current !== null) {
+        cancelAnimationFrame(pendingPinRef.current);
+        pendingPinRef.current = null;
+      }
+    },
+    [],
+  );
 
   // ── Sentinel observer: keeps `stickToBottomRef` and the scroll button
   //    button state in lock-step with whether the bottom is actually visible.
@@ -972,7 +1074,9 @@ export default function ChatInterface({ initialSessionId }: Props) {
     };
 
     let touchStartY: number | null = null;
-    const onTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0]?.clientY ?? null; };
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0]?.clientY ?? null;
+    };
     const onTouchMove = (e: TouchEvent) => {
       const y = e.touches[0]?.clientY ?? null;
       if (touchStartY !== null && y !== null && y - touchStartY > 10) {
@@ -1057,41 +1161,43 @@ export default function ChatInterface({ initialSessionId }: Props) {
     pinToBottom();
   }, [pinToBottom]);
 
-
   // ---------------------------------------------------------------------------
   // Handle sending a message
   // ---------------------------------------------------------------------------
-  const handleSend = useCallback(async (text: string, attachments: Attachment[]) => {
-    if (!text && attachments.length === 0) return;
-    if (!sessionId) return;
+  const handleSend = useCallback(
+    async (text: string, attachments: Attachment[]) => {
+      if (!text && attachments.length === 0) return;
+      if (!sessionId) return;
 
-    setPendingAttachments(attachments);
-    // Re-arm sticking and pin immediately. The MutationObserver + the
-    // message-list effect will keep us pinned through the entire turn.
-    stickToBottomRef.current = true;
-    setShowScrollButton(false);
-    scrollToBottom();
+      setPendingAttachments(attachments);
+      // Re-arm sticking and pin immediately. The MutationObserver + the
+      // message-list effect will keep us pinned through the entire turn.
+      stickToBottomRef.current = true;
+      setShowScrollButton(false);
+      scrollToBottom();
 
-    // Append message via useChat (triggers streaming request)
-    try {
-      await append(
-        { role: 'user', content: text },
-        {
-          body: {
-            sessionId,
-            agentName,
-            modelId: modelId || undefined,
-            attachments,
+      // Append message via useChat (triggers streaming request)
+      try {
+        await append(
+          { role: 'user', content: text },
+          {
+            body: {
+              sessionId,
+              agentName,
+              modelId: modelId || undefined,
+              attachments,
+            },
           },
-        }
-      );
-    } catch (err) {
-      console.error('append error:', err);
-    }
+        );
+      } catch (err) {
+        console.error('append error:', err);
+      }
 
-    setPendingAttachments([]);
-    window.dispatchEvent(new Event('sessions-changed'));
-  }, [sessionId, agentName, modelId, append]); // eslint-disable-line react-hooks/exhaustive-deps
+      setPendingAttachments([]);
+      window.dispatchEvent(new Event('sessions-changed'));
+    },
+    [sessionId, agentName, modelId, append, scrollToBottom],
+  );
 
   // Listen for session-renamed events dispatched by the persistent layout sidebar
   useEffect(() => {
@@ -1150,13 +1256,22 @@ export default function ChatInterface({ initialSessionId }: Props) {
   // Stable approval callbacks so React.memo on MessageRow can bail out for
   // all previous messages (inline arrow functions create new references every
   // render and would defeat memoisation).
-  const handleApprovalGranted = useCallback(async (_invocation: LiveToolInvocation, scope: 'once' | 'session' | 'permanent') => {
-    void _invocation;
-    await append({ role: 'user', content: `I approved the operation (scope: ${scope}). Please proceed.` });
-  }, [append]);
+  const handleApprovalGranted = useCallback(
+    async (_invocation: LiveToolInvocation, scope: 'once' | 'session' | 'permanent') => {
+      void _invocation;
+      await append({
+        role: 'user',
+        content: `I approved the operation (scope: ${scope}). Please proceed.`,
+      });
+    },
+    [append],
+  );
 
   const handleApprovalDenied = useCallback(async () => {
-    await append({ role: 'user', content: 'I denied the operation. Please do not proceed with it.' });
+    await append({
+      role: 'user',
+      content: 'I denied the operation. Please do not proceed with it.',
+    });
   }, [append]);
 
   // Continue / resume after an incomplete assistant message.
@@ -1191,70 +1306,92 @@ export default function ChatInterface({ initialSessionId }: Props) {
 
   return (
     <>
-      {newChatContextMenu && (() => {
-        const s = pinnedSessions.find(s => s.id === newChatContextMenu.id);
-        if (!s) return null;
-        return (
-          <>
-            <div className="fixed inset-0 z-40 bg-black/10" onClick={() => setNewChatContextMenu(null)} />
-            <div
-              className="fixed z-50 min-w-[220px] rounded-xl border border-gray-200 bg-white py-1 shadow-xl dark:border-gray-700 dark:bg-gray-800"
-              style={{ left: newChatContextMenu.x, top: newChatContextMenu.y }}
-              onClick={e => e.stopPropagation()}
-            >
-              <button
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
-                onClick={() => { setNewChatContextMenu(null); patchPinnedSession(s.id, { pinChat: !s.pinned_chat }); }}
+      {newChatContextMenu &&
+        (() => {
+          const s = pinnedSessions.find((s) => s.id === newChatContextMenu.id);
+          if (!s) return null;
+          return (
+            <>
+              <div
+                className="fixed inset-0 z-40 bg-black/10"
+                onClick={() => setNewChatContextMenu(null)}
+              />
+              <div
+                className="fixed z-50 min-w-[220px] rounded-xl border border-gray-200 bg-white py-1 shadow-xl dark:border-gray-700 dark:bg-gray-800"
+                style={{ left: newChatContextMenu.x, top: newChatContextMenu.y }}
+                onClick={(e) => e.stopPropagation()}
               >
-                {s.pinned_chat ? <PinOff size={15} /> : <Pin size={15} />}
-                {s.pinned_chat ? 'Unpin Chat' : 'Pin Chat'}
-              </button>
-              <button
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
-                onClick={() => { setNewChatContextMenu(null); patchPinnedSession(s.id, { pinPrompt: !s.pinned_prompt }); }}
-              >
-                {s.pinned_prompt ? <BookmarkX size={15} /> : <Bookmark size={15} />}
-                {s.pinned_prompt ? 'Unpin Prompt' : 'Pin Prompt'}
-              </button>
-              <button
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
-                onClick={() => { setNewChatContextMenu(null); router.push(`/chat/${s.id}`); }}
-              >
-                <Pencil size={15} />
-                Edit
-              </button>
-              <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
-              <button
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-left"
-                onClick={() => { setNewChatContextMenu(null); deletePinnedSession(s.id); }}
-              >
-                <Trash2 size={15} />
-                Delete
-              </button>
-            </div>
-          </>
-        );
-      })()}
+                <button
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
+                  onClick={() => {
+                    setNewChatContextMenu(null);
+                    patchPinnedSession(s.id, { pinChat: !s.pinned_chat });
+                  }}
+                >
+                  {s.pinned_chat ? <PinOff size={15} /> : <Pin size={15} />}
+                  {s.pinned_chat ? 'Unpin Chat' : 'Pin Chat'}
+                </button>
+                <button
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
+                  onClick={() => {
+                    setNewChatContextMenu(null);
+                    patchPinnedSession(s.id, { pinPrompt: !s.pinned_prompt });
+                  }}
+                >
+                  {s.pinned_prompt ? <BookmarkX size={15} /> : <Bookmark size={15} />}
+                  {s.pinned_prompt ? 'Unpin Prompt' : 'Pin Prompt'}
+                </button>
+                <button
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
+                  onClick={() => {
+                    setNewChatContextMenu(null);
+                    router.push(`/chat/${s.id}`);
+                  }}
+                >
+                  <Pencil size={15} />
+                  Edit
+                </button>
+                <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+                <button
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-left"
+                  onClick={() => {
+                    setNewChatContextMenu(null);
+                    deletePinnedSession(s.id);
+                  }}
+                >
+                  <Trash2 size={15} />
+                  Delete
+                </button>
+              </div>
+            </>
+          );
+        })()}
 
       {/* Main chat area
           On mobile, hidden when preview is open so only one panel shows at a time */}
-      <main className={`flex-1 flex-col overflow-hidden min-w-0 ${
-        previewOpen && previewFile ? 'hidden md:flex' : 'flex'
-      }`}>
+      <main
+        className={`flex-1 flex-col overflow-hidden min-w-0 ${
+          previewOpen && previewFile ? 'hidden md:flex' : 'flex'
+        }`}
+      >
         {/* Top bar
             Desktop: single row – title on the left, agent + model selectors on the right.
             Mobile:  two rows – title row (with pl-16 to clear the hamburger button) +
                      compact selector row below. */}
-        <header className="flex-shrink-0 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900"
-          style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <header
+          className="flex-shrink-0 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900"
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        >
           {/* Row 1 – title */}
           <div className="flex items-center justify-between pl-16 pr-3 md:px-6 py-2.5 md:py-3">
-            <h1 className="font-700 text-gray-900 dark:text-gray-100 text-base truncate">{sessionTitle}</h1>
+            <h1 className="font-700 text-gray-900 dark:text-gray-100 text-base truncate">
+              {sessionTitle}
+            </h1>
 
             <div className="flex items-center gap-2">
               {/* Preview toggle / history navigator */}
-              {previewFile && (
-                previewHistory.length > 1 ? (
+              {previewFile &&
+                (previewHistory.length > 1 ? (
                   /* Multi-preview nav bar */
                   <div className="flex items-center gap-0.5">
                     <button
@@ -1306,35 +1443,39 @@ export default function ChatInterface({ initialSessionId }: Props) {
                     }`}
                   >
                     {previewOpen ? <PanelRightClose size={15} /> : <PanelRight size={15} />}
-                    <span className="hidden sm:inline text-sm">{previewOpen ? 'Hide' : 'Preview'}</span>
+                    <span className="hidden sm:inline text-sm">
+                      {previewOpen ? 'Hide' : 'Preview'}
+                    </span>
                   </button>
-                )
-              )}
+                ))}
 
               {/* Desktop-only selectors (hidden on mobile, shown in row 2 instead) */}
               <div className="hidden md:flex items-center gap-3">
-              {/* System prompt viewer */}
-              <button
-                onClick={() => setSystemPromptOpen(true)}
-                title="View system prompt"
-                className="h-9 w-9 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:text-violet-600 dark:hover:text-violet-300 transition-colors"
-              >
-                <Brain size={15} />
-              </button>
-              {/* Agent selector */}
-              <CustomDropDown
-                models={agentNames}
-                value={agentName}
-                onChange={n => { userChangedAgentRef.current = true; setAgentName(n); }}
-                placeholder="Select an agent…"
-                searchPlaceholder="Search agents…"
-                noun={{ singular: 'agent', plural: 'agents' }}
-                icon={<Bot size={14} />}
-                allowFreeText={false}
-              />
+                {/* System prompt viewer */}
+                <button
+                  onClick={() => setSystemPromptOpen(true)}
+                  title="View system prompt"
+                  className="h-9 w-9 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:text-violet-600 dark:hover:text-violet-300 transition-colors"
+                >
+                  <Brain size={15} />
+                </button>
+                {/* Agent selector */}
+                <CustomDropDown
+                  models={agentNames}
+                  value={agentName}
+                  onChange={(n) => {
+                    userChangedAgentRef.current = true;
+                    setAgentName(n);
+                  }}
+                  placeholder="Select an agent…"
+                  searchPlaceholder="Search agents…"
+                  noun={{ singular: 'agent', plural: 'agents' }}
+                  icon={<Bot size={14} />}
+                  allowFreeText={false}
+                />
 
-              {/* Model selector */}
-              <ModelSelector value={modelId} onChange={setModelId} />
+                {/* Model selector */}
+                <ModelSelector value={modelId} onChange={setModelId} />
               </div>
             </div>
           </div>
@@ -1352,7 +1493,10 @@ export default function ChatInterface({ initialSessionId }: Props) {
             <CustomDropDown
               models={agentNames}
               value={agentName}
-              onChange={n => { userChangedAgentRef.current = true; setAgentName(n); }}
+              onChange={(n) => {
+                userChangedAgentRef.current = true;
+                setAgentName(n);
+              }}
               placeholder="Select an agent…"
               searchPlaceholder="Search agents…"
               noun={{ singular: 'agent', plural: 'agents' }}
@@ -1376,82 +1520,130 @@ export default function ChatInterface({ initialSessionId }: Props) {
           {isEmpty && (
             <div className="flex flex-col items-center justify-center h-full text-center max-w-2xl mx-auto">
               <BrandLogo className="h-20 w-20 mb-3" priority />
-              <h2 className="text-2xl font-800 text-gray-900 dark:text-gray-100 tracking-tight mb-2">Start a conversation</h2>
+              <h2 className="text-2xl font-800 text-gray-900 dark:text-gray-100 tracking-tight mb-2">
+                Start a conversation
+              </h2>
               <p className="text-gray-500 dark:text-gray-300 text-sm leading-relaxed">
-                Ask anything. The agent can use skills and MCP tools, remember important information, and delegate to specialized sub-agents.
+                Ask anything. The agent can use skills and MCP tools, remember important
+                information, and delegate to specialized sub-agents.
               </p>
 
               {/* Sections rendered in user-configured order */}
-              {newChatSectionOrder.map(section => {
+              {newChatSectionOrder.map((section) => {
                 if (section === 'suggestions' && newChatShowSuggestions) {
                   return (
                     <div key="suggestions" className="mt-6 w-full text-left">
-                      <p className="text-sm font-600 text-gray-500 dark:text-gray-300 tracking-wider mb-3">Suggested Prompts</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
-                      {suggestions.map((suggestion, idx) => (
-                        <button
-                          key={suggestion}
-                          onClick={() => handleSend(suggestion, [])}
-                          className={`cursor-pointer text-left px-4 py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-sm text-gray-600 dark:text-gray-300 font-medium transition-all duration-150 hover:scale-[1.02]${idx >= 4 ? ' hidden sm:block' : ''}`}
-                        >
-                          <MessageSquare size={15} className="inline mr-2 opacity-50" />
-                          {suggestion}
-                        </button>
-                      ))}
-                    </div>
-                    </div>
-                  );
-                }
-                if (section === 'pinned_chat' && newChatShowPinnedChat && pinnedSessions.some(s => s.pinned_chat)) {
-                  return (
-                    <div key="pinned_chat" className="mt-6 w-full text-left">
-                      <p className="text-sm font-600 text-gray-500 dark:text-gray-300 tracking-wider mb-3">Pinned Chats</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {pinnedSessions.filter(s => s.pinned_chat).map(s => (
-                          <div key={s.id} className="relative flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-colors group cursor-pointer">
-                            <button
-                              className="cursor-pointer flex-1 text-left text-sm font-medium text-gray-700 dark:text-gray-200 truncate"
-                              onClick={() => {
-                                window.history.pushState(null, '', `/chat/${s.id}`);
-                                window.dispatchEvent(new CustomEvent('session-active', { detail: { id: s.id } }));
-                                loadSession(s.id, s.title, s.agent_name);
-                              }}
-                            >
-                              <Pin size={15} className="inline mr-2 opacity-50" />
-                              {s.title}
-                            </button>
-                            <button
-                              onClick={e => { e.stopPropagation(); const pos = getActionMenuPosition(e.currentTarget.getBoundingClientRect()); setNewChatContextMenu({ id: s.id, mode: 'chat', x: pos.x, y: pos.y }); }}
-                              title="Chat actions"
-                              aria-label="Chat actions"
-                              className="cursor-pointer p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-all flex-shrink-0"
-                            >
-                              <MoreHorizontal size={17} />
-                            </button>
-                          </div>
+                      <p className="text-sm font-600 text-gray-500 dark:text-gray-300 tracking-wider mb-3">
+                        Suggested Prompts
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
+                        {suggestions.map((suggestion, idx) => (
+                          <button
+                            key={suggestion}
+                            onClick={() => handleSend(suggestion, [])}
+                            className={`cursor-pointer text-left px-4 py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-sm text-gray-600 dark:text-gray-300 font-medium transition-all duration-150 hover:scale-[1.02]${idx >= 4 ? ' hidden sm:block' : ''}`}
+                          >
+                            <MessageSquare size={15} className="inline mr-2 opacity-50" />
+                            {suggestion}
+                          </button>
                         ))}
                       </div>
                     </div>
                   );
                 }
+                if (
+                  section === 'pinned_chat' &&
+                  newChatShowPinnedChat &&
+                  pinnedSessions.some((s) => s.pinned_chat)
+                ) {
+                  return (
+                    <div key="pinned_chat" className="mt-6 w-full text-left">
+                      <p className="text-sm font-600 text-gray-500 dark:text-gray-300 tracking-wider mb-3">
+                        Pinned Chats
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {pinnedSessions
+                          .filter((s) => s.pinned_chat)
+                          .map((s) => (
+                            <div
+                              key={s.id}
+                              className="relative flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-colors group cursor-pointer"
+                            >
+                              <button
+                                className="cursor-pointer flex-1 text-left text-sm font-medium text-gray-700 dark:text-gray-200 truncate"
+                                onClick={() => {
+                                  window.history.pushState(null, '', `/chat/${s.id}`);
+                                  window.dispatchEvent(
+                                    new CustomEvent('session-active', { detail: { id: s.id } }),
+                                  );
+                                  loadSession(s.id, s.title, s.agent_name);
+                                }}
+                              >
+                                <Pin size={15} className="inline mr-2 opacity-50" />
+                                {s.title}
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const pos = getActionMenuPosition(
+                                    e.currentTarget.getBoundingClientRect(),
+                                  );
+                                  setNewChatContextMenu({
+                                    id: s.id,
+                                    mode: 'chat',
+                                    x: pos.x,
+                                    y: pos.y,
+                                  });
+                                }}
+                                title="Chat actions"
+                                aria-label="Chat actions"
+                                className="cursor-pointer p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-all flex-shrink-0"
+                              >
+                                <MoreHorizontal size={17} />
+                              </button>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  );
+                }
                 if (section === 'pinned_prompt' && newChatShowPinnedPrompt) {
-                  const promptSessions = pinnedSessions.filter(s => s.pinned_prompt);
+                  const promptSessions = pinnedSessions.filter((s) => s.pinned_prompt);
                   if (promptSessions.length === 0) return null;
                   return (
                     <div key="pinned_prompt" className="mt-6 w-full text-left">
-                      <p className="text-sm font-600 text-gray-500 dark:text-gray-300 tracking-wider mb-3">Pinned Prompts</p>
+                      <p className="text-sm font-600 text-gray-500 dark:text-gray-300 tracking-wider mb-3">
+                        Pinned Prompts
+                      </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {promptSessions.map(s => (
-                          <div key={s.id} className="relative flex items-center gap-3 px-4 py-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 transition-colors group cursor-pointer">
+                        {promptSessions.map((s) => (
+                          <div
+                            key={s.id}
+                            className="relative flex items-center gap-3 px-4 py-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 transition-colors group cursor-pointer"
+                          >
                             <button
                               className="cursor-pointer flex-1 text-left text-sm text-gray-700 dark:text-gray-200 line-clamp-2"
                               onClick={() => handleSend(s.pinned_prompt!, [])}
                             >
-                              <MessageSquare size={15} className="inline mr-2 opacity-50 flex-shrink-0" />
+                              <MessageSquare
+                                size={15}
+                                className="inline mr-2 opacity-50 flex-shrink-0"
+                              />
                               {s.pinned_prompt}
                             </button>
                             <button
-                              onClick={e => { e.stopPropagation(); const pos = getActionMenuPosition(e.currentTarget.getBoundingClientRect()); setNewChatContextMenu({ id: s.id, mode: 'prompt', x: pos.x, y: pos.y }); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const pos = getActionMenuPosition(
+                                  e.currentTarget.getBoundingClientRect(),
+                                );
+                                setNewChatContextMenu({
+                                  id: s.id,
+                                  mode: 'prompt',
+                                  x: pos.x,
+                                  y: pos.y,
+                                });
+                              }}
                               title="Prompt actions"
                               aria-label="Prompt actions"
                               className="cursor-pointer p-1 rounded hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-400 hover:text-blue-700 dark:hover:text-blue-200 transition-all flex-shrink-0"
@@ -1523,14 +1715,15 @@ export default function ChatInterface({ initialSessionId }: Props) {
             ))}
 
             {/* Pending attachments preview (user just submitted) */}
-            {pendingAttachments.length > 0 && pendingAttachments.map(att => (
-              <div key={att.url} className="flex justify-end mb-2">
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg px-3 py-1.5 text-sm text-blue-600 flex items-center gap-2">
-                  <span className="text-sm opacity-60">{att.mime}</span>
-                  <span className="font-medium truncate max-w-[200px]">{att.name}</span>
+            {pendingAttachments.length > 0 &&
+              pendingAttachments.map((att) => (
+                <div key={att.url} className="flex justify-end mb-2">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg px-3 py-1.5 text-sm text-blue-600 flex items-center gap-2">
+                    <span className="text-sm opacity-60">{att.mime}</span>
+                    <span className="font-medium truncate max-w-[200px]">{att.name}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
 
             {/* Loading indicator: shown only when waiting for the first assistant message
                 (i.e., last message is user, not assistant). This prevents duplicate bot icons
@@ -1542,7 +1735,7 @@ export default function ChatInterface({ initialSessionId }: Props) {
                 </div>
                 <div className="bg-gray-100 dark:bg-gray-800 rounded-xl rounded-tl-sm px-4 py-3">
                   <div className="flex gap-1.5 items-center h-5">
-                    {[0, 1, 2].map(i => (
+                    {[0, 1, 2].map((i) => (
                       <div
                         key={i}
                         className="h-2 w-2 rounded-full bg-gray-400 animate-bounce"
@@ -1593,10 +1786,7 @@ export default function ChatInterface({ initialSessionId }: Props) {
           previewFile persists so the toggle button can reopen the last file.
           Hidden on mobile when chat is active (main is shown instead). */}
       {previewFile && previewOpen && (
-        <PreviewPanel
-          file={previewFile}
-          onClose={() => setPreviewOpenPersisted(false)}
-        />
+        <PreviewPanel file={previewFile} onClose={() => setPreviewOpenPersisted(false)} />
       )}
 
       {/* System Prompt Viewer */}

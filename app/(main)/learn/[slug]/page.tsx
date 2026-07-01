@@ -7,7 +7,7 @@ interface Props {
 }
 
 export function generateStaticParams() {
-  return LESSONS.map(lesson => ({ slug: lesson.slug }));
+  return LESSONS.map((lesson) => ({ slug: lesson.slug }));
 }
 
 export default async function LessonPage({ params }: Props) {

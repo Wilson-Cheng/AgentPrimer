@@ -24,19 +24,16 @@ import { getSessionUser } from '@/lib/auth';
  *                                sources; PDFs are not returned through this
  *                                path (use ?raw=1).
  */
-export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const numId  = parseInt(id, 10);
+  const numId = parseInt(id, 10);
   if (isNaN(numId)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
 
-  const url  = new URL(req.url);
-  const raw  = url.searchParams.get('raw')  === '1';
+  const url = new URL(req.url);
+  const raw = url.searchParams.get('raw') === '1';
   const meta = url.searchParams.get('meta') === '1';
 
   // Metadata-only path — small SELECT, no large content load.
@@ -54,9 +51,9 @@ export async function GET(
       const bytes = src.bytes ?? Buffer.from(src.content, 'base64');
       return new Response(new Uint8Array(bytes), {
         headers: {
-          'Content-Type':           'application/pdf',
-          'Content-Length':         String(bytes.length),
-          'Cache-Control':          'private, max-age=0, must-revalidate',
+          'Content-Type': 'application/pdf',
+          'Content-Length': String(bytes.length),
+          'Cache-Control': 'private, max-age=0, must-revalidate',
           'X-Content-Type-Options': 'nosniff',
         },
       });
@@ -69,10 +66,10 @@ export async function GET(
     const filename = src.name.replace(/[^A-Za-z0-9._-]+/g, '_').slice(0, 80) || 'document';
     return new Response(src.content, {
       headers: {
-        'Content-Type':            'text/plain; charset=utf-8',
-        'X-Content-Type-Options':  'nosniff',
-        'Content-Disposition':     `attachment; filename="${filename}.txt"`,
-        'Cache-Control':           'private, max-age=0, must-revalidate',
+        'Content-Type': 'text/plain; charset=utf-8',
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Disposition': `attachment; filename="${filename}.txt"`,
+        'Cache-Control': 'private, max-age=0, must-revalidate',
       },
     });
   }

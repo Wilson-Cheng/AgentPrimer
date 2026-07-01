@@ -13,17 +13,8 @@
  *   7. Returns a streaming HTTP Response consumed by the useChat hook
  */
 import { createDataStreamResponse, formatDataStreamPart } from 'ai';
-import {
-  getSetting,
-  getPendingNotifications,
-  markNotificationsRead,
-} from '../db';
-import {
-  readMemory,
-  getAgentConfig,
-  hasNoTools,
-  MAIN_AGENT_NAME,
-} from '../memory';
+import { getSetting, getPendingNotifications, markNotificationsRead } from '../db';
+import { readMemory, getAgentConfig, hasNoTools, MAIN_AGENT_NAME } from '../memory';
 import type { OutputSchema } from '../memory';
 import { buildSkillDiscoverySection } from '../skills-loader';
 import { loadFunctionTools } from '../function-tools-loader';

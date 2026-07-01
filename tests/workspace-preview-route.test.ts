@@ -27,7 +27,9 @@ describe('workspace preview route', () => {
     const projectDir = path.join(tempDir, 'data', 'projects', 'react-todo-demo');
     fs.mkdirSync(projectDir, { recursive: true });
     const htmlPath = path.join(projectDir, 'index.html');
-    fs.writeFileSync(htmlPath, `<!DOCTYPE html>
+    fs.writeFileSync(
+      htmlPath,
+      `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -42,19 +44,26 @@ describe('workspace preview route', () => {
     localStorage.getItem(STORAGE_KEY);
   </script>
 </body>
-</html>`, 'utf8');
+</html>`,
+      'utf8',
+    );
 
     const { GET } = await loadWorkspaceRoute();
     const slug = htmlPath.split(path.sep).filter(Boolean);
-    const response = await GET(new NextRequest(`http://localhost:15432/api/workspace/${slug.join('/')}`), {
-      params: Promise.resolve({ slug }),
-    });
+    const response = await GET(
+      new NextRequest(`http://localhost:15432/api/workspace/${slug.join('/')}`),
+      {
+        params: Promise.resolve({ slug }),
+      },
+    );
     const body = await response.text();
 
     expect(response.status).toBe(200);
     expect(response.headers.get('content-security-policy')).toContain("'unsafe-eval'");
     expect(body).toContain('Object.defineProperty(window,k');
-    expect(body.indexOf('Object.defineProperty(window,k')).toBeLessThan(body.indexOf('<script src="./react.production.min.js">'));
+    expect(body.indexOf('Object.defineProperty(window,k')).toBeLessThan(
+      body.indexOf('<script src="./react.production.min.js">'),
+    );
     expect(Number(response.headers.get('content-length'))).toBe(Buffer.byteLength(body));
   });
 });

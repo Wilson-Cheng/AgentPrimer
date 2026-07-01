@@ -40,6 +40,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Format check
+        run: npm run format:check
+
       - name: Test
         run: npm test
 
@@ -69,4 +72,3 @@ jobs:
         env:
           # next build must never fall back to the public dev secret.
           AGENT_PRIMER_SECRET: ci-build-placeholder-secret
-

@@ -60,14 +60,14 @@ export async function GET() {
   // Skills are listed so developers can preview what gets injected into
   // the system prompt. The `body` field carries the full SKILL.md content.
   const skillContexts = loadSkillContext('all');
-  const skills: ToolEntry[] = skillContexts.map(ctx => ({
-    id:          ctx.name,
-    name:        ctx.name,
+  const skills: ToolEntry[] = skillContexts.map((ctx) => ({
+    id: ctx.name,
+    name: ctx.name,
     description: ctx.description,
-    parameters:  {}, // skills have no parameters — they are not callable
-    category:    'skill',
-    source:      ctx.name,
-    body:        ctx.raw, // full SKILL.md content for playground display
+    parameters: {}, // skills have no parameters — they are not callable
+    category: 'skill',
+    source: ctx.name,
+    body: ctx.raw, // full SKILL.md content for playground display
   }));
 
   // ── Function tools (OpenAI function-calling format, subprocess execution) ─
@@ -75,12 +75,12 @@ export async function GET() {
   const functionTools: ToolEntry[] = [];
   for (const [key, def] of Object.entries(fnToolsMap)) {
     functionTools.push({
-      id:          key,
-      name:        key,
+      id: key,
+      name: key,
       description: (def as { description?: string }).description ?? '',
-      parameters:  zodToOpenAISchema((def as { parameters: import('zod').ZodType }).parameters),
-      category:    'function_tool',
-      source:      key,
+      parameters: zodToOpenAISchema((def as { parameters: import('zod').ZodType }).parameters),
+      category: 'function_tool',
+      source: key,
     });
   }
 
@@ -90,12 +90,12 @@ export async function GET() {
     const mcpToolsMap = await loadMcpTools('all');
     for (const [key, def] of Object.entries(mcpToolsMap)) {
       mcpTools.push({
-        id:          key,
-        name:        key,
+        id: key,
+        name: key,
         description: (def as { description?: string }).description ?? '',
-        parameters:  zodToOpenAISchema((def as { parameters: import('zod').ZodType }).parameters),
-        category:    'mcp',
-        source:      key.split('__')[0] ?? key,
+        parameters: zodToOpenAISchema((def as { parameters: import('zod').ZodType }).parameters),
+        category: 'mcp',
+        source: key.split('__')[0] ?? key,
       });
     }
   } catch {
@@ -124,47 +124,49 @@ export async function POST(request: NextRequest) {
 
     if (toolType === 'builtin') {
       // Execute an in-process built-in tool
-      const tools  = createBuiltinTools('_playground', undefined);
+      const tools = createBuiltinTools('_playground', undefined);
       const toolDef = tools[toolId];
       if (!toolDef?.execute) {
         return NextResponse.json({ error: `Built-in tool not found: ${toolId}` }, { status: 404 });
       }
       result = await toolDef.execute(args);
-
     } else if (toolType === 'skill') {
       // Skills are not callable — return their SKILL.md body as the "result"
       // so the playground can display the full instructions.
       const contexts = loadSkillContext('all');
-      const skill    = contexts.find(c => c.name === toolId);
+      const skill = contexts.find((c) => c.name === toolId);
       if (!skill) {
         return NextResponse.json({ error: `Skill not found: ${toolId}` }, { status: 404 });
       }
       result = {
-        type:        'skill_preview',
-        name:        skill.name,
+        type: 'skill_preview',
+        name: skill.name,
         description: skill.description,
-        content:     skill.raw,
-        note:        'Skills are instruction modules. This is the full SKILL.md content that gets injected into the agent system prompt.',
+        content: skill.raw,
+        note: 'Skills are instruction modules. This is the full SKILL.md content that gets injected into the agent system prompt.',
       };
-
     } else if (toolType === 'function_tool') {
       // Execute a function tool in a subprocess
-      const fnTools = loadFunctionTools('all') as Record<string, { execute?: (args: Record<string, unknown>) => Promise<unknown> }>;
+      const fnTools = loadFunctionTools('all') as Record<
+        string,
+        { execute?: (args: Record<string, unknown>) => Promise<unknown> }
+      >;
       const toolDef = fnTools[toolId];
       if (!toolDef?.execute) {
         return NextResponse.json({ error: `Function tool not found: ${toolId}` }, { status: 404 });
       }
       result = await toolDef.execute(args);
-
     } else if (toolType === 'mcp') {
       // Execute an MCP tool via the MCP client
-      const mcpToolsMap = await loadMcpTools('all') as Record<string, { execute?: (args: Record<string, unknown>) => Promise<unknown> }>;
-      const toolDef     = mcpToolsMap[toolId];
+      const mcpToolsMap = (await loadMcpTools('all')) as Record<
+        string,
+        { execute?: (args: Record<string, unknown>) => Promise<unknown> }
+      >;
+      const toolDef = mcpToolsMap[toolId];
       if (!toolDef?.execute) {
         return NextResponse.json({ error: `MCP tool not found: ${toolId}` }, { status: 404 });
       }
       result = await toolDef.execute(args);
-
     } else {
       return NextResponse.json({ error: `Unknown tool type: ${toolType}` }, { status: 400 });
     }
@@ -175,4 +177,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

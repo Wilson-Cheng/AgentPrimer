@@ -52,8 +52,8 @@ export default function FinalizeCallBubble({
     // Drop system messages (index 0 plus any other) and the trailing
     // finalize user message — what's left is the actual "conversation" we
     // care about.
-    const conversation = msgs.slice(0, -1).filter(m => m.role !== 'system');
-    return !conversation.some(m => m.role === 'assistant' || m.role === 'tool');
+    const conversation = msgs.slice(0, -1).filter((m) => m.role !== 'system');
+    return !conversation.some((m) => m.role === 'assistant' || m.role === 'tool');
   }, [payload]);
 
   const headerText = oneShot
@@ -64,7 +64,7 @@ export default function FinalizeCallBubble({
     <div className="w-full min-w-0 rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-950/30 overflow-hidden text-sm">
       {/* Header — always visible */}
       <button
-        onClick={() => setExpanded(v => !v)}
+        onClick={() => setExpanded((v) => !v)}
         className="flex items-center gap-2 w-full px-3 py-2 text-gray-700 dark:text-gray-200 hover:bg-violet-100/60 dark:hover:bg-violet-900/20 transition-colors text-left"
         title="Toggle request payload"
       >
@@ -72,9 +72,7 @@ export default function FinalizeCallBubble({
           size={14}
           className={`flex-shrink-0 text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
         />
-        <span className="font-mono text-violet-700 dark:text-violet-300 text-sm">
-          {headerText}
-        </span>
+        <span className="font-mono text-violet-700 dark:text-violet-300 text-sm">{headerText}</span>
       </button>
 
       {/* Expanded: full request payload */}
@@ -83,28 +81,25 @@ export default function FinalizeCallBubble({
           <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
             {oneShot ? (
               <>
-                This agent has no tools or skills available, so there&apos;s
-                nothing for a ReAct loop to do. AgentPrimer sends a single
-                non-streaming call directly with{' '}
+                This agent has no tools or skills available, so there&apos;s nothing for a ReAct
+                loop to do. AgentPrimer sends a single non-streaming call directly with{' '}
                 <code className="px-1 py-0.5 rounded bg-violet-100 dark:bg-violet-900/40 font-mono">
                   response_format: &#123; type: &quot;json_object&quot; &#125;
                 </code>{' '}
-                and a fresh system prompt containing only the schema. The
-                model&apos;s reply is the structured JSON panel shown below.
-                Full request body sent to{' '}
+                and a fresh system prompt containing only the schema. The model&apos;s reply is the
+                structured JSON panel shown below. Full request body sent to{' '}
                 <code className="font-mono">/v1/chat/completions</code>:
               </>
             ) : (
               <>
-                After the ReAct loop finished, AgentPrimer made one additional
-                non-streaming call with{' '}
+                After the ReAct loop finished, AgentPrimer made one additional non-streaming call
+                with{' '}
                 <code className="px-1 py-0.5 rounded bg-violet-100 dark:bg-violet-900/40 font-mono">
                   response_format: &#123; type: &quot;json_object&quot; &#125;
                 </code>{' '}
-                and a fresh system prompt containing only the schema — no
-                agent role, no tool instructions. The full request body sent
-                to <code className="font-mono">/v1/chat/completions</code> is
-                below.
+                and a fresh system prompt containing only the schema — no agent role, no tool
+                instructions. The full request body sent to{' '}
+                <code className="font-mono">/v1/chat/completions</code> is below.
               </>
             )}
           </p>

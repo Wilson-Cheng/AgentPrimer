@@ -24,12 +24,9 @@
 
 import path from 'path';
 
-export const LOCAL_EMBED_MODEL =
-  process.env.EMBED_MODEL || 'Xenova/all-MiniLM-L6-v2';
+export const LOCAL_EMBED_MODEL = process.env.EMBED_MODEL || 'Xenova/all-MiniLM-L6-v2';
 
-const CACHE_DIR =
-  process.env.EMBED_CACHE_DIR ||
-  path.join(process.cwd(), 'data', 'models');
+const CACHE_DIR = process.env.EMBED_CACHE_DIR || path.join(process.cwd(), 'data', 'models');
 
 // Pipeline type is loaded dynamically; keep it loose to avoid a hard dependency
 // on the package's types at compile time.
@@ -63,8 +60,7 @@ async function loadPipeline(): Promise<FeatureExtractionPipeline | null> {
     return extractor;
   } catch (e) {
     _status = 'unavailable';
-    _loadError =
-      e instanceof Error ? e.message : 'failed to load embedding model';
+    _loadError = e instanceof Error ? e.message : 'failed to load embedding model';
     console.warn(
       `[embeddings] local embedder unavailable (${_loadError}); ` +
         'falling back to FTS5 keyword search. ' +
@@ -126,8 +122,6 @@ export async function localEmbedHealth(): Promise<{
     status: 'degraded',
     model: LOCAL_EMBED_MODEL,
     backend: 'unavailable',
-    error:
-      _loadError ||
-      'embedding model not loaded; install @huggingface/transformers',
+    error: _loadError || 'embedding model not loaded; install @huggingface/transformers',
   };
 }

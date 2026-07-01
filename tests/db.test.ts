@@ -94,26 +94,51 @@ describe('database layer', () => {
 
   it('preserves user-enabled state when bundled tools are reseeded', async () => {
     fs.mkdirSync(path.join(tempDir, 'defaults', 'skills', 'demo-skill'), { recursive: true });
-    fs.writeFileSync(path.join(tempDir, 'defaults', 'skills', 'demo-skill', 'SKILL.md'), 'name: demo-skill\ndescription: Demo skill\n', 'utf-8');
-    fs.mkdirSync(path.join(tempDir, 'defaults', 'function-tools', 'demo-tool'), { recursive: true });
-    fs.writeFileSync(path.join(tempDir, 'defaults', 'function-tools', 'demo-tool', 'function.json'), JSON.stringify({ name: 'demo_tool', description: 'Demo tool', parameters: { type: 'object', properties: {} } }), 'utf-8');
+    fs.writeFileSync(
+      path.join(tempDir, 'defaults', 'skills', 'demo-skill', 'SKILL.md'),
+      'name: demo-skill\ndescription: Demo skill\n',
+      'utf-8',
+    );
+    fs.mkdirSync(path.join(tempDir, 'defaults', 'function-tools', 'demo-tool'), {
+      recursive: true,
+    });
+    fs.writeFileSync(
+      path.join(tempDir, 'defaults', 'function-tools', 'demo-tool', 'function.json'),
+      JSON.stringify({
+        name: 'demo_tool',
+        description: 'Demo tool',
+        parameters: { type: 'object', properties: {} },
+      }),
+      'utf-8',
+    );
     fs.mkdirSync(path.join(tempDir, 'defaults', 'mcp-servers', 'exa'), { recursive: true });
-    fs.writeFileSync(path.join(tempDir, 'defaults', 'mcp-servers', 'exa', 'mcp.json'), JSON.stringify({
-      name: 'exa',
-      transport: 'stdio',
-      command: 'npx',
-      args: ['-y', 'exa-mcp-server'],
-      enabled: false,
-    }), 'utf-8');
+    fs.writeFileSync(
+      path.join(tempDir, 'defaults', 'mcp-servers', 'exa', 'mcp.json'),
+      JSON.stringify({
+        name: 'exa',
+        transport: 'stdio',
+        command: 'npx',
+        args: ['-y', 'exa-mcp-server'],
+        enabled: false,
+      }),
+      'utf-8',
+    );
 
     vi.resetModules();
     const { bootstrap } = await import('../lib/bootstrap');
-    const { listSkills, listFunctionTools, listMcpServers, setSkillEnabled, setFunctionToolEnabled, setMcpServerEnabled } = await import('../lib/db');
+    const {
+      listSkills,
+      listFunctionTools,
+      listMcpServers,
+      setSkillEnabled,
+      setFunctionToolEnabled,
+      setMcpServerEnabled,
+    } = await import('../lib/db');
 
     bootstrap();
-    const skill = listSkills().find(s => s.name === 'demo-skill');
-    const functionTool = listFunctionTools().find(t => t.name === 'demo_tool');
-    const exa = listMcpServers().find(s => s.name === 'exa');
+    const skill = listSkills().find((s) => s.name === 'demo-skill');
+    const functionTool = listFunctionTools().find((t) => t.name === 'demo_tool');
+    const exa = listMcpServers().find((s) => s.name === 'exa');
     expect(skill?.enabled).toBe(1);
     expect(functionTool?.enabled).toBe(1);
     expect(exa?.enabled).toBe(0);
@@ -123,18 +148,42 @@ describe('database layer', () => {
     setMcpServerEnabled(exa!.id, true);
     bootstrap();
 
-    expect(listSkills().find(s => s.name === 'demo-skill')?.enabled).toBe(0);
-    expect(listFunctionTools().find(t => t.name === 'demo_tool')?.enabled).toBe(0);
-    expect(listMcpServers().find(s => s.name === 'exa')?.enabled).toBe(1);
+    expect(listSkills().find((s) => s.name === 'demo-skill')?.enabled).toBe(0);
+    expect(listFunctionTools().find((t) => t.name === 'demo_tool')?.enabled).toBe(0);
+    expect(listMcpServers().find((s) => s.name === 'exa')?.enabled).toBe(1);
   });
 
   it('upserts skills and MCP servers by unique name', async () => {
     const { listSkills, listMcpServers, upsertSkill, upsertMcpServer } = await loadDb();
 
-    upsertSkill({ id: 'skill-1', name: 'demo', github_url: 'builtin://demo', local_path: '/tmp/demo', enabled: 1, manifest_json: '{}' });
-    upsertSkill({ id: 'skill-2', name: 'demo', github_url: 'builtin://demo-2', local_path: '/tmp/demo2', enabled: 0, manifest_json: '{"updated":true}' });
+    upsertSkill({
+      id: 'skill-1',
+      name: 'demo',
+      github_url: 'builtin://demo',
+      local_path: '/tmp/demo',
+      enabled: 1,
+      manifest_json: '{}',
+    });
+    upsertSkill({
+      id: 'skill-2',
+      name: 'demo',
+      github_url: 'builtin://demo-2',
+      local_path: '/tmp/demo2',
+      enabled: 0,
+      manifest_json: '{"updated":true}',
+    });
 
-    upsertMcpServer({ id: 'mcp-1', name: 'datetime', github_url: 'builtin://datetime', local_path: '/tmp/mcp', transport: 'stdio', command: 'node', args_json: '[]', url: '', enabled: 1 });
+    upsertMcpServer({
+      id: 'mcp-1',
+      name: 'datetime',
+      github_url: 'builtin://datetime',
+      local_path: '/tmp/mcp',
+      transport: 'stdio',
+      command: 'node',
+      args_json: '[]',
+      url: '',
+      enabled: 1,
+    });
 
     expect(listSkills()).toHaveLength(1);
     expect(listSkills()[0]).toMatchObject({ id: 'skill-1', name: 'demo', enabled: 0 });

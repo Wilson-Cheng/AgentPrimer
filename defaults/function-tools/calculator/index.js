@@ -46,7 +46,7 @@ function safeMathEval(expression) {
   if (!/^[\d\s+\-*/.%()^]+$/.test(sanitized)) {
     throw new Error(
       `Invalid expression: "${sanitized}". ` +
-      'Only numbers, arithmetic operators (+, -, *, /, **, %), and parentheses are allowed.'
+        'Only numbers, arithmetic operators (+, -, *, /, **, %), and parentheses are allowed.',
     );
   }
 

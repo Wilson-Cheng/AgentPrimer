@@ -43,16 +43,19 @@ interface SidebarResizeResult {
  * localStorage immediately and to `.ui-settings.json` after a short debounce.
  */
 export function useSidebarResize({
-  initial, min, max, persistDelayMs = 800,
+  initial,
+  min,
+  max,
+  persistDelayMs = 800,
 }: SidebarResizeOptions): SidebarResizeResult {
   const [width, setWidthState] = useState(initial);
   const [isDragging, setIsDragging] = useState(false);
 
-  const widthRef          = useRef(initial);
-  const draggingRef       = useRef(false);
-  const startXRef         = useRef(0);
-  const startWidthRef     = useRef(0);
-  const persistTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const widthRef = useRef(initial);
+  const draggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startWidthRef = useRef(0);
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setWidth = useCallback((next: number) => {
     widthRef.current = next;
@@ -62,8 +65,10 @@ export function useSidebarResize({
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!draggingRef.current) return;
-      const next = Math.max(min, Math.min(max,
-        startWidthRef.current + e.clientX - startXRef.current));
+      const next = Math.max(
+        min,
+        Math.min(max, startWidthRef.current + e.clientX - startXRef.current),
+      );
       widthRef.current = next;
       setWidthState(next);
     };
@@ -80,17 +85,17 @@ export function useSidebarResize({
       );
     };
     window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup',   onUp);
+    window.addEventListener('mouseup', onUp);
     return () => {
       window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup',   onUp);
+      window.removeEventListener('mouseup', onUp);
     };
   }, [min, max, persistDelayMs]);
 
   const onDividerMouseDown = useCallback((e: React.MouseEvent) => {
-    draggingRef.current   = true;
+    draggingRef.current = true;
     setIsDragging(true);
-    startXRef.current     = e.clientX;
+    startXRef.current = e.clientX;
     startWidthRef.current = widthRef.current;
     e.preventDefault();
   }, []);
@@ -127,16 +132,20 @@ interface PreviewSplitResult {
  * persisted to `.ui-settings.json` after a short debounce.
  */
 export function usePreviewSplit({
-  initial, min, max, containerRef, persistDelayMs = 600,
+  initial,
+  min,
+  max,
+  containerRef,
+  persistDelayMs = 600,
 }: PreviewSplitOptions): PreviewSplitResult {
   const [widthPct, setWidthPctState] = useState(initial);
-  const [isDragging, setIsDragging]  = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const widthRef         = useRef(initial);
-  const draggingRef      = useRef(false);
-  const startXRef        = useRef(0);
-  const startPctRef      = useRef(initial);
-  const persistTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const widthRef = useRef(initial);
+  const draggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startPctRef = useRef(initial);
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setWidthPct = useCallback((next: number) => {
     widthRef.current = next;
@@ -152,7 +161,7 @@ export function usePreviewSplit({
       }
       const rect = containerRef.current.getBoundingClientRect();
       if (rect.width === 0) return;
-      const deltaPx  = e.clientX - startXRef.current;
+      const deltaPx = e.clientX - startXRef.current;
       const deltaPct = (deltaPx / rect.width) * 100;
       // Editor width grows as the handle moves right → preview shrinks.
       const next = Math.max(min, Math.min(max, startPctRef.current - deltaPct));
@@ -173,7 +182,7 @@ export function usePreviewSplit({
       );
     };
     window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup',   onUp);
+    window.addEventListener('mouseup', onUp);
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onUp);
     window.addEventListener('blur', onUp);
@@ -181,7 +190,7 @@ export function usePreviewSplit({
     return () => {
       onUp();
       window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup',   onUp);
+      window.removeEventListener('mouseup', onUp);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onUp);
       window.removeEventListener('blur', onUp);
@@ -189,16 +198,19 @@ export function usePreviewSplit({
     };
   }, [min, max, containerRef, persistDelayMs]);
 
-  const onDividerMouseDown = useCallback((e: React.MouseEvent) => {
-    if (!containerRef.current) return;
-    draggingRef.current = true;
-    setIsDragging(true);
-    startXRef.current   = e.clientX;
-    startPctRef.current = widthRef.current;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-    e.preventDefault();
-  }, [containerRef]);
+  const onDividerMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (!containerRef.current) return;
+      draggingRef.current = true;
+      setIsDragging(true);
+      startXRef.current = e.clientX;
+      startPctRef.current = widthRef.current;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    },
+    [containerRef],
+  );
 
   return { widthPct, setWidthPct, isDragging, onDividerMouseDown };
 }

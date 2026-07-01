@@ -25,8 +25,12 @@
 import { Bot, BookPlus, Check, ChevronRight, Copy, Eye, RotateCcw, User } from 'lucide-react';
 import { useState } from 'react';
 import type {
-  AgentStepTrace, Attachment, LiveToolInvocation, MessageTokenUsage,
-  ToolCall, UIPart,
+  AgentStepTrace,
+  Attachment,
+  LiveToolInvocation,
+  MessageTokenUsage,
+  ToolCall,
+  UIPart,
 } from './message/types';
 import { ReasoningBlock, StreamingTextPart } from './message/Reasoning';
 import { AttachmentRow } from './message/FileBlocks';
@@ -34,7 +38,10 @@ import { StructuredOutputPanel } from './message/StructuredOutput';
 import FinalizeCallBubble from './message/FinalizeCallBubble';
 import { TokenUsageBadge, TraceDrawer } from './message/TraceDrawer';
 import {
-  HistoricalToolsTrace, LiveToolCard, LiveToolsPanel, SkillActivationCard,
+  HistoricalToolsTrace,
+  LiveToolCard,
+  LiveToolsPanel,
+  SkillActivationCard,
 } from './message/ToolCards';
 import SendToRagDialog from './SendToRagDialog';
 
@@ -87,22 +94,36 @@ interface MessageBubbleProps {
 }
 
 export default function MessageBubble({
-  role, content, attachments = [], toolCalls = [],
-  toolInvocations = [], parts = [], reasoning = '', isStreaming,
-  sessionId, onApprovalGranted, onApprovalDenied, expandByDefault = false,
-  tokenUsage, contextLength, outputLength, data = [], trace = [],
-  incomplete, onContinue,
+  role,
+  content,
+  attachments = [],
+  toolCalls = [],
+  toolInvocations = [],
+  parts = [],
+  reasoning = '',
+  isStreaming,
+  sessionId,
+  onApprovalGranted,
+  onApprovalDenied,
+  expandByDefault = false,
+  tokenUsage,
+  contextLength,
+  outputLength,
+  data = [],
+  trace = [],
+  incomplete,
+  onContinue,
 }: MessageBubbleProps) {
   const [traceOpen, setTraceOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [subagentOpen, setSubagentOpen] = useState(false);
   const [sendToRagOpen, setSendToRagOpen] = useState(false);
-  const isUser      = role === 'user';
+  const isUser = role === 'user';
   const isAssistant = role === 'assistant';
   const subagentMatch = isAssistant ? content.match(/^\[(Sub-agent[^\]]+)\]\n\n([\s\S]*)$/) : null;
 
   // Prefer live invocations (streaming) over saved tool calls (historical)
-  const liveTools  = toolInvocations.length > 0 ? toolInvocations : null;
+  const liveTools = toolInvocations.length > 0 ? toolInvocations : null;
   const savedTools = toolCalls.length > 0 ? toolCalls : null;
 
   // ── Structured output detection ──────────────────────────────────────────
@@ -110,7 +131,10 @@ export default function MessageBubble({
   //   Live (during streaming) → msg.data as { type: 'structured_output', ... }
   //   Historical (from DB)    → msg.parts as { type: 'structured-output', ... }
   const soFromData = data.find(
-    d => typeof d === 'object' && d !== null && (d as Record<string, unknown>).type === 'structured_output'
+    (d) =>
+      typeof d === 'object' &&
+      d !== null &&
+      (d as Record<string, unknown>).type === 'structured_output',
   ) as { type: string; data: unknown; schemaName: string; schemaLabel: string } | undefined;
 
   // ── Finalize-call bubble ────────────────────────────────────────────────
@@ -122,7 +146,10 @@ export default function MessageBubble({
   // The bubble is intentionally pre-call only (no response yet at that
   // moment); the structured-output panel below renders the result.
   const finalizeFromData = data.find(
-    d => typeof d === 'object' && d !== null && (d as Record<string, unknown>).type === 'finalize_call'
+    (d) =>
+      typeof d === 'object' &&
+      d !== null &&
+      (d as Record<string, unknown>).type === 'finalize_call',
   ) as { type: string; schemaLabel?: string; payload: unknown } | undefined;
 
   // ── Activated skills detection ──────────────────────────────────────────
@@ -131,7 +158,10 @@ export default function MessageBubble({
   // live, and pushes a matching `skills-activated` part to `allParts` for
   // persistence. Live UI reads `data[]`; reloaded UI reads `parts[]`.
   const skillsFromData = data.find(
-    d => typeof d === 'object' && d !== null && (d as Record<string, unknown>).type === 'skills_activated'
+    (d) =>
+      typeof d === 'object' &&
+      d !== null &&
+      (d as Record<string, unknown>).type === 'skills_activated',
   ) as { type: string; skills: Array<{ name: string; description: string }> } | undefined;
 
   // ── Ordered-parts rendering ──────────────────────────────────────────────
@@ -141,20 +171,34 @@ export default function MessageBubble({
   //
   // 'structured-output' and 'skills-activated' parts are restored from
   // parts_json on page navigation.
-  const orderedParts = parts.filter(p =>
-    p.type === 'step-start' || p.type === 'reasoning' ||
-    p.type === 'tool-invocation' || p.type === 'text' ||
-    p.type === 'structured-output' || p.type === 'finalize-call' || p.type === 'skills-activated'
+  const orderedParts = parts.filter(
+    (p) =>
+      p.type === 'step-start' ||
+      p.type === 'reasoning' ||
+      p.type === 'tool-invocation' ||
+      p.type === 'text' ||
+      p.type === 'structured-output' ||
+      p.type === 'finalize-call' ||
+      p.type === 'skills-activated',
   );
-  const useOrderedParts = orderedParts.some(
-    p => p.type === 'reasoning' || p.type === 'tool-invocation' || p.type === 'text' ||
-         p.type === 'structured-output' || p.type === 'finalize-call' || p.type === 'skills-activated'
-  ) || !!soFromData || !!skillsFromData || !!finalizeFromData;
+  const useOrderedParts =
+    orderedParts.some(
+      (p) =>
+        p.type === 'reasoning' ||
+        p.type === 'tool-invocation' ||
+        p.type === 'text' ||
+        p.type === 'structured-output' ||
+        p.type === 'finalize-call' ||
+        p.type === 'skills-activated',
+    ) ||
+    !!soFromData ||
+    !!skillsFromData ||
+    !!finalizeFromData;
   const copyResponseSource = async () => {
-    const source = useOrderedParts
-      ? orderedParts.filter(p => p.type !== 'step-start')
-      : content;
-    await navigator.clipboard.writeText(typeof source === 'string' ? source : JSON.stringify(source, null, 2));
+    const source = useOrderedParts ? orderedParts.filter((p) => p.type !== 'step-start') : content;
+    await navigator.clipboard.writeText(
+      typeof source === 'string' ? source : JSON.stringify(source, null, 2),
+    );
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1200);
   };
@@ -164,10 +208,12 @@ export default function MessageBubble({
    *  parts when available; for legacy messages we fall back to `content`. */
   const summarySource: string = useOrderedParts
     ? orderedParts
-        .filter(p => p.type === 'text' || p.type === 'reasoning')
-        .map(p => p.type === 'text'
-          ? (p as { text: string }).text
-          : `> ${(p as { reasoning: string }).reasoning}`)
+        .filter((p) => p.type === 'text' || p.type === 'reasoning')
+        .map((p) =>
+          p.type === 'text'
+            ? (p as { text: string }).text
+            : `> ${(p as { reasoning: string }).reasoning}`,
+        )
         .join('\n\n')
     : content;
 
@@ -193,18 +239,24 @@ export default function MessageBubble({
     </button>
   );
   // Index of the last non-step-start part – only that part gets isStreaming.
-  const lastPartIdx = orderedParts.reduce(
-    (last, p, i) => (p.type !== 'step-start' ? i : last), -1
-  );
+  const lastPartIdx = orderedParts.reduce((last, p, i) => (p.type !== 'step-start' ? i : last), -1);
 
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'} group`}>
       {/* Avatar */}
-        <div className={`flex-shrink-0 h-8 w-8 rounded-lg flex items-center justify-center ${isUser ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'}`}>
-        {isUser ? <User size={15} className="text-white" /> : <Bot size={15} className="text-gray-600 dark:text-gray-300" />}
+      <div
+        className={`flex-shrink-0 h-8 w-8 rounded-lg flex items-center justify-center ${isUser ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'}`}
+      >
+        {isUser ? (
+          <User size={15} className="text-white" />
+        ) : (
+          <Bot size={15} className="text-gray-600 dark:text-gray-300" />
+        )}
       </div>
 
-      <div className={`flex flex-col gap-2 w-full min-w-0 max-w-[90%] ${isUser ? 'items-end' : 'items-start'}`}>
+      <div
+        className={`flex flex-col gap-2 w-full min-w-0 max-w-[90%] ${isUser ? 'items-end' : 'items-start'}`}
+      >
         {/* Attachments */}
         {attachments.length > 0 && <AttachmentRow attachments={attachments} isUser={isUser} />}
 
@@ -223,7 +275,9 @@ export default function MessageBubble({
                 return (
                   <ReasoningBlock
                     key={`r${i}`}
-                    reasoning={rp.reasoning} isStreaming={partStreaming} expandByDefault={expandByDefault}
+                    reasoning={rp.reasoning}
+                    isStreaming={partStreaming}
+                    expandByDefault={expandByDefault}
                   />
                 );
               }
@@ -243,17 +297,42 @@ export default function MessageBubble({
               }
 
               if (part.type === 'finalize-call') {
-                const fp = part as { type: 'finalize-call'; schemaLabel?: string; payload: unknown };
-                return <FinalizeCallBubble key={`fin${i}`} schemaLabel={fp.schemaLabel} payload={fp.payload} />;
+                const fp = part as {
+                  type: 'finalize-call';
+                  schemaLabel?: string;
+                  payload: unknown;
+                };
+                return (
+                  <FinalizeCallBubble
+                    key={`fin${i}`}
+                    schemaLabel={fp.schemaLabel}
+                    payload={fp.payload}
+                  />
+                );
               }
 
               if (part.type === 'structured-output') {
-                const sop = part as { type: 'structured-output'; data: unknown; schemaName: string; schemaLabel: string };
-                return <StructuredOutputPanel key={`so${i}`} data={sop.data} schemaName={sop.schemaName} schemaLabel={sop.schemaLabel} />;
+                const sop = part as {
+                  type: 'structured-output';
+                  data: unknown;
+                  schemaName: string;
+                  schemaLabel: string;
+                };
+                return (
+                  <StructuredOutputPanel
+                    key={`so${i}`}
+                    data={sop.data}
+                    schemaName={sop.schemaName}
+                    schemaLabel={sop.schemaLabel}
+                  />
+                );
               }
 
               if (part.type === 'skills-activated') {
-                const skp = part as { type: 'skills-activated'; skills: Array<{ name: string; description: string }> };
+                const skp = part as {
+                  type: 'skills-activated';
+                  skills: Array<{ name: string; description: string }>;
+                };
                 return <SkillActivationCard key={`sk${i}`} skills={skp.skills} />;
               }
 
@@ -262,8 +341,15 @@ export default function MessageBubble({
                 const xp = part as { type: 'text'; text: string };
                 if (!xp.text || !xp.text.trim()) return null;
                 return (
-                  <div key={`t${i}`} className="group relative max-w-full rounded-xl px-4 py-3 pb-6 text-base leading-relaxed bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-sm">
-                    <StreamingTextPart text={xp.text} isStreaming={isStreaming ?? false} streamingCursor={partStreaming ?? false} />
+                  <div
+                    key={`t${i}`}
+                    className="group relative max-w-full rounded-xl px-4 py-3 pb-6 text-base leading-relaxed bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-sm"
+                  >
+                    <StreamingTextPart
+                      text={xp.text}
+                      isStreaming={isStreaming ?? false}
+                      streamingCursor={partStreaming ?? false}
+                    />
                     {!isStreaming && copyIcon}
                     {!isStreaming && sendToRagIcon}
                   </div>
@@ -273,14 +359,14 @@ export default function MessageBubble({
               return null;
             })}
             {/* Live finalize-call bubble */}
-            {finalizeFromData && !orderedParts.some(p => p.type === 'finalize-call') && (
+            {finalizeFromData && !orderedParts.some((p) => p.type === 'finalize-call') && (
               <FinalizeCallBubble
                 schemaLabel={finalizeFromData.schemaLabel}
                 payload={finalizeFromData.payload}
               />
             )}
             {/* Live structured output */}
-            {soFromData && !orderedParts.some(p => p.type === 'structured-output') && (
+            {soFromData && !orderedParts.some((p) => p.type === 'structured-output') && (
               <StructuredOutputPanel
                 data={soFromData.data}
                 schemaName={soFromData.schemaName}
@@ -288,7 +374,7 @@ export default function MessageBubble({
               />
             )}
             {/* Live skills bubble */}
-            {skillsFromData && !orderedParts.some(p => p.type === 'skills-activated') && (
+            {skillsFromData && !orderedParts.some((p) => p.type === 'skills-activated') && (
               <SkillActivationCard skills={skillsFromData.skills} />
             )}
           </>
@@ -297,61 +383,81 @@ export default function MessageBubble({
         {/* ── LEGACY FIXED-ORDER (historical messages / no parts) ───────── */}
         {isAssistant && !useOrderedParts && reasoning && (
           <ReasoningBlock
-            reasoning={reasoning} isStreaming={isStreaming && !content} expandByDefault={expandByDefault}
+            reasoning={reasoning}
+            isStreaming={isStreaming && !content}
+            expandByDefault={expandByDefault}
           />
         )}
 
         {isAssistant && !useOrderedParts && liveTools && liveTools.length > 0 && (
           <LiveToolsPanel
             invocations={liveTools}
-            sessionId={sessionId} onApprovalGranted={onApprovalGranted}
-            onApprovalDenied={onApprovalDenied} expandByDefault={expandByDefault}
+            sessionId={sessionId}
+            onApprovalGranted={onApprovalGranted}
+            onApprovalDenied={onApprovalDenied}
+            expandByDefault={expandByDefault}
           />
         )}
 
         {subagentMatch && !useOrderedParts && (
           <div className="max-w-full rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100 overflow-hidden">
             <button
-              onClick={() => setSubagentOpen(v => !v)}
+              onClick={() => setSubagentOpen((v) => !v)}
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
             >
-              <ChevronRight size={15} className={`transition-transform ${subagentOpen ? 'rotate-90' : ''}`} />
+              <ChevronRight
+                size={15}
+                className={`transition-transform ${subagentOpen ? 'rotate-90' : ''}`}
+              />
               <span>{subagentMatch[1]}</span>
             </button>
             {subagentOpen && (
-              <pre className="whitespace-pre-wrap border-t border-emerald-200 px-3 py-2 text-sm leading-relaxed dark:border-emerald-800">{subagentMatch[2]}</pre>
+              <pre className="whitespace-pre-wrap border-t border-emerald-200 px-3 py-2 text-sm leading-relaxed dark:border-emerald-800">
+                {subagentMatch[2]}
+              </pre>
             )}
           </div>
         )}
 
         {/* Main content bubble: user messages + assistant without ordered parts */}
-        {(isUser || (isAssistant && !useOrderedParts && !subagentMatch)) && content && content.trim() && (
-          <div className={`
+        {(isUser || (isAssistant && !useOrderedParts && !subagentMatch)) &&
+          content &&
+          content.trim() && (
+            <div
+              className={`
             ${isAssistant ? 'group ' : ''}relative max-w-full rounded-xl px-4 py-3 ${isAssistant ? 'pb-8 ' : ''}text-base leading-relaxed
-            ${isUser
-              ? 'bg-blue-500 text-white rounded-tr-sm'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-sm'
+            ${
+              isUser
+                ? 'bg-blue-500 text-white rounded-tr-sm'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-sm'
             }
-          `}>
-            {isUser ? (
-              <p className="whitespace-pre-wrap">{content}</p>
-            ) : (
-              <>
-                <StreamingTextPart text={content} isStreaming={isStreaming ?? false} streamingCursor={isStreaming ?? false} />
-                {!isStreaming && copyIcon}
-                {!isStreaming && sendToRagIcon}
-              </>
-            )}
-          </div>
-        )}
+          `}
+            >
+              {isUser ? (
+                <p className="whitespace-pre-wrap">{content}</p>
+              ) : (
+                <>
+                  <StreamingTextPart
+                    text={content}
+                    isStreaming={isStreaming ?? false}
+                    streamingCursor={isStreaming ?? false}
+                  />
+                  {!isStreaming && copyIcon}
+                  {!isStreaming && sendToRagIcon}
+                </>
+              )}
+            </div>
+          )}
 
         {/* Historical tool calls trace (from DB, shown for loaded messages) */}
-        {isAssistant && !liveTools && savedTools && <HistoricalToolsTrace toolCalls={savedTools} expandByDefault={expandByDefault} />}
+        {isAssistant && !liveTools && savedTools && (
+          <HistoricalToolsTrace toolCalls={savedTools} expandByDefault={expandByDefault} />
+        )}
 
         {/* Thinking indicator */}
         {isAssistant && isStreaming && (
           <div className="flex mt-2 gap-1.5 items-center h-5 px-1" aria-label="Thinking">
-            {[0, 1, 2].map(i => (
+            {[0, 1, 2].map((i) => (
               <div
                 key={i}
                 className="h-2 w-2 rounded-full bg-gray-400 animate-bounce"
@@ -365,7 +471,11 @@ export default function MessageBubble({
         {isAssistant && !isStreaming && (
           <div className="space-y-1">
             {tokenUsage && (tokenUsage.input > 0 || tokenUsage.output > 0) && (
-              <TokenUsageBadge usage={tokenUsage} contextLength={contextLength} outputLength={outputLength} />
+              <TokenUsageBadge
+                usage={tokenUsage}
+                contextLength={contextLength}
+                outputLength={outputLength}
+              />
             )}
             {trace.length > 0 && (
               <button
@@ -404,9 +514,7 @@ export default function MessageBubble({
       </div>
 
       {/* Trace drawer */}
-      {traceOpen && (
-        <TraceDrawer trace={trace} onClose={() => setTraceOpen(false)} />
-      )}
+      {traceOpen && <TraceDrawer trace={trace} onClose={() => setTraceOpen(false)} />}
 
       {/* Send-to-RAG dialog (3-step: summarize → send → index) */}
       {sendToRagOpen && (

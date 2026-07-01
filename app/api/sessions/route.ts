@@ -1,4 +1,14 @@
-import { listSessions, createSession, deleteSession, updateSessionAgent, updateSessionTitle, pinSessionChat, setPinnedPrompt, getFirstUserMessage, updateSessionPreviewState } from '@/lib/db';
+import {
+  listSessions,
+  createSession,
+  deleteSession,
+  updateSessionAgent,
+  updateSessionTitle,
+  pinSessionChat,
+  setPinnedPrompt,
+  getFirstUserMessage,
+  updateSessionPreviewState,
+} from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 

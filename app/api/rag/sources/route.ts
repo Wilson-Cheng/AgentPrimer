@@ -27,8 +27,8 @@ export async function POST(req: Request) {
   let content: string;
   let sourceType = 'file_upload';
   let originalContent: string | undefined;
-  let originalBytes:   Buffer    | undefined;
-  let originalMime:    string    | undefined;
+  let originalBytes: Buffer | undefined;
+  let originalMime: string | undefined;
 
   if (ct.includes('multipart/form-data')) {
     const form = await req.formData().catch(() => null);
@@ -41,9 +41,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'file field is required' }, { status: 400 });
     }
 
-    name = typeof nameField === 'string' && nameField.trim()
-      ? nameField.trim()
-      : fileField.name;
+    name = typeof nameField === 'string' && nameField.trim() ? nameField.trim() : fileField.name;
 
     let extracted: ExtractResult;
     try {
@@ -54,14 +52,14 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-    content         = extracted.text;
+    content = extracted.text;
     originalContent = extracted.original;
-    originalBytes   = extracted.bytes;
-    originalMime    = extracted.mime;
+    originalBytes = extracted.bytes;
+    originalMime = extracted.mime;
     sourceType = 'file_upload';
   } else {
     // JSON body
-    const body = await req.json().catch(() => null) as {
+    const body = (await req.json().catch(() => null)) as {
       name?: string;
       content?: string;
       source_type?: string;
@@ -69,14 +67,16 @@ export async function POST(req: Request) {
     } | null;
 
     if (!body) return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-    if (!body.name?.trim())    return NextResponse.json({ error: 'name is required' },    { status: 400 });
-    if (!body.content?.trim()) return NextResponse.json({ error: 'content is required' }, { status: 400 });
+    if (!body.name?.trim())
+      return NextResponse.json({ error: 'name is required' }, { status: 400 });
+    if (!body.content?.trim())
+      return NextResponse.json({ error: 'content is required' }, { status: 400 });
 
-    name       = body.name.trim();
-    content    = body.content;
+    name = body.name.trim();
+    content = body.content;
     sourceType = body.source_type ?? 'paste';
     originalContent = body.content;
-    originalMime    = body.original_mime ?? 'text/plain';
+    originalMime = body.original_mime ?? 'text/plain';
   }
 
   if (!content.trim()) {
@@ -85,8 +85,12 @@ export async function POST(req: Request) {
 
   try {
     const result = await ingestDocument({
-      name, sourceType, content,
-      originalContent, originalBytes, originalMime,
+      name,
+      sourceType,
+      content,
+      originalContent,
+      originalBytes,
+      originalMime,
     });
     return NextResponse.json(result);
   } catch (err) {
@@ -98,43 +102,53 @@ export async function POST(req: Request) {
 // ── File content extraction ───────────────────────────────────────────────────
 
 interface ExtractResult {
-  text:      string;
+  text: string;
   /** Verbatim text for text/markdown/html sources. Empty for PDFs. */
   original?: string;
   /** Raw bytes for PDFs. Undefined for text. */
-  bytes?:    Buffer;
-  mime:      string;
+  bytes?: Buffer;
+  mime: string;
 }
 
 /** Allowed text mimes (anything else without a `.pdf` extension is rejected
  *  so the View panel never tries to render a lossy UTF-8 decode of binary
  *  bytes, e.g. .docx / .xlsx / images mislabelled as text). */
 const TEXT_EXTS = new Set([
-  'txt', 'md', 'markdown', 'html', 'htm',
-  'csv', 'tsv', 'json', 'yaml', 'yml', 'xml', 'log',
+  'txt',
+  'md',
+  'markdown',
+  'html',
+  'htm',
+  'csv',
+  'tsv',
+  'json',
+  'yaml',
+  'yml',
+  'xml',
+  'log',
 ]);
 
 function extToMime(ext: string, fallbackType: string): string {
-  if (ext === 'md' || ext === 'markdown')   return 'text/markdown';
-  if (ext === 'html' || ext === 'htm')      return 'text/html';
-  if (ext === 'json')                       return 'application/json';
-  if (ext === 'csv' || ext === 'tsv')       return 'text/csv';
-  if (ext === 'xml')                        return 'application/xml';
-  if (ext === 'yaml' || ext === 'yml')      return 'text/yaml';
+  if (ext === 'md' || ext === 'markdown') return 'text/markdown';
+  if (ext === 'html' || ext === 'htm') return 'text/html';
+  if (ext === 'json') return 'application/json';
+  if (ext === 'csv' || ext === 'tsv') return 'text/csv';
+  if (ext === 'xml') return 'application/xml';
+  if (ext === 'yaml' || ext === 'yml') return 'text/yaml';
   if (fallbackType && fallbackType.startsWith('text/')) return fallbackType;
   return 'text/plain';
 }
 
 async function extractFileContent(file: File): Promise<ExtractResult> {
-  const buf   = Buffer.from(await file.arrayBuffer());
+  const buf = Buffer.from(await file.arrayBuffer());
   const lname = file.name.toLowerCase();
-  const ext   = lname.includes('.') ? lname.slice(lname.lastIndexOf('.') + 1) : '';
+  const ext = lname.includes('.') ? lname.slice(lname.lastIndexOf('.') + 1) : '';
 
   if (ext === 'pdf' || file.type === 'application/pdf') {
     return {
-      text:  extractPdf(buf),
+      text: extractPdf(buf),
       bytes: buf,
-      mime:  'application/pdf',
+      mime: 'application/pdf',
     };
   }
 
@@ -144,7 +158,7 @@ async function extractFileContent(file: File): Promise<ExtractResult> {
   if (!TEXT_EXTS.has(ext) && !file.type.startsWith('text/')) {
     throw new Error(
       `Unsupported file type ".${ext || file.type || 'unknown'}". ` +
-      `Allowed: PDF or text (txt, md, html, csv, json, yaml, xml).`,
+        `Allowed: PDF or text (txt, md, html, csv, json, yaml, xml).`,
     );
   }
 
@@ -156,17 +170,16 @@ function extractPdf(buf: Buffer): string {
   try {
     // pdftotext is available in the Docker image (poppler-utils)
     const text = execSync('pdftotext -layout -enc UTF-8 - -', {
-      input:     buf,
+      input: buf,
       maxBuffer: 10 * 1024 * 1024,
-      timeout:   30_000,
+      timeout: 30_000,
     }).toString('utf8');
     if (!text.trim()) throw new Error('pdftotext returned empty output');
     return text;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     throw new Error(
-      `Could not extract text from PDF: ${msg}. ` +
-      `Try pasting the text directly instead.`
+      `Could not extract text from PDF: ${msg}. ` + `Try pasting the text directly instead.`,
     );
   }
 }

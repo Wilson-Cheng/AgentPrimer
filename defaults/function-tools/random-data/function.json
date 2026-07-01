@@ -18,9 +18,18 @@
         "type": "object",
         "description": "Type-specific options: for 'integer' use { min: number, max: number }; for 'lorem' use { words: number }",
         "properties": {
-          "min": { "type": "number", "description": "Minimum value for integer generation (default: 0)" },
-          "max": { "type": "number", "description": "Maximum value for integer generation (default: 1000)" },
-          "words": { "type": "integer", "description": "Number of Lorem Ipsum words to generate (default: 20)" }
+          "min": {
+            "type": "number",
+            "description": "Minimum value for integer generation (default: 0)"
+          },
+          "max": {
+            "type": "number",
+            "description": "Maximum value for integer generation (default: 1000)"
+          },
+          "words": {
+            "type": "integer",
+            "description": "Number of Lorem Ipsum words to generate (default: 20)"
+          }
         }
       }
     },

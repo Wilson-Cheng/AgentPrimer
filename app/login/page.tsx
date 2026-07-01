@@ -15,8 +15,10 @@ function LoginForm() {
   // Redirect to registration if first-time setup has not been done
   useEffect(() => {
     fetch('/api/auth/setup')
-      .then(r => r.json())
-      .then(({ needsSetup }) => { if (needsSetup) router.replace('/register'); })
+      .then((r) => r.json())
+      .then(({ needsSetup }) => {
+        if (needsSetup) router.replace('/register');
+      })
       .catch(() => {});
   }, [router]);
 
@@ -75,9 +77,13 @@ function LoginForm() {
         <div className="relative z-10 space-y-6">
           {[
             { icon: '⚡', title: 'Skills & MCP', desc: 'Install tools from GitHub instantly' },
-            { icon: '🧠', title: 'Persistent Memory', desc: 'Agents remember across conversations' },
+            {
+              icon: '🧠',
+              title: 'Persistent Memory',
+              desc: 'Agents remember across conversations',
+            },
             { icon: '🤖', title: 'Multi-Agent', desc: 'Delegate tasks to specialized sub-agents' },
-          ].map(f => (
+          ].map((f) => (
             <div key={f.title} className="flex items-start gap-4">
               <div className="h-10 w-10 rounded-lg bg-white/15 flex items-center justify-center text-xl flex-shrink-0">
                 {f.icon}
@@ -113,11 +119,14 @@ function LoginForm() {
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-600 text-gray-700">Username</label>
               <div className="relative">
-                <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <User
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
                 <input
                   type="text"
                   value={username}
-                  onChange={e => setUsername(e.target.value)}
+                  onChange={(e) => setUsername(e.target.value)}
                   placeholder="admin"
                   autoComplete="username"
                   required
@@ -134,11 +143,14 @@ function LoginForm() {
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-600 text-gray-700">Password</label>
               <div className="relative">
-                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Lock
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   autoComplete="current-password"
                   required

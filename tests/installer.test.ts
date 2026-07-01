@@ -8,7 +8,7 @@ let tempDir: string;
 async function loadInstaller() {
   vi.resetModules();
   const installer = await import('../lib/installer');
-  const db        = await import('../lib/db');
+  const db = await import('../lib/db');
   return { ...installer, ...db };
 }
 
@@ -56,7 +56,9 @@ describe('nameFromPackageArg', () => {
     const { nameFromPackageArg } = await loadInstaller();
     expect(nameFromPackageArg(['@upstash/context7-mcp@latest'])).toBe('context7-mcp');
     expect(nameFromPackageArg(['exa-mcp-server'])).toBe('exa-mcp-server');
-    expect(nameFromPackageArg(['-y', '@modelcontextprotocol/server-everything'])).toBe('server-everything');
+    expect(nameFromPackageArg(['-y', '@modelcontextprotocol/server-everything'])).toBe(
+      'server-everything',
+    );
   });
 
   it('returns empty when no positional argument is present', async () => {
@@ -105,8 +107,11 @@ describe('installLocalSkill', () => {
     const { installLocalSkill } = await loadInstaller();
     const skillDir = path.join(tempDir, 'data', 'skills', 'no-name');
     fs.mkdirSync(skillDir, { recursive: true });
-    fs.writeFileSync(path.join(skillDir, 'SKILL.md'),
-      '---\ndescription: missing name field\n---\n# body', 'utf-8');
+    fs.writeFileSync(
+      path.join(skillDir, 'SKILL.md'),
+      '---\ndescription: missing name field\n---\n# body',
+      'utf-8',
+    );
 
     expect(() => installLocalSkill(skillDir, 0)).toThrow(/name/);
   });
@@ -115,8 +120,7 @@ describe('installLocalSkill', () => {
     const { installLocalSkill } = await loadInstaller();
     const skillDir = path.join(tempDir, 'data', 'skills', 'no-desc');
     fs.mkdirSync(skillDir, { recursive: true });
-    fs.writeFileSync(path.join(skillDir, 'SKILL.md'),
-      '---\nname: ok\n---\n# body', 'utf-8');
+    fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '---\nname: ok\n---\n# body', 'utf-8');
 
     expect(() => installLocalSkill(skillDir, 0)).toThrow(/description/);
   });
@@ -125,9 +129,11 @@ describe('installLocalSkill', () => {
     const { installLocalSkill } = await loadInstaller();
     const skillDir = path.join(tempDir, 'data', 'skills', 'unterminated');
     fs.mkdirSync(skillDir, { recursive: true });
-    fs.writeFileSync(path.join(skillDir, 'SKILL.md'),
+    fs.writeFileSync(
+      path.join(skillDir, 'SKILL.md'),
       '---\nname: still-going\ndescription: ...\n\n# body never closes the frontmatter',
-      'utf-8');
+      'utf-8',
+    );
 
     expect(() => installLocalSkill(skillDir, 0)).toThrow(/malformed frontmatter/);
   });

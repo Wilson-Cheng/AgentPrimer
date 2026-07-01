@@ -85,10 +85,4 @@ export interface ModelInfo {
 
 // ── SDK finish reason mapping ──────────────────────────────────────────────
 export type SdkFinishReason =
-  | 'stop'
-  | 'length'
-  | 'content-filter'
-  | 'tool-calls'
-  | 'error'
-  | 'other'
-  | 'unknown';
+  'stop' | 'length' | 'content-filter' | 'tool-calls' | 'error' | 'other' | 'unknown';

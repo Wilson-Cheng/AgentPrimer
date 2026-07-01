@@ -46,10 +46,10 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import { DATA_DIR, upsertSkill, upsertMcpServer, upsertFunctionTool, getDb } from './db';
 
-const DEFAULTS_DIR       = path.join(/* turbopackIgnore: true */ process.cwd(), 'defaults');
-const SKILLS_DIR         = path.join(DATA_DIR, 'skills');
+const DEFAULTS_DIR = path.join(/* turbopackIgnore: true */ process.cwd(), 'defaults');
+const SKILLS_DIR = path.join(DATA_DIR, 'skills');
 const FUNCTION_TOOLS_DIR = path.join(DATA_DIR, 'function-tools');
-const MCP_SERVERS_DIR    = path.join(DATA_DIR, 'mcp-servers');
+const MCP_SERVERS_DIR = path.join(DATA_DIR, 'mcp-servers');
 
 // ---------------------------------------------------------------------------
 // Step 1: copy defaults/ → data/, skipping existing files
@@ -69,11 +69,7 @@ const FORCE_OVERWRITE_SKILLS = new Set([
 ]);
 
 // Built-in function tool names (must match directory names in defaults/function-tools/)
-const FORCE_OVERWRITE_FUNCTION_TOOLS = new Set([
-  'calculator',
-  'unit-converter',
-  'random-data',
-]);
+const FORCE_OVERWRITE_FUNCTION_TOOLS = new Set(['calculator', 'unit-converter', 'random-data']);
 
 function copyDefaults(src: string, dest: string, root = true, forceOverwrite = false): void {
   if (!fs.existsSync(src)) return;
@@ -81,16 +77,16 @@ function copyDefaults(src: string, dest: string, root = true, forceOverwrite = f
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
     // Skip .env at the top level — handled by createEnvTemplate()
     if (root && entry.name === '.env') continue;
-    const srcPath  = path.join(src,  entry.name);
+    const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
     if (entry.isDirectory()) {
       // Force-overwrite built-in skills and function-tools so they stay
       // in sync with defaults/ across server restarts and upgrades.
       const isForced = root
         ? false
-        : forceOverwrite
-          || FORCE_OVERWRITE_SKILLS.has(entry.name)
-          || FORCE_OVERWRITE_FUNCTION_TOOLS.has(entry.name);
+        : forceOverwrite ||
+          FORCE_OVERWRITE_SKILLS.has(entry.name) ||
+          FORCE_OVERWRITE_FUNCTION_TOOLS.has(entry.name);
       copyDefaults(srcPath, destPath, false, isForced);
     } else if (forceOverwrite || !fs.existsSync(destPath)) {
       fs.copyFileSync(srcPath, destPath);
@@ -148,7 +144,7 @@ function createEnvTemplate(): void {
 function seedSkills(): void {
   if (!fs.existsSync(SKILLS_DIR)) return;
   for (const name of fs.readdirSync(SKILLS_DIR)) {
-    const dir         = path.join(SKILLS_DIR, name);
+    const dir = path.join(SKILLS_DIR, name);
     const skillMdPath = path.join(dir, 'SKILL.md');
     if (!fs.statSync(dir).isDirectory() || !fs.existsSync(skillMdPath)) continue;
 
@@ -166,13 +162,15 @@ function seedSkills(): void {
       continue;
     }
 
-    const existing = getDb().prepare('SELECT id, enabled FROM skills WHERE github_url = ?').get(githubUrl) as { id: string; enabled: number } | undefined;
+    const existing = getDb()
+      .prepare('SELECT id, enabled FROM skills WHERE github_url = ?')
+      .get(githubUrl) as { id: string; enabled: number } | undefined;
     upsertSkill({
-      id:            existing?.id ?? randomUUID(),
-      name:          skillName,
-      github_url:    githubUrl,
-      local_path:    dir,
-      enabled:       existing?.enabled ?? 1,
+      id: existing?.id ?? randomUUID(),
+      name: skillName,
+      github_url: githubUrl,
+      local_path: dir,
+      enabled: existing?.enabled ?? 1,
       // Store the raw SKILL.md content for display (skills-loader re-reads from disk)
       manifest_json: skillMdContent,
     });
@@ -189,7 +187,7 @@ function seedSkills(): void {
 function seedFunctionTools(): void {
   if (!fs.existsSync(FUNCTION_TOOLS_DIR)) return;
   for (const name of fs.readdirSync(FUNCTION_TOOLS_DIR)) {
-    const dir          = path.join(FUNCTION_TOOLS_DIR, name);
+    const dir = path.join(FUNCTION_TOOLS_DIR, name);
     const manifestPath = path.join(dir, 'function.json');
     if (!fs.statSync(dir).isDirectory() || !fs.existsSync(manifestPath)) continue;
 
@@ -198,20 +196,22 @@ function seedFunctionTools(): void {
     let manifest: { name?: string };
     try {
       manifestRaw = fs.readFileSync(manifestPath, 'utf-8');
-      manifest    = JSON.parse(manifestRaw) as { name?: string };
+      manifest = JSON.parse(manifestRaw) as { name?: string };
     } catch {
       console.warn(`bootstrap: skipping function tool "${name}" — invalid function.json`);
       continue;
     }
 
     const toolName = manifest.name ?? name;
-    const existing = getDb().prepare('SELECT id, enabled FROM function_tools WHERE github_url = ?').get(githubUrl) as { id: string; enabled: number } | undefined;
+    const existing = getDb()
+      .prepare('SELECT id, enabled FROM function_tools WHERE github_url = ?')
+      .get(githubUrl) as { id: string; enabled: number } | undefined;
     upsertFunctionTool({
-      id:            existing?.id ?? randomUUID(),
-      name:          toolName,
-      github_url:    githubUrl,
-      local_path:    dir,
-      enabled:       existing?.enabled ?? 1,
+      id: existing?.id ?? randomUUID(),
+      name: toolName,
+      github_url: githubUrl,
+      local_path: dir,
+      enabled: existing?.enabled ?? 1,
       manifest_json: manifestRaw,
     });
   }
@@ -223,12 +223,19 @@ function seedFunctionTools(): void {
 function seedMcpServers(): void {
   if (!fs.existsSync(MCP_SERVERS_DIR)) return;
   for (const name of fs.readdirSync(MCP_SERVERS_DIR)) {
-    const dir      = path.join(MCP_SERVERS_DIR, name);
+    const dir = path.join(MCP_SERVERS_DIR, name);
     const metaPath = path.join(dir, 'mcp.json');
     if (!fs.statSync(dir).isDirectory() || !fs.existsSync(metaPath)) continue;
 
     const githubUrl = `builtin://${name}`;
-    let meta: { name?: string; transport?: 'stdio' | 'sse'; command?: string; args?: string[]; url?: string; enabled?: boolean };
+    let meta: {
+      name?: string;
+      transport?: 'stdio' | 'sse';
+      command?: string;
+      args?: string[];
+      url?: string;
+      enabled?: boolean;
+    };
     try {
       meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8')) as typeof meta;
     } catch {
@@ -241,18 +248,33 @@ function seedMcpServers(): void {
       i === 0 && !a.startsWith('/') && !a.startsWith('-') ? path.resolve(dir, a) : a,
     );
 
-    const existing = getDb().prepare('SELECT id, name, transport, command, args_json, url, enabled, env_json FROM mcp_servers WHERE github_url = ?').get(githubUrl) as { id: string; name: string; transport: 'stdio' | 'sse'; command: string; args_json: string; url: string; enabled: number; env_json: string } | undefined;
+    const existing = getDb()
+      .prepare(
+        'SELECT id, name, transport, command, args_json, url, enabled, env_json FROM mcp_servers WHERE github_url = ?',
+      )
+      .get(githubUrl) as
+      | {
+          id: string;
+          name: string;
+          transport: 'stdio' | 'sse';
+          command: string;
+          args_json: string;
+          url: string;
+          enabled: number;
+          env_json: string;
+        }
+      | undefined;
     upsertMcpServer({
-      id:         existing?.id ?? randomUUID(),
-      name:       existing?.name ?? meta.name ?? name,
+      id: existing?.id ?? randomUUID(),
+      name: existing?.name ?? meta.name ?? name,
       github_url: githubUrl,
       local_path: dir,
-      transport:  existing?.transport ?? meta.transport ?? 'stdio',
-      command:    existing?.command ?? meta.command ?? 'node',
-      args_json:  existing?.args_json ?? JSON.stringify(absArgs),
-      url:        existing?.url ?? meta.url ?? '',
-      enabled:    existing?.enabled ?? (meta.enabled === false ? 0 : 1),
-      env_json:   existing?.env_json ?? '{}',
+      transport: existing?.transport ?? meta.transport ?? 'stdio',
+      command: existing?.command ?? meta.command ?? 'node',
+      args_json: existing?.args_json ?? JSON.stringify(absArgs),
+      url: existing?.url ?? meta.url ?? '',
+      enabled: existing?.enabled ?? (meta.enabled === false ? 0 : 1),
+      env_json: existing?.env_json ?? '{}',
     });
   }
 }
@@ -270,11 +292,13 @@ export function loadDataEnv(): void {
     if (!trimmed || trimmed.startsWith('#')) continue;
     const eqIdx = trimmed.indexOf('=');
     if (eqIdx < 1) continue;
-    const key   = trimmed.slice(0, eqIdx).trim();
-    let   value = trimmed.slice(eqIdx + 1).trim();
+    const key = trimmed.slice(0, eqIdx).trim();
+    let value = trimmed.slice(eqIdx + 1).trim();
     // Strip optional surrounding quotes
-    if ((value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))) {
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
       value = value.slice(1, -1);
     }
     process.env[key] = value;
@@ -314,11 +338,31 @@ export function bootstrap(): void {
 // These are exported so the reset endpoint can selectively restore default
 // files + re-seed the DB after clearing user data for a given category.
 
-export function seedSkillsPublic()   { seedSkills(); }
-export function seedFunctionToolsPublic() { seedFunctionTools(); }
-export function seedMcpServersPublic() { seedMcpServers(); }
-export function createEnvTemplatePublic() { createEnvTemplate(); }
-export function copyDefaultsPublic(src: string, dest: string, root = true, forceOverwrite = false): void {
+export function seedSkillsPublic() {
+  seedSkills();
+}
+export function seedFunctionToolsPublic() {
+  seedFunctionTools();
+}
+export function seedMcpServersPublic() {
+  seedMcpServers();
+}
+export function createEnvTemplatePublic() {
+  createEnvTemplate();
+}
+export function copyDefaultsPublic(
+  src: string,
+  dest: string,
+  root = true,
+  forceOverwrite = false,
+): void {
   copyDefaults(src, dest, root, forceOverwrite);
 }
-export { DEFAULTS_DIR, SKILLS_DIR, FUNCTION_TOOLS_DIR, MCP_SERVERS_DIR, FORCE_OVERWRITE_SKILLS, FORCE_OVERWRITE_FUNCTION_TOOLS };
+export {
+  DEFAULTS_DIR,
+  SKILLS_DIR,
+  FUNCTION_TOOLS_DIR,
+  MCP_SERVERS_DIR,
+  FORCE_OVERWRITE_SKILLS,
+  FORCE_OVERWRITE_FUNCTION_TOOLS,
+};

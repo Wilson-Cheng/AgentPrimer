@@ -2,7 +2,7 @@
 
 ## Exercise 1: Trace a tool call manually
 
-Set a breakpoint inside the tool execution block in `lib/agent.ts`, where `toolDef.execute(args)` runs.
+Set a breakpoint inside the tool execution block in `lib/agent/loop.ts`, where `toolDef.execute(args)` runs.
 
 Send: *"List all files in /app/lib"*
 

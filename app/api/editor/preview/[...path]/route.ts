@@ -3,27 +3,31 @@ import fs from 'fs';
 import { Readable } from 'stream';
 import { ReadableStream as WebReadableStream } from 'stream/web';
 import { resolveDataPath } from '@/lib/path-security';
-import { activePreviewContentSecurityPolicy, injectPreviewStorageShim, isActivePreviewContentType } from '@/lib/preview-security';
+import {
+  activePreviewContentSecurityPolicy,
+  injectPreviewStorageShim,
+  isActivePreviewContentType,
+} from '@/lib/preview-security';
 
 export const runtime = 'nodejs';
 
 const MIME: Record<string, string> = {
   html: 'text/html; charset=utf-8',
-  htm:  'text/html; charset=utf-8',
-  css:  'text/css; charset=utf-8',
-  js:   'text/javascript; charset=utf-8',
-  mjs:  'text/javascript; charset=utf-8',
+  htm: 'text/html; charset=utf-8',
+  css: 'text/css; charset=utf-8',
+  js: 'text/javascript; charset=utf-8',
+  mjs: 'text/javascript; charset=utf-8',
   json: 'application/json; charset=utf-8',
-  md:   'text/markdown; charset=utf-8',
-  svg:  'image/svg+xml',
-  png:  'image/png',
-  jpg:  'image/jpeg',
+  md: 'text/markdown; charset=utf-8',
+  svg: 'image/svg+xml',
+  png: 'image/png',
+  jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
-  gif:  'image/gif',
+  gif: 'image/gif',
   webp: 'image/webp',
-  ico:  'image/x-icon',
-  pdf:  'application/pdf',
-  txt:  'text/plain; charset=utf-8',
+  ico: 'image/x-icon',
+  pdf: 'application/pdf',
+  txt: 'text/plain; charset=utf-8',
   wasm: 'application/wasm',
 };
 

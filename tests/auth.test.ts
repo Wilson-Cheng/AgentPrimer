@@ -38,7 +38,9 @@ describe('auth file helpers', () => {
     try {
       const { issueSession } = await loadAuth();
 
-      await expect(issueSession('admin')).rejects.toThrow('AGENT_PRIMER_SECRET must be set in production.');
+      await expect(issueSession('admin')).rejects.toThrow(
+        'AGENT_PRIMER_SECRET must be set in production.',
+      );
     } finally {
       process.env = { ...process.env, NODE_ENV: previousNodeEnv };
     }
@@ -61,7 +63,9 @@ describe('auth file helpers', () => {
 
     await registerFirstUser('admin', 'password');
 
-    await expect(registerFirstUser('other', 'password')).rejects.toThrow('Users file already exists.');
+    await expect(registerFirstUser('other', 'password')).rejects.toThrow(
+      'Users file already exists.',
+    );
   });
 
   it('accepts legacy MD5 hashes and upgrades them to bcrypt after successful login', async () => {

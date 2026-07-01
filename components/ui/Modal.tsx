@@ -16,13 +16,22 @@ interface ModalProps {
  * Modal – flat design, no shadows.
  * Semi-transparent overlay + solid white card.
  */
-export default function Modal({ open, onClose, title, children, footer, width = 'md' }: ModalProps) {
+export default function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  footer,
+  width = 'md',
+}: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape key
   useEffect(() => {
     if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [open, onClose]);
@@ -36,7 +45,9 @@ export default function Modal({ open, onClose, title, children, footer, width = 
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(17, 24, 39, 0.6)' }}
-      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+      onClick={(e) => {
+        if (e.target === overlayRef.current) onClose();
+      }}
     >
       <div
         className={`w-full ${widths[width]} dark:bg-gray-800 bg-white rounded-xl overflow-hidden`}
@@ -46,7 +57,9 @@ export default function Modal({ open, onClose, title, children, footer, width = 
       >
         {/* Header – primary blue color block */}
         <div className="flex items-center justify-between px-6 py-4 bg-blue-500">
-          <h2 id="modal-title" className="text-lg font-700 text-white tracking-tight">{title}</h2>
+          <h2 id="modal-title" className="text-lg font-700 text-white tracking-tight">
+            {title}
+          </h2>
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"

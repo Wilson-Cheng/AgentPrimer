@@ -30,7 +30,7 @@ describe('RAG pipeline', () => {
     const chunks = chunkText(text);
 
     expect(chunks.length).toBeGreaterThan(1);
-    expect(chunks.every(chunk => chunk.length <= 1600)).toBe(true);
+    expect(chunks.every((chunk) => chunk.length <= 1600)).toBe(true);
     expect(chunks.join('\n')).toContain('bbbb');
   });
 
@@ -44,9 +44,14 @@ describe('RAG pipeline', () => {
     vi.doMock('../lib/embeddings', () => ({
       LOCAL_EMBED_MODEL: 'Xenova/all-MiniLM-L6-v2',
       embedLocal: vi.fn(async (texts: string[]) =>
-        texts.map(text => text.toLowerCase().includes('banana') ? [1, 0] : [0, 1]),
+        texts.map((text) => (text.toLowerCase().includes('banana') ? [1, 0] : [0, 1])),
       ),
-      localEmbedHealth: vi.fn(async () => ({ ok: true, status: 'ok', model: 'Xenova/all-MiniLM-L6-v2', backend: 'mock' })),
+      localEmbedHealth: vi.fn(async () => ({
+        ok: true,
+        status: 'ok',
+        model: 'Xenova/all-MiniLM-L6-v2',
+        backend: 'mock',
+      })),
     }));
 
     const { ingestDocument, retrieveChunks } = await loadRag();
@@ -64,7 +69,12 @@ describe('RAG pipeline', () => {
     });
 
     expect(first).toMatchObject({ chunks: 1, embedded: true, skipped: false });
-    expect(second).toMatchObject({ sourceId: first.sourceId, chunks: 1, embedded: true, skipped: true });
+    expect(second).toMatchObject({
+      sourceId: first.sourceId,
+      chunks: 1,
+      embedded: true,
+      skipped: true,
+    });
 
     const results = await retrieveChunks('banana recipe', 1);
 
@@ -76,7 +86,13 @@ describe('RAG pipeline', () => {
     vi.doMock('../lib/embeddings', () => ({
       LOCAL_EMBED_MODEL: 'Xenova/all-MiniLM-L6-v2',
       embedLocal: vi.fn(async () => null),
-      localEmbedHealth: vi.fn(async () => ({ ok: false, status: 'degraded', model: 'Xenova/all-MiniLM-L6-v2', backend: 'mock', error: 'down' })),
+      localEmbedHealth: vi.fn(async () => ({
+        ok: false,
+        status: 'degraded',
+        model: 'Xenova/all-MiniLM-L6-v2',
+        backend: 'mock',
+        error: 'down',
+      })),
     }));
 
     const { ingestDocument, retrieveChunks } = await loadRag();

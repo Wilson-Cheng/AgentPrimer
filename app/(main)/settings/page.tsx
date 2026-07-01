@@ -13,8 +13,30 @@ import { useState, useEffect } from 'react';
 import Button from '@/components/ui/Button';
 import CustomDropDown from '@/components/ui/CustomDropDown';
 import { useConfirm } from '@/components/ui/CustomConfirmDialog';
-import { Settings, Key, Globe, Cpu, Save, Check, RefreshCw, CheckCircle2, XCircle, Sliders, Repeat, Database, Layout, GripVertical, Sun, Moon, Monitor, Activity, PanelRightClose, AlertTriangle, RotateCcw, BookOpen } from 'lucide-react';
-
+import {
+  Settings,
+  Key,
+  Globe,
+  Cpu,
+  Save,
+  Check,
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
+  Sliders,
+  Repeat,
+  Database,
+  Layout,
+  GripVertical,
+  Sun,
+  Moon,
+  Monitor,
+  Activity,
+  PanelRightClose,
+  AlertTriangle,
+  RotateCcw,
+  BookOpen,
+} from 'lucide-react';
 
 export default function SettingsPage() {
   // LLM API endpoint URL (e.g., https://api.deepseek.com/v1)
@@ -104,7 +126,11 @@ export default function SettingsPage() {
   // Whether to show pinned system prompts on the new chat page
   const [newChatShowPinnedPrompt, setNewChatShowPinnedPrompt] = useState(true);
   // Order of sections on the new chat page (drag-reorderable)
-  const [newChatSectionOrder, setNewChatSectionOrder] = useState(['suggestions', 'pinned_chat', 'pinned_prompt']);
+  const [newChatSectionOrder, setNewChatSectionOrder] = useState([
+    'suggestions',
+    'pinned_chat',
+    'pinned_prompt',
+  ]);
   // Which section is currently being dragged (null = none)
   const [draggingSection, setDraggingSection] = useState<string | null>(null);
   const [showLearnNav, setShowLearnNav] = useState(true);
@@ -143,7 +169,7 @@ export default function SettingsPage() {
     setModelFetchError('');
     try {
       // Detect the masked placeholder (contains bullet char U+2022)
-      const cleanKey = key.includes('\u2022') ? undefined : (key || undefined);
+      const cleanKey = key.includes('\u2022') ? undefined : key || undefined;
       const res = await fetch('/api/models', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -166,10 +192,10 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetch('/api/settings')
-      .then(r => r.json())
-      .then(data => {
-        const ep  = data.settings?.endpoint    ?? '';
-        const key = data.settings?.api_key     ?? '';
+      .then((r) => r.json())
+      .then((data) => {
+        const ep = data.settings?.endpoint ?? '';
+        const key = data.settings?.api_key ?? '';
         const mdl = data.settings?.default_model ?? '';
         // Never pre-populate the API key field with the masked value — that would
         // overwrite the real key with bullet characters if the user clicks Save.
@@ -184,9 +210,15 @@ export default function SettingsPage() {
         setMaxAgentSteps(parseInt(data.settings?.max_agent_steps ?? '0', 10) || 0);
         setContextKeepPairs(parseInt(data.settings?.context_keep_pairs ?? '0', 10) || 0);
         setSubagentPollingEnabled(data.settings?.subagent_polling_enabled !== 'false');
-        setSubagentPollIntervalSeconds(parseInt(data.settings?.subagent_poll_interval_seconds ?? '60', 10) || 60);
-        setSubagentPollMaxAttempts(parseInt(data.settings?.subagent_poll_max_attempts ?? '10', 10) || 10);
-        setSubagentProgressBubblesEnabled(data.settings?.subagent_progress_bubbles_enabled === 'true');
+        setSubagentPollIntervalSeconds(
+          parseInt(data.settings?.subagent_poll_interval_seconds ?? '60', 10) || 60,
+        );
+        setSubagentPollMaxAttempts(
+          parseInt(data.settings?.subagent_poll_max_attempts ?? '10', 10) || 10,
+        );
+        setSubagentProgressBubblesEnabled(
+          data.settings?.subagent_progress_bubbles_enabled === 'true',
+        );
         setSubagentAutoFollowupEnabled(data.settings?.subagent_auto_followup_enabled !== 'false');
         setEmbeddingProvider((data.settings?.embedding_provider ?? 'local') as 'local' | 'openai');
         const embKey = data.settings?.embedding_api_key ?? '';
@@ -213,8 +245,8 @@ export default function SettingsPage() {
         if (embProv === 'openai') {
           const embEp = data.settings?.embedding_endpoint || ep;
           const rawEmbKey = data.settings?.embedding_api_key ?? '';
-          const embKeyUsable = rawEmbKey && !rawEmbKey.includes('\u2022') ? rawEmbKey
-            : (key && !masked ? key : '');
+          const embKeyUsable =
+            rawEmbKey && !rawEmbKey.includes('\u2022') ? rawEmbKey : key && !masked ? key : '';
           if (embEp && embKeyUsable) fetchEmbeddingModels(embEp, embKeyUsable);
         }
       });
@@ -223,11 +255,14 @@ export default function SettingsPage() {
 
     // Load new-chat layout prefs
     fetch('/api/ui-settings')
-      .then(r => r.json())
+      .then((r) => r.json())
       .then((d: Record<string, unknown>) => {
-        if (d.new_chat_show_suggestions !== undefined) setNewChatShowSuggestions(d.new_chat_show_suggestions !== false);
-        if (d.new_chat_show_pinned_chat !== undefined) setNewChatShowPinnedChat(d.new_chat_show_pinned_chat !== false);
-        if (d.new_chat_show_pinned_prompt !== undefined) setNewChatShowPinnedPrompt(d.new_chat_show_pinned_prompt !== false);
+        if (d.new_chat_show_suggestions !== undefined)
+          setNewChatShowSuggestions(d.new_chat_show_suggestions !== false);
+        if (d.new_chat_show_pinned_chat !== undefined)
+          setNewChatShowPinnedChat(d.new_chat_show_pinned_chat !== false);
+        if (d.new_chat_show_pinned_prompt !== undefined)
+          setNewChatShowPinnedPrompt(d.new_chat_show_pinned_prompt !== false);
         if (d.show_learn_nav !== undefined) setShowLearnNav(d.show_learn_nav !== false);
         if (typeof d.new_chat_section_order === 'string' && d.new_chat_section_order) {
           setNewChatSectionOrder((d.new_chat_section_order as string).split(',').filter(Boolean));
@@ -244,8 +279,8 @@ export default function SettingsPage() {
     setEmbeddingFetchingModels(true);
     setEmbeddingFetchError('');
     try {
-      const cleanKey = key.includes('\u2022') ? undefined : (key || undefined);
-      const cleanChatKey = apiKey.includes('\u2022') ? undefined : (apiKey || undefined);
+      const cleanKey = key.includes('\u2022') ? undefined : key || undefined;
+      const cleanChatKey = apiKey.includes('\u2022') ? undefined : apiKey || undefined;
       const res = await fetch('/api/models', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -271,8 +306,10 @@ export default function SettingsPage() {
     setEmbeddingTestStatus('idle');
     setEmbeddingTestMsg('');
     try {
-      const cleanKey = embeddingApiKey.includes('\u2022') ? undefined : (embeddingApiKey || undefined);
-      const cleanChatKey = apiKey.includes('\u2022') ? undefined : (apiKey || undefined);
+      const cleanKey = embeddingApiKey.includes('\u2022')
+        ? undefined
+        : embeddingApiKey || undefined;
+      const cleanChatKey = apiKey.includes('\u2022') ? undefined : apiKey || undefined;
       const useUrl = embeddingEndpoint || endpoint;
       const res = await fetch('/api/models', {
         method: 'POST',
@@ -282,7 +319,9 @@ export default function SettingsPage() {
       const data = await res.json();
       if (data.models?.length) {
         setEmbeddingTestStatus('ok');
-        setEmbeddingTestMsg(`Connected — ${data.models.length} model${data.models.length !== 1 ? 's' : ''} available`);
+        setEmbeddingTestMsg(
+          `Connected — ${data.models.length} model${data.models.length !== 1 ? 's' : ''} available`,
+        );
         setEmbeddingAvailableModels(data.models);
       } else {
         setEmbeddingTestStatus('fail');
@@ -301,7 +340,7 @@ export default function SettingsPage() {
     setTestStatus('idle');
     setTestMsg('');
     try {
-      const cleanKey = apiKey.includes('\u2022') ? undefined : (apiKey || undefined);
+      const cleanKey = apiKey.includes('\u2022') ? undefined : apiKey || undefined;
       const res = await fetch('/api/models', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -310,7 +349,9 @@ export default function SettingsPage() {
       const data = await res.json();
       if (data.models?.length) {
         setTestStatus('ok');
-        setTestMsg(`Connected — ${data.models.length} model${data.models.length !== 1 ? 's' : ''} available`);
+        setTestMsg(
+          `Connected — ${data.models.length} model${data.models.length !== 1 ? 's' : ''} available`,
+        );
         setAvailableModels(data.models);
       } else {
         setTestStatus('fail');
@@ -382,9 +423,11 @@ export default function SettingsPage() {
     if (langfuseSecretKey) setLangfuseSecretMasked(false);
 
     // Notify any layout shells listening for nav-relevant changes.
-    window.dispatchEvent(new CustomEvent('ui-settings-changed', {
-      detail: { show_learn_nav: showLearnNav },
-    }));
+    window.dispatchEvent(
+      new CustomEvent('ui-settings-changed', {
+        detail: { show_learn_nav: showLearnNav },
+      }),
+    );
 
     setSaving(false);
     setSaved(true);
@@ -438,8 +481,13 @@ export default function SettingsPage() {
   // so unchecking "Reset to original" reverts to whatever the user had
   // selected manually before.
   const checkedAny =
-    resetSystem || resetAgents || resetSingleAgent ||
-    resetMcp || resetSkills || resetFunctionTools || resetFull;
+    resetSystem ||
+    resetAgents ||
+    resetSingleAgent ||
+    resetMcp ||
+    resetSkills ||
+    resetFunctionTools ||
+    resetFull;
 
   const openResetPicker = () => {
     setResetSystem(false);
@@ -451,8 +499,8 @@ export default function SettingsPage() {
     setResetFull(false);
     setResetErr('');
     fetch('/api/agents')
-      .then(r => r.json())
-      .then(d => {
+      .then((r) => r.json())
+      .then((d) => {
         const names = Array.isArray(d.agents) && d.agents.length ? d.agents : ['main'];
         setResetAgentNames(names);
         setResetAgentName(names.includes(resetAgentName) ? resetAgentName : names[0]);
@@ -488,8 +536,8 @@ export default function SettingsPage() {
     const message = isFull ? (
       <>
         <p className="text-red-600 dark:text-red-400 font-700">
-          This will permanently delete EVERYTHING and restore the app to
-          its original state, including:
+          This will permanently delete EVERYTHING and restore the app to its original state,
+          including:
         </p>
         <ul className="list-disc list-inside ml-2 text-gray-700 dark:text-gray-300 space-y-0.5">
           <li>Your user account and login</li>
@@ -499,9 +547,8 @@ export default function SettingsPage() {
           <li>System prompt and agent folders</li>
         </ul>
         <p className="text-gray-600 dark:text-gray-400">
-          The embedding model cache (<code className="font-mono">data/models/</code>)
-          is kept to avoid a slow re-download — delete it manually for a
-          true clean slate.
+          The embedding model cache (<code className="font-mono">data/models/</code>) is kept to
+          avoid a slow re-download — delete it manually for a true clean slate.
         </p>
         <p className="text-red-600 dark:text-red-400">
           You will be logged out and redirected to the registration page.
@@ -509,14 +556,45 @@ export default function SettingsPage() {
       </>
     ) : (
       <>
-        <p>The following will be <strong>overwritten with the bundled defaults</strong>:</p>
+        <p>
+          The following will be <strong>overwritten with the bundled defaults</strong>:
+        </p>
         <ul className="list-disc list-inside ml-2 text-gray-700 dark:text-gray-300 space-y-0.5">
-          {resetSystem        && <li><code className="font-mono">system.md</code> (global system prompt)</li>}
-          {resetAgents        && <li><code className="font-mono">data/agents/</code> (all agent folders — custom agents and memories will be lost)</li>}
-          {resetSingleAgent   && <li><code className="font-mono">data/agents/{resetAgentName}/</code> (that agent&apos;s prompt, memory, schemas, and files)</li>}
-          {resetMcp           && <li>All MCP servers in <code className="font-mono">data/mcp-servers/</code> — user-installed servers will be removed; only bundled defaults remain</li>}
-          {resetSkills        && <li>All skills in <code className="font-mono">data/skills/</code> — user-installed skills will be removed; only bundled defaults remain</li>}
-          {resetFunctionTools && <li>All function tools in <code className="font-mono">data/function-tools/</code> — user-installed tools will be removed; only bundled defaults remain</li>}
+          {resetSystem && (
+            <li>
+              <code className="font-mono">system.md</code> (global system prompt)
+            </li>
+          )}
+          {resetAgents && (
+            <li>
+              <code className="font-mono">data/agents/</code> (all agent folders — custom agents and
+              memories will be lost)
+            </li>
+          )}
+          {resetSingleAgent && (
+            <li>
+              <code className="font-mono">data/agents/{resetAgentName}/</code> (that agent&apos;s
+              prompt, memory, schemas, and files)
+            </li>
+          )}
+          {resetMcp && (
+            <li>
+              All MCP servers in <code className="font-mono">data/mcp-servers/</code> —
+              user-installed servers will be removed; only bundled defaults remain
+            </li>
+          )}
+          {resetSkills && (
+            <li>
+              All skills in <code className="font-mono">data/skills/</code> — user-installed skills
+              will be removed; only bundled defaults remain
+            </li>
+          )}
+          {resetFunctionTools && (
+            <li>
+              All function tools in <code className="font-mono">data/function-tools/</code> —
+              user-installed tools will be removed; only bundled defaults remain
+            </li>
+          )}
         </ul>
         <p className="text-gray-500 dark:text-gray-400">
           Your user account, chats, settings, and API keys are NOT affected.
@@ -562,26 +640,28 @@ export default function SettingsPage() {
 
   return (
     <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Page header — sticks at top */}
-        <div className="flex-shrink-0 bg-blue-500 pl-14 pr-6 py-6 md:px-8 md:py-10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full translate-x-1/3 -translate-y-1/3" />
-          <div className="absolute top-0 left-1/3 w-36 h-36 bg-white/10 rotate-45 -translate-y-1/2" />
-          <div className="relative z-10 max-w-2xl">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 min-w-12 rounded-xl bg-white/20 flex items-center justify-center">
-                <Settings size={24} className="text-white" />
-              </div>
-              <div className="min-w-0 overflow-hidden">
-                <h1 className="text-3xl font-800 text-white tracking-tight truncate">Settings</h1>
-                <p className="text-blue-200 text-sm truncate">Configure your AI backend and preferences</p>
-              </div>
+      {/* Page header — sticks at top */}
+      <div className="flex-shrink-0 bg-blue-500 pl-14 pr-6 py-6 md:px-8 md:py-10 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full translate-x-1/3 -translate-y-1/3" />
+        <div className="absolute top-0 left-1/3 w-36 h-36 bg-white/10 rotate-45 -translate-y-1/2" />
+        <div className="relative z-10 max-w-2xl">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 min-w-12 rounded-xl bg-white/20 flex items-center justify-center">
+              <Settings size={24} className="text-white" />
+            </div>
+            <div className="min-w-0 overflow-hidden">
+              <h1 className="text-3xl font-800 text-white tracking-tight truncate">Settings</h1>
+              <p className="text-blue-200 text-sm truncate">
+                Configure your AI backend and preferences
+              </p>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Scrollable content — scrollbar at browser edge */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-3xl mx-auto w-full px-8 py-8 space-y-6">
+      {/* Scrollable content — scrollbar at browser edge */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-3xl mx-auto w-full px-8 py-8 space-y-6">
           {loading ? (
             <div className="flex items-center gap-3 text-gray-400 dark:text-gray-500 py-12 justify-center">
               <RefreshCw size={18} className="animate-spin" />
@@ -609,7 +689,9 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <h2 className="font-700 text-gray-900 dark:text-gray-100">API Configuration</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">OpenAI-compatible endpoint, key, and default model</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      OpenAI-compatible endpoint, key, and default model
+                    </p>
                   </div>
                 </div>
 
@@ -623,13 +705,14 @@ export default function SettingsPage() {
                     <input
                       type="url"
                       value={endpoint}
-                      onChange={e => setEndpoint(e.target.value)}
-                      onBlur={e => fetchModels(e.target.value, apiKey)}
+                      onChange={(e) => setEndpoint(e.target.value)}
+                      onBlur={(e) => fetchModels(e.target.value, apiKey)}
                       placeholder="https://api.deepseek.com/v1"
                       className="w-full h-11 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 text-sm focus:outline-none focus:border-blue-500 transition-all duration-200 font-mono"
                     />
                     <p className="text-sm text-gray-400 dark:text-gray-500">
-                      Supports OpenAI, OpenRouter, Together AI, Ollama, LM Studio, and any compatible endpoint.
+                      Supports OpenAI, OpenRouter, Together AI, Ollama, LM Studio, and any
+                      compatible endpoint.
                     </p>
                   </div>
 
@@ -642,13 +725,18 @@ export default function SettingsPage() {
                     <input
                       type="password"
                       value={apiKey}
-                      onChange={e => { setApiKey(e.target.value); setKeyIsMasked(false); }}
-                      onBlur={e => fetchModels(endpoint, e.target.value)}
+                      onChange={(e) => {
+                        setApiKey(e.target.value);
+                        setKeyIsMasked(false);
+                      }}
+                      onBlur={(e) => fetchModels(endpoint, e.target.value)}
                       placeholder={keyIsMasked ? 'Key saved – re-enter to replace' : 'sk-…'}
                       className="w-full h-11 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 text-sm focus:outline-none focus:border-blue-500 transition-all duration-200 font-mono"
                     />
                     <p className="text-sm text-gray-400 dark:text-gray-500">
-                      {keyIsMasked ? 'A key is already saved. Leave blank to keep it.' : 'Leave blank to keep the existing key.'}
+                      {keyIsMasked
+                        ? 'A key is already saved. Leave blank to keep it.'
+                        : 'Leave blank to keep the existing key.'}
                     </p>
                     {/* Test button */}
                     <button
@@ -657,19 +745,29 @@ export default function SettingsPage() {
                       disabled={testing || !endpoint}
                       className="mt-1 flex items-center gap-1.5 px-3 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-40 text-sm font-600 text-gray-700 dark:text-gray-300 transition-colors"
                     >
-                      {testing
-                        ? <><RefreshCw size={14} className="animate-spin" /> Testing…</>
-                        : <><RefreshCw size={14} /> Test and fetch models</>}
+                      {testing ? (
+                        <>
+                          <RefreshCw size={14} className="animate-spin" /> Testing…
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw size={14} /> Test and fetch models
+                        </>
+                      )}
                     </button>
                     {testStatus !== 'idle' && (
-                      <div className={`flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg ${
-                        testStatus === 'ok'
-                          ? 'bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
-                          : 'bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
-                      }`}>
-                        {testStatus === 'ok'
-                          ? <CheckCircle2 size={14} className="flex-shrink-0" />
-                          : <XCircle size={14} className="flex-shrink-0" />}
+                      <div
+                        className={`flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg ${
+                          testStatus === 'ok'
+                            ? 'bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                            : 'bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
+                        }`}
+                      >
+                        {testStatus === 'ok' ? (
+                          <CheckCircle2 size={14} className="flex-shrink-0" />
+                        ) : (
+                          <XCircle size={14} className="flex-shrink-0" />
+                        )}
                         {testMsg}
                       </div>
                     )}
@@ -707,12 +805,17 @@ export default function SettingsPage() {
                     {fetchingModels ? (
                       <p className="text-sm text-gray-400">Fetching available models…</p>
                     ) : availableModels.length > 0 ? (
-                      <p className="text-sm text-green-600">{availableModels.length} models available</p>
+                      <p className="text-sm text-green-600">
+                        {availableModels.length} models available
+                      </p>
                     ) : modelFetchError ? (
-                      <p className="text-sm text-red-500">{modelFetchError} — you can still type a model ID manually</p>
+                      <p className="text-sm text-red-500">
+                        {modelFetchError} — you can still type a model ID manually
+                      </p>
                     ) : (
                       <p className="text-sm text-gray-400">
-                        Used when no model is selected in chat. Enter Base URL above and press Tab to auto-load available models.
+                        Used when no model is selected in chat. Enter Base URL above and press Tab
+                        to auto-load available models.
                       </p>
                     )}
                   </div>
@@ -726,8 +829,12 @@ export default function SettingsPage() {
                     <Database size={18} className="text-white" />
                   </div>
                   <div>
-                    <h2 className="font-700 text-gray-900 dark:text-gray-100">Embedding Provider</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Used for RAG and semantic memory search</p>
+                    <h2 className="font-700 text-gray-900 dark:text-gray-100">
+                      Embedding Provider
+                    </h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Used for RAG and semantic memory search
+                    </p>
                   </div>
                 </div>
                 <div className="flex rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-600">
@@ -764,12 +871,14 @@ export default function SettingsPage() {
                   <div className="mt-5 space-y-5 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                     {/* Embedding Base URL */}
                     <div className="space-y-1.5">
-                      <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Embedding Base URL</label>
+                      <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                        Embedding Base URL
+                      </label>
                       <input
                         type="url"
                         value={embeddingEndpoint}
-                        onChange={e => setEmbeddingEndpoint(e.target.value)}
-                        onBlur={e => fetchEmbeddingModels(e.target.value, embeddingApiKey)}
+                        onChange={(e) => setEmbeddingEndpoint(e.target.value)}
+                        onBlur={(e) => fetchEmbeddingModels(e.target.value, embeddingApiKey)}
                         placeholder={endpoint || 'https://api.openai.com/v1'}
                         className="w-full h-11 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 text-sm focus:outline-none focus:border-teal-500 transition-all duration-200 font-mono"
                       />
@@ -780,13 +889,22 @@ export default function SettingsPage() {
 
                     {/* Embedding API Key */}
                     <div className="space-y-1.5">
-                      <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Embedding API Key</label>
+                      <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                        Embedding API Key
+                      </label>
                       <input
                         type="password"
                         value={embeddingApiKey}
-                        onChange={e => { setEmbeddingApiKey(e.target.value); setEmbeddingKeyMasked(false); }}
-                        onBlur={e => fetchEmbeddingModels(embeddingEndpoint, e.target.value)}
-                        placeholder={embeddingKeyMasked ? 'Key saved – re-enter to replace' : 'Leave blank to reuse the chat API key'}
+                        onChange={(e) => {
+                          setEmbeddingApiKey(e.target.value);
+                          setEmbeddingKeyMasked(false);
+                        }}
+                        onBlur={(e) => fetchEmbeddingModels(embeddingEndpoint, e.target.value)}
+                        placeholder={
+                          embeddingKeyMasked
+                            ? 'Key saved – re-enter to replace'
+                            : 'Leave blank to reuse the chat API key'
+                        }
                         className="w-full h-11 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 text-sm focus:outline-none focus:border-teal-500 transition-all duration-200 font-mono"
                       />
                       <p className="text-sm text-gray-400 dark:text-gray-500">
@@ -800,19 +918,29 @@ export default function SettingsPage() {
                         disabled={embeddingTesting || !(embeddingEndpoint || endpoint)}
                         className="mt-1 flex items-center gap-1.5 px-3 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-40 text-sm font-600 text-gray-700 dark:text-gray-300 transition-colors"
                       >
-                        {embeddingTesting
-                          ? <><RefreshCw size={14} className="animate-spin" /> Testing…</>
-                          : <><RefreshCw size={14} /> Test and fetch models</>}
+                        {embeddingTesting ? (
+                          <>
+                            <RefreshCw size={14} className="animate-spin" /> Testing…
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw size={14} /> Test and fetch models
+                          </>
+                        )}
                       </button>
                       {embeddingTestStatus !== 'idle' && (
-                        <div className={`flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg ${
-                          embeddingTestStatus === 'ok'
-                            ? 'bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
-                            : 'bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
-                        }`}>
-                          {embeddingTestStatus === 'ok'
-                            ? <CheckCircle2 size={14} className="flex-shrink-0" />
-                            : <XCircle size={14} className="flex-shrink-0" />}
+                        <div
+                          className={`flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg ${
+                            embeddingTestStatus === 'ok'
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                              : 'bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
+                          }`}
+                        >
+                          {embeddingTestStatus === 'ok' ? (
+                            <CheckCircle2 size={14} className="flex-shrink-0" />
+                          ) : (
+                            <XCircle size={14} className="flex-shrink-0" />
+                          )}
                           {embeddingTestMsg}
                         </div>
                       )}
@@ -821,14 +949,19 @@ export default function SettingsPage() {
                     {/* Embedding Model */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Embedding Model</label>
+                        <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                          Embedding Model
+                        </label>
                         <button
                           type="button"
                           onClick={() => fetchEmbeddingModels(embeddingEndpoint, embeddingApiKey)}
                           disabled={embeddingFetchingModels || !(embeddingEndpoint || endpoint)}
                           className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-800 disabled:opacity-40"
                         >
-                          <RefreshCw size={14} className={embeddingFetchingModels ? 'animate-spin' : ''} />
+                          <RefreshCw
+                            size={14}
+                            className={embeddingFetchingModels ? 'animate-spin' : ''}
+                          />
                           {embeddingFetchingModels ? 'Loading…' : 'Refresh models'}
                         </button>
                       </div>
@@ -843,12 +976,17 @@ export default function SettingsPage() {
                       {embeddingFetchingModels ? (
                         <p className="text-sm text-gray-400">Fetching available models…</p>
                       ) : embeddingAvailableModels.length > 0 ? (
-                        <p className="text-sm text-green-600">{embeddingAvailableModels.length} models available</p>
+                        <p className="text-sm text-green-600">
+                          {embeddingAvailableModels.length} models available
+                        </p>
                       ) : embeddingFetchError ? (
-                        <p className="text-sm text-red-500">{embeddingFetchError} — you can still type a model ID manually</p>
+                        <p className="text-sm text-red-500">
+                          {embeddingFetchError} — you can still type a model ID manually
+                        </p>
                       ) : (
                         <p className="text-sm text-gray-400">
-                          Defaults to <code className="font-mono">text-embedding-3-small</code> when blank. Type a model ID or click Refresh.
+                          Defaults to <code className="font-mono">text-embedding-3-small</code> when
+                          blank. Type a model ID or click Refresh.
                         </p>
                       )}
                     </div>
@@ -864,202 +1002,293 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <h2 className="font-700 text-gray-900 dark:text-gray-100">Chat Behavior</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Control how the chat interface behaves</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Control how the chat interface behaves
+                    </p>
                   </div>
                 </div>
                 <div className="space-y-5">
                   {/* Expand tool details toggle */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-600 text-gray-700 dark:text-gray-300">Expand tool details by default</p>
-                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Show reasoning and tool call results expanded instead of collapsed</p>
+                      <p className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                        Expand tool details by default
+                      </p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
+                        Show reasoning and tool call results expanded instead of collapsed
+                      </p>
                     </div>
                     <button
                       type="button"
-                      onClick={() => setExpandToolDetails(v => !v)}
+                      onClick={() => setExpandToolDetails((v) => !v)}
                       className={`relative flex-shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none ${
                         expandToolDetails ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
                       }`}
                     >
-                      <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-                        expandToolDetails ? 'translate-x-5' : 'translate-x-0'
-                      }`} />
+                      <span
+                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                          expandToolDetails ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
                     </button>
                   </div>
 
                   {/* Show token usage toggle */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-600 text-gray-700 dark:text-gray-300">Show token usage in messages</p>
-                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Display input, cached, and output token counts at the end of each assistant message</p>
+                      <p className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                        Show token usage in messages
+                      </p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
+                        Display input, cached, and output token counts at the end of each assistant
+                        message
+                      </p>
                     </div>
                     <button
                       type="button"
-                      onClick={() => setShowTokenUsage(v => !v)}
+                      onClick={() => setShowTokenUsage((v) => !v)}
                       className={`relative flex-shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none ${
                         showTokenUsage ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
                       }`}
                     >
-                      <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-                        showTokenUsage ? 'translate-x-5' : 'translate-x-0'
-                      }`} />
+                      <span
+                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                          showTokenUsage ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
                     </button>
                   </div>
 
                   {/* Show trace badge toggle */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-600 text-gray-700 dark:text-gray-300">Show trace in messages</p>
-                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Display the &quot;Trace&quot; badge at the end of each assistant message that has per-step trace data</p>
+                      <p className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                        Show trace in messages
+                      </p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
+                        Display the &quot;Trace&quot; badge at the end of each assistant message
+                        that has per-step trace data
+                      </p>
                     </div>
                     <button
                       type="button"
-                      onClick={() => setShowTrace(v => !v)}
+                      onClick={() => setShowTrace((v) => !v)}
                       className={`relative flex-shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none ${
                         showTrace ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
                       }`}
                     >
-                      <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-                        showTrace ? 'translate-x-5' : 'translate-x-0'
-                      }`} />
+                      <span
+                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                          showTrace ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
                     </button>
                   </div>
 
                   {/* Agent tracing toggle */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-600 text-gray-700 dark:text-gray-300">Per-step agent tracing</p>
-                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Record per-LLM-call timing, token usage, and tool I/O for each assistant message (requires more storage)</p>
+                      <p className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                        Per-step agent tracing
+                      </p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
+                        Record per-LLM-call timing, token usage, and tool I/O for each assistant
+                        message (requires more storage)
+                      </p>
                     </div>
                     <button
                       type="button"
-                      onClick={() => setTracingEnabled(v => !v)}
+                      onClick={() => setTracingEnabled((v) => !v)}
                       className={`relative flex-shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none ${
                         tracingEnabled ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'
                       }`}
                     >
-                      <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-                        tracingEnabled ? 'translate-x-5' : 'translate-x-0'
-                      }`} />
+                      <span
+                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                          tracingEnabled ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
                     </button>
                   </div>
-
 
                   {/* Sub-agent monitor */}
                   <div className="space-y-4 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-600 text-gray-700 dark:text-gray-300">Monitor async sub-agents</p>
-                        <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Poll background sub-agent task logs and inject completion updates into the chat</p>
+                        <p className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                          Monitor async sub-agents
+                        </p>
+                        <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
+                          Poll background sub-agent task logs and inject completion updates into the
+                          chat
+                        </p>
                       </div>
                       <button
                         type="button"
-                        onClick={() => setSubagentPollingEnabled(v => !v)}
+                        onClick={() => setSubagentPollingEnabled((v) => !v)}
                         className={`relative flex-shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none ${
                           subagentPollingEnabled ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
                         }`}
                       >
-                        <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-                          subagentPollingEnabled ? 'translate-x-5' : 'translate-x-0'
-                        }`} />
+                        <span
+                          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                            subagentPollingEnabled ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
                       </button>
                     </div>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-600 text-gray-700 dark:text-gray-300">Show progress bubbles</p>
-                        <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Post changed progress log lines while tasks are still running</p>
+                        <p className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                          Show progress bubbles
+                        </p>
+                        <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
+                          Post changed progress log lines while tasks are still running
+                        </p>
                       </div>
                       <button
                         type="button"
-                        onClick={() => setSubagentProgressBubblesEnabled(v => !v)}
+                        onClick={() => setSubagentProgressBubblesEnabled((v) => !v)}
                         className={`relative flex-shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none ${
-                          subagentProgressBubblesEnabled ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
+                          subagentProgressBubblesEnabled
+                            ? 'bg-emerald-500'
+                            : 'bg-gray-300 dark:bg-gray-600'
                         }`}
                       >
-                        <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-                          subagentProgressBubblesEnabled ? 'translate-x-5' : 'translate-x-0'
-                        }`} />
+                        <span
+                          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                            subagentProgressBubblesEnabled ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
                       </button>
                     </div>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-600 text-gray-700 dark:text-gray-300">Auto follow up when complete</p>
-                        <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Experimental orchestration demo: automatically spend one parent-agent LLM call after a sub-agent finishes</p>
+                        <p className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                          Auto follow up when complete
+                        </p>
+                        <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
+                          Experimental orchestration demo: automatically spend one parent-agent LLM
+                          call after a sub-agent finishes
+                        </p>
                       </div>
                       <button
                         type="button"
-                        onClick={() => setSubagentAutoFollowupEnabled(v => !v)}
+                        onClick={() => setSubagentAutoFollowupEnabled((v) => !v)}
                         className={`relative flex-shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none ${
-                          subagentAutoFollowupEnabled ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
+                          subagentAutoFollowupEnabled
+                            ? 'bg-emerald-500'
+                            : 'bg-gray-300 dark:bg-gray-600'
                         }`}
                       >
-                        <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-                          subagentAutoFollowupEnabled ? 'translate-x-5' : 'translate-x-0'
-                        }`} />
+                        <span
+                          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                            subagentAutoFollowupEnabled ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
                       </button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Poll interval seconds</label>
+                        <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                          Poll interval seconds
+                        </label>
                         <input
                           type="number"
                           min={1}
                           step={1}
                           value={subagentPollIntervalSeconds}
-                          onChange={e => setSubagentPollIntervalSeconds(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
-                          onBlur={() => setSubagentPollIntervalSeconds(v => v === '' || Number.isNaN(v) || v < 1 ? 60 : v)}
+                          onChange={(e) =>
+                            setSubagentPollIntervalSeconds(
+                              e.target.value === '' ? '' : parseInt(e.target.value, 10),
+                            )
+                          }
+                          onBlur={() =>
+                            setSubagentPollIntervalSeconds((v) =>
+                              v === '' || Number.isNaN(v) || v < 1 ? 60 : v,
+                            )
+                          }
                           className="w-full h-11 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 text-sm focus:outline-none focus:border-emerald-500 transition-all duration-200 font-mono"
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Max poll attempts</label>
+                        <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                          Max poll attempts
+                        </label>
                         <input
                           type="number"
                           min={1}
                           step={1}
                           value={subagentPollMaxAttempts}
-                          onChange={e => setSubagentPollMaxAttempts(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
-                          onBlur={() => setSubagentPollMaxAttempts(v => v === '' || Number.isNaN(v) || v < 1 ? 10 : v)}
+                          onChange={(e) =>
+                            setSubagentPollMaxAttempts(
+                              e.target.value === '' ? '' : parseInt(e.target.value, 10),
+                            )
+                          }
+                          onBlur={() =>
+                            setSubagentPollMaxAttempts((v) =>
+                              v === '' || Number.isNaN(v) || v < 1 ? 10 : v,
+                            )
+                          }
                           className="w-full h-11 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 text-sm focus:outline-none focus:border-emerald-500 transition-all duration-200 font-mono"
                         />
                       </div>
                     </div>
-                    <p className="text-sm text-gray-400 dark:text-gray-500">Default: poll every 60 seconds, up to 10 times. Polling reads local task status/log files and does not call the LLM.</p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">
+                      Default: poll every 60 seconds, up to 10 times. Polling reads local task
+                      status/log files and does not call the LLM.
+                    </p>
                   </div>
 
                   {/* Max agent steps */}
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
                       <Repeat size={14} className="text-gray-500" />
-                      <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Max Agent Loop Steps</label>
+                      <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                        Max Agent Loop Steps
+                      </label>
                     </div>
                     <input
                       type="number"
                       min={0}
                       step={1}
                       value={maxAgentSteps}
-                      onChange={e => setMaxAgentSteps(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                      onChange={(e) =>
+                        setMaxAgentSteps(Math.max(0, parseInt(e.target.value, 10) || 0))
+                      }
                       className="w-full h-11 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 text-sm focus:outline-none focus:border-blue-500 transition-all duration-200 font-mono"
                     />
-                    <p className="text-sm text-gray-400 dark:text-gray-500">Maximum tool-call iterations per agent response. Set to <code className="font-mono bg-gray-100 dark:bg-gray-700 px-1 rounded">0</code> for unlimited (up to 100).</p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">
+                      Maximum tool-call iterations per agent response. Set to{' '}
+                      <code className="font-mono bg-gray-100 dark:bg-gray-700 px-1 rounded">0</code>{' '}
+                      for unlimited (up to 100).
+                    </p>
                   </div>
 
                   {/* Context window compaction */}
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
                       <PanelRightClose size={14} className="text-gray-500" />
-                      <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Context Window Compaction</label>
+                      <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                        Context Window Compaction
+                      </label>
                     </div>
                     <input
                       type="number"
                       min={0}
                       step={1}
                       value={contextKeepPairs}
-                      onChange={e => setContextKeepPairs(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                      onChange={(e) =>
+                        setContextKeepPairs(Math.max(0, parseInt(e.target.value, 10) || 0))
+                      }
                       className="w-full h-11 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 text-sm focus:outline-none focus:border-blue-500 transition-all duration-200 font-mono"
                     />
                     <p className="text-sm text-gray-400 dark:text-gray-500">
-                      Number of recent user/assistant exchanges to keep in context (sliding window). Set to <code className="font-mono bg-gray-100 dark:bg-gray-700 px-1 rounded">0</code> to disable. Older messages are dropped to stay within the model&apos;s token limit. Helps prevent context overflow on long conversations.
+                      Number of recent user/assistant exchanges to keep in context (sliding window).
+                      Set to{' '}
+                      <code className="font-mono bg-gray-100 dark:bg-gray-700 px-1 rounded">0</code>{' '}
+                      to disable. Older messages are dropped to stay within the model&apos;s token
+                      limit. Helps prevent context overflow on long conversations.
                     </p>
                   </div>
                 </div>
@@ -1072,60 +1301,84 @@ export default function SettingsPage() {
                     <Activity size={18} className="text-white" />
                   </div>
                   <div>
-                    <h2 className="font-700 text-gray-900 dark:text-gray-100">Langfuse Observability</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Optional external tracing for LLM calls, tool steps, timing, and token usage</p>
+                    <h2 className="font-700 text-gray-900 dark:text-gray-100">
+                      Langfuse Observability
+                    </h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Optional external tracing for LLM calls, tool steps, timing, and token usage
+                    </p>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-600 text-gray-700 dark:text-gray-300">Send traces to Langfuse</p>
-                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Requires Public Key and Secret Key. Per-step local tracing can be enabled separately above.</p>
+                      <p className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                        Send traces to Langfuse
+                      </p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
+                        Requires Public Key and Secret Key. Per-step local tracing can be enabled
+                        separately above.
+                      </p>
                     </div>
                     <button
                       type="button"
-                      onClick={() => setLangfuseEnabled(v => !v)}
+                      onClick={() => setLangfuseEnabled((v) => !v)}
                       className={`relative flex-shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none ${
                         langfuseEnabled ? 'bg-fuchsia-500' : 'bg-gray-300 dark:bg-gray-600'
                       }`}
                     >
-                      <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-                        langfuseEnabled ? 'translate-x-5' : 'translate-x-0'
-                      }`} />
+                      <span
+                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                          langfuseEnabled ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
                     </button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Public Key</label>
+                      <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                        Public Key
+                      </label>
                       <input
                         type="text"
                         value={langfusePublicKey}
-                        onChange={e => setLangfusePublicKey(e.target.value)}
+                        onChange={(e) => setLangfusePublicKey(e.target.value)}
                         placeholder="pk-lf-..."
                         className="w-full h-11 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 text-sm focus:outline-none focus:border-fuchsia-500 transition-all duration-200 font-mono"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Secret Key</label>
+                      <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                        Secret Key
+                      </label>
                       <input
                         type="password"
                         value={langfuseSecretKey}
-                        onChange={e => { setLangfuseSecretKey(e.target.value); setLangfuseSecretMasked(false); }}
-                        placeholder={langfuseSecretMasked ? 'Secret saved – re-enter to replace' : 'sk-lf-...'}
+                        onChange={(e) => {
+                          setLangfuseSecretKey(e.target.value);
+                          setLangfuseSecretMasked(false);
+                        }}
+                        placeholder={
+                          langfuseSecretMasked ? 'Secret saved – re-enter to replace' : 'sk-lf-...'
+                        }
                         className="w-full h-11 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 text-sm focus:outline-none focus:border-fuchsia-500 transition-all duration-200 font-mono"
                       />
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Base URL</label>
+                    <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                      Base URL
+                    </label>
                     <input
                       type="url"
                       value={langfuseBaseUrl}
-                      onChange={e => setLangfuseBaseUrl(e.target.value)}
+                      onChange={(e) => setLangfuseBaseUrl(e.target.value)}
                       placeholder="https://cloud.langfuse.com"
                       className="w-full h-11 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 text-sm focus:outline-none focus:border-fuchsia-500 transition-all duration-200 font-mono"
                     />
-                    <p className="text-sm text-gray-400 dark:text-gray-500">Use the cloud URL or your self-hosted Langfuse base URL.</p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">
+                      Use the cloud URL or your self-hosted Langfuse base URL.
+                    </p>
                   </div>
                 </div>
               </section>
@@ -1138,15 +1391,19 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <h2 className="font-700 text-gray-900 dark:text-gray-100">Theme</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Applied immediately and saved per-browser (no Save needed)</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Applied immediately and saved per-browser (no Save needed)
+                    </p>
                   </div>
                 </div>
                 <div className="flex rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-600">
-                  {([
-                    { value: 'light',  label: 'Light',  Icon: Sun     },
-                    { value: 'dark',   label: 'Dark',   Icon: Moon    },
-                    { value: 'system', label: 'System', Icon: Monitor },
-                  ] as const).map(({ value, label, Icon }, i) => (
+                  {(
+                    [
+                      { value: 'light', label: 'Light', Icon: Sun },
+                      { value: 'dark', label: 'Dark', Icon: Moon },
+                      { value: 'system', label: 'System', Icon: Monitor },
+                    ] as const
+                  ).map(({ value, label, Icon }, i) => (
                     <button
                       key={value}
                       type="button"
@@ -1174,39 +1431,53 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <h2 className="font-700 text-gray-900 dark:text-gray-100">Navigation</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Choose which learning shortcuts appear in the sidebar</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Choose which learning shortcuts appear in the sidebar
+                    </p>
                   </div>
                 </div>
                 <div className="space-y-5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-600 text-gray-700 dark:text-gray-300">Show Learn in sidebar</p>
-                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Hide this after finishing the curriculum, then re-enable it here anytime</p>
+                      <p className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                        Show Learn in sidebar
+                      </p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
+                        Hide this after finishing the curriculum, then re-enable it here anytime
+                      </p>
                     </div>
                     <button
                       type="button"
-                      onClick={() => setShowLearnNav(v => !v)}
+                      onClick={() => setShowLearnNav((v) => !v)}
                       className={`relative flex-shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none ${showLearnNav ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`}
                     >
-                      <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${showLearnNav ? 'translate-x-5' : 'translate-x-0'}`} />
+                      <span
+                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${showLearnNav ? 'translate-x-5' : 'translate-x-0'}`}
+                      />
                     </button>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-600 text-gray-700 dark:text-gray-300">Tool Playground</p>
-                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Enable the Tool Playground page for testing tools interactively</p>
+                      <p className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                        Tool Playground
+                      </p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
+                        Enable the Tool Playground page for testing tools interactively
+                      </p>
                     </div>
                     <button
                       type="button"
-                      onClick={() => setToolPlayground(v => !v)}
+                      onClick={() => setToolPlayground((v) => !v)}
                       className={`relative flex-shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none ${
                         toolPlayground ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-600'
                       }`}
                     >
-                      <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-                        toolPlayground ? 'translate-x-5' : 'translate-x-0'
-                      }`} />
+                      <span
+                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                          toolPlayground ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
                     </button>
                   </div>
                 </div>
@@ -1220,39 +1491,67 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <h2 className="font-700 text-gray-900 dark:text-gray-100">New Chat Layout</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Choose which sections appear on the new chat screen and their order</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Choose which sections appear on the new chat screen and their order
+                    </p>
                   </div>
                 </div>
 
                 {/* Drag-to-reorder with inline toggles */}
                 <div className="space-y-1.5">
-                  {newChatSectionOrder.map(id => {
-                    const meta: Record<string, { label: string; value: boolean; set: (v: boolean) => void }> = {
-                      suggestions: { label: 'Suggested Prompts', value: newChatShowSuggestions, set: setNewChatShowSuggestions },
-                      pinned_chat:  { label: 'Pinned Chat',       value: newChatShowPinnedChat,    set: setNewChatShowPinnedChat    },
-                      pinned_prompt:{ label: 'Pinned Prompts',    value: newChatShowPinnedPrompt,  set: setNewChatShowPinnedPrompt  },
+                  {newChatSectionOrder.map((id) => {
+                    const meta: Record<
+                      string,
+                      { label: string; value: boolean; set: (v: boolean) => void }
+                    > = {
+                      suggestions: {
+                        label: 'Suggested Prompts',
+                        value: newChatShowSuggestions,
+                        set: setNewChatShowSuggestions,
+                      },
+                      pinned_chat: {
+                        label: 'Pinned Chat',
+                        value: newChatShowPinnedChat,
+                        set: setNewChatShowPinnedChat,
+                      },
+                      pinned_prompt: {
+                        label: 'Pinned Prompts',
+                        value: newChatShowPinnedPrompt,
+                        set: setNewChatShowPinnedPrompt,
+                      },
                     };
-                    const { label, value, set } = meta[id] ?? { label: id, value: true, set: () => {} };
+                    const { label, value, set } = meta[id] ?? {
+                      label: id,
+                      value: true,
+                      set: () => {},
+                    };
                     return (
                       <div
                         key={id}
                         draggable
-                        onDragStart={e => handleDragStart(e, id)}
-                        onDragOver={e => e.preventDefault()}
-                        onDrop={e => handleDrop(e, id)}
+                        onDragStart={(e) => handleDragStart(e, id)}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => handleDrop(e, id)}
                         onDragEnd={() => setDraggingSection(null)}
                         className={`flex items-center gap-3 px-3 py-2.5 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 cursor-grab active:cursor-grabbing transition-opacity ${draggingSection === id ? 'opacity-40' : 'opacity-100'}`}
                       >
                         <GripVertical size={15} className="text-gray-400 flex-shrink-0" />
-                        <span className="flex-1 text-sm text-gray-700 dark:text-gray-200">{label}</span>
+                        <span className="flex-1 text-sm text-gray-700 dark:text-gray-200">
+                          {label}
+                        </span>
                         <button
                           type="button"
                           role="switch"
                           aria-checked={value}
-                          onClick={e => { e.stopPropagation(); set(!value); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            set(!value);
+                          }}
                           className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors ${value ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`}
                         >
-                          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${value ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
+                          <span
+                            className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${value ? 'translate-x-4.5' : 'translate-x-0.5'}`}
+                          />
                         </button>
                       </div>
                     );
@@ -1271,9 +1570,13 @@ export default function SettingsPage() {
                   className="w-full shadow-lg"
                 >
                   {saved ? (
-                    <><Check size={16} /> Saved!</>
+                    <>
+                      <Check size={16} /> Saved!
+                    </>
                   ) : (
-                    <><Save size={16} /> Save Settings</>
+                    <>
+                      <Save size={16} /> Save Settings
+                    </>
                   )}
                 </Button>
               </div>
@@ -1281,7 +1584,14 @@ export default function SettingsPage() {
               {/* Info box */}
               <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 rounded-xl p-5 text-sm text-blue-700 dark:text-blue-300">
                 <p className="font-700 mb-1.5">Deployment tip</p>
-                <p>All persistent data (database, memory, agents, skills) is stored in the <code className="font-mono bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/data</code> directory. Mount this directory as a volume on server to persist data across restarts.</p>
+                <p>
+                  All persistent data (database, memory, agents, skills) is stored in the{' '}
+                  <code className="font-mono bg-blue-100 dark:bg-blue-900/50 px-1 rounded">
+                    /data
+                  </code>{' '}
+                  directory. Mount this directory as a volume on server to persist data across
+                  restarts.
+                </p>
               </div>
 
               {/* ── Danger Zone ────────────────────────────────────────────
@@ -1296,7 +1606,9 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <h2 className="font-700 text-gray-900 dark:text-gray-100">Danger Zone</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Restore individual parts of AgentPrimer — or wipe everything and start fresh.</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Restore individual parts of AgentPrimer — or wipe everything and start fresh.
+                    </p>
                   </div>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -1310,124 +1622,127 @@ export default function SettingsPage() {
                     Reset failed: {resetErr}
                   </div>
                 )}
-                <Button
-                  variant="danger"
-                  size="md"
-                  onClick={openResetPicker}
-                  loading={resetRunning}
-                >
+                <Button variant="danger" size="md" onClick={openResetPicker} loading={resetRunning}>
                   <RotateCcw size={14} /> Reset Default…
                 </Button>
               </section>
             </>
           )}
-          </div>{/* end inner centered content */}
-        </div>{/* end outer scroll container */}
+        </div>
+        {/* end inner centered content */}
+      </div>
+      {/* end outer scroll container */}
 
-        {/* ── Reset picker dialog (Stage 1) ──────────────────────────────
+      {/* ── Reset picker dialog (Stage 1) ──────────────────────────────
             Inline dialog (not the shared Modal) because we need a red
             danger framing and custom checkbox list. Clicking the backdrop
             cancels. */}
-        {resetPickerOpen && (
+      {resetPickerOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setResetPickerOpen(false)}
+        >
           <div
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => setResetPickerOpen(false)}
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="h-9 w-9 rounded-lg min-w-9 bg-red-500 flex items-center justify-center">
-                  <RotateCcw size={18} className="text-white" />
-                </div>
-                <div>
-                  <h2 className="font-700 text-gray-900 dark:text-gray-100">Reset Default</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Pick what to restore from defaults</p>
-                </div>
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="h-9 w-9 rounded-lg min-w-9 bg-red-500 flex items-center justify-center">
+                <RotateCcw size={18} className="text-white" />
               </div>
-              <div className="px-6 py-4 space-y-3 max-h-[60vh] overflow-y-auto">
-                <ResetCheck
-                  label="System prompt"
-                  hint="data/system.md"
-                  checked={resetFull || resetSystem}
-                  disabled={resetFull}
-                  onChange={setResetSystem}
-                />
-                <ResetCheck
-                  label="All agents"
-                  hint="data/agents/ — resets every bundled agent folder"
-                  checked={resetFull || resetAgents}
-                  disabled={resetFull || resetSingleAgent}
-                  onChange={setResetAgents}
-                />
-                <ResetCheck
-                  label="Single agent"
-                  hint="Reset one bundled agent folder"
-                  checked={resetFull || resetSingleAgent}
-                  disabled={resetFull || resetAgents}
-                  onChange={setResetSingleAgent}
-                />
-                {resetSingleAgent && !resetFull && !resetAgents && (
-                  <select
-                    value={resetAgentName}
-                    onChange={e => setResetAgentName(e.target.value)}
-                    className="ml-6 h-9 px-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100"
-                  >
-                    {resetAgentNames.map(name => <option key={name} value={name}>{name}</option>)}
-                  </select>
-                )}
-                <ResetCheck
-                  label="MCP servers"
-                  hint="Removes ALL installed MCP servers; restores only the bundled defaults"
-                  checked={resetFull || resetMcp}
-                  disabled={resetFull}
-                  onChange={setResetMcp}
-                />
-                <ResetCheck
-                  label="Skills"
-                  hint="Removes ALL installed skills; restores only the bundled defaults"
-                  checked={resetFull || resetSkills}
-                  disabled={resetFull}
-                  onChange={setResetSkills}
-                />
-                <ResetCheck
-                  label="Function tools"
-                  hint="Removes ALL installed function tools; restores only the bundled defaults"
-                  checked={resetFull || resetFunctionTools}
-                  disabled={resetFull}
-                  onChange={setResetFunctionTools}
-                />
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
-                  <ResetCheck
-                    label="Reset to original (full factory reset)"
-                    hint="Also deletes your user account, all chats, API keys, and uploads. You will be logged out."
-                    checked={resetFull}
-                    onChange={setResetFull}
-                    accent="danger"
-                  />
-                </div>
-              </div>
-              <div className="px-6 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
-                <Button variant="secondary" size="sm" onClick={() => setResetPickerOpen(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={handleResetContinue}
-                  disabled={!checkedAny}
-                >
-                  Continue
-                </Button>
+              <div>
+                <h2 className="font-700 text-gray-900 dark:text-gray-100">Reset Default</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Pick what to restore from defaults
+                </p>
               </div>
             </div>
+            <div className="px-6 py-4 space-y-3 max-h-[60vh] overflow-y-auto">
+              <ResetCheck
+                label="System prompt"
+                hint="data/system.md"
+                checked={resetFull || resetSystem}
+                disabled={resetFull}
+                onChange={setResetSystem}
+              />
+              <ResetCheck
+                label="All agents"
+                hint="data/agents/ — resets every bundled agent folder"
+                checked={resetFull || resetAgents}
+                disabled={resetFull || resetSingleAgent}
+                onChange={setResetAgents}
+              />
+              <ResetCheck
+                label="Single agent"
+                hint="Reset one bundled agent folder"
+                checked={resetFull || resetSingleAgent}
+                disabled={resetFull || resetAgents}
+                onChange={setResetSingleAgent}
+              />
+              {resetSingleAgent && !resetFull && !resetAgents && (
+                <select
+                  value={resetAgentName}
+                  onChange={(e) => setResetAgentName(e.target.value)}
+                  className="ml-6 h-9 px-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100"
+                >
+                  {resetAgentNames.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <ResetCheck
+                label="MCP servers"
+                hint="Removes ALL installed MCP servers; restores only the bundled defaults"
+                checked={resetFull || resetMcp}
+                disabled={resetFull}
+                onChange={setResetMcp}
+              />
+              <ResetCheck
+                label="Skills"
+                hint="Removes ALL installed skills; restores only the bundled defaults"
+                checked={resetFull || resetSkills}
+                disabled={resetFull}
+                onChange={setResetSkills}
+              />
+              <ResetCheck
+                label="Function tools"
+                hint="Removes ALL installed function tools; restores only the bundled defaults"
+                checked={resetFull || resetFunctionTools}
+                disabled={resetFull}
+                onChange={setResetFunctionTools}
+              />
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
+                <ResetCheck
+                  label="Reset to original (full factory reset)"
+                  hint="Also deletes your user account, all chats, API keys, and uploads. You will be logged out."
+                  checked={resetFull}
+                  onChange={setResetFull}
+                  accent="danger"
+                />
+              </div>
+            </div>
+            <div className="px-6 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setResetPickerOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={handleResetContinue}
+                disabled={!checkedAny}
+              >
+                Continue
+              </Button>
+            </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Stage 2 confirm dialog — rendered by the useConfirm hook. */}
-        {ResetConfirmModal}
-      </main>
+      {/* Stage 2 confirm dialog — rendered by the useConfirm hook. */}
+      {ResetConfirmModal}
+    </main>
   );
 }
 
@@ -1462,7 +1777,7 @@ function ResetCheck({
         type="checkbox"
         checked={checked}
         disabled={disabled}
-        onChange={e => onChange(e.target.checked)}
+        onChange={(e) => onChange(e.target.checked)}
         className={`mt-1 h-4 w-4 rounded border-gray-300 dark:border-gray-600 ${
           accent === 'danger'
             ? 'text-red-500 focus:ring-red-500'
@@ -1470,11 +1785,13 @@ function ResetCheck({
         } disabled:cursor-not-allowed`}
       />
       <span className="min-w-0">
-        <span className={`block text-sm font-600 ${
-          accent === 'danger'
-            ? 'text-red-700 dark:text-red-300'
-            : 'text-gray-900 dark:text-gray-100'
-        }`}>
+        <span
+          className={`block text-sm font-600 ${
+            accent === 'danger'
+              ? 'text-red-700 dark:text-red-300'
+              : 'text-gray-900 dark:text-gray-100'
+          }`}
+        >
           {label}
         </span>
         {hint && (

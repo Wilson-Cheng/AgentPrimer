@@ -11,40 +11,45 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { getSessionUser } from '@/lib/auth';
-import { activePreviewContentSecurityPolicy, injectPreviewStorageShim, isActivePreviewContentType, isSameOriginPreviewAssetRequest } from '@/lib/preview-security';
+import {
+  activePreviewContentSecurityPolicy,
+  injectPreviewStorageShim,
+  isActivePreviewContentType,
+  isSameOriginPreviewAssetRequest,
+} from '@/lib/preview-security';
 import { DATA_ROOT, isInsideRoot } from '@/lib/path-security';
 
 const PREVIEW_ROOT = path.resolve(DATA_ROOT);
 // Simple extension→MIME map for common types the preview panel serves
 const MIME: Record<string, string> = {
   html: 'text/html; charset=utf-8',
-  htm:  'text/html; charset=utf-8',
-  css:  'text/css; charset=utf-8',
-  js:   'text/javascript; charset=utf-8',
-  mjs:  'text/javascript; charset=utf-8',
-  ts:   'text/typescript; charset=utf-8',
+  htm: 'text/html; charset=utf-8',
+  css: 'text/css; charset=utf-8',
+  js: 'text/javascript; charset=utf-8',
+  mjs: 'text/javascript; charset=utf-8',
+  ts: 'text/typescript; charset=utf-8',
   json: 'application/json; charset=utf-8',
-  svg:  'image/svg+xml',
-  png:  'image/png',
-  jpg:  'image/jpeg',
+  svg: 'image/svg+xml',
+  png: 'image/png',
+  jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
-  gif:  'image/gif',
+  gif: 'image/gif',
   webp: 'image/webp',
-  ico:  'image/x-icon',
-  pdf:  'application/pdf',
-  txt:  'text/plain; charset=utf-8',
-  md:   'text/plain; charset=utf-8',
-  csv:  'text/csv; charset=utf-8',
-  xml:  'text/xml; charset=utf-8',
+  ico: 'image/x-icon',
+  pdf: 'application/pdf',
+  txt: 'text/plain; charset=utf-8',
+  md: 'text/plain; charset=utf-8',
+  csv: 'text/csv; charset=utf-8',
+  xml: 'text/xml; charset=utf-8',
   wasm: 'application/wasm',
-  mp4:  'video/mp4',
+  mp4: 'video/mp4',
   webm: 'video/webm',
-  ogg:  'audio/ogg',
-  mp3:  'audio/mpeg',
-  wav:  'audio/wav',
+  ogg: 'audio/ogg',
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
   woff: 'font/woff',
-  woff2:'font/woff2',
-  ttf:  'font/ttf',
+  woff2: 'font/woff2',
+  ttf: 'font/ttf',
 };
 
 function getMime(filePath: string): string {
@@ -52,10 +57,7 @@ function getMime(filePath: string): string {
   return MIME[ext] ?? 'application/octet-stream';
 }
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ slug: string[] }> },
-) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string[] }> }) {
   const isPreviewAssetRequest = isSameOriginPreviewAssetRequest(req);
   if (!isPreviewAssetRequest) {
     const user = await getSessionUser();
@@ -92,7 +94,10 @@ export async function GET(
 
   const contentType = getMime(realPath);
   const rawContent = contentType.startsWith('text/html') ? fs.readFileSync(realPath, 'utf8') : null;
-  const body = rawContent === null ? fs.readFileSync(realPath) : injectPreviewStorageShim(contentType, rawContent);
+  const body =
+    rawContent === null
+      ? fs.readFileSync(realPath)
+      : injectPreviewStorageShim(contentType, rawContent);
   const contentLength = typeof body === 'string' ? Buffer.byteLength(body) : stats.size;
   const headers: Record<string, string> = {
     'Content-Type': contentType,

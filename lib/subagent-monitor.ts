@@ -25,14 +25,20 @@ async function readTaskFile(taskFile: string): Promise<string> {
 }
 
 function latestInterestingLine(content: string): string {
-  const lines = content.split('\n').map(line => line.trim()).filter(Boolean);
-  const interesting = lines.filter(line => /\] (PROGRESS|FINISHED|ERROR|STATUS):/.test(line));
+  const lines = content
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const interesting = lines.filter((line) => /\] (PROGRESS|FINISHED|ERROR|STATUS):/.test(line));
   return interesting.at(-1) ?? lines.at(-1) ?? '';
 }
 
 function finalSummary(content: string, fallback: string): string {
-  const lines = content.split('\n').map(line => line.trim()).filter(Boolean);
-  const final = [...lines].reverse().find(line => /\] (FINISHED|ERROR):/.test(line));
+  const lines = content
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const final = [...lines].reverse().find((line) => /\] (FINISHED|ERROR):/.test(line));
   if (!final) return fallback;
   return final.replace(/^\[[^\]]+\]\s*/, '');
 }
@@ -70,7 +76,7 @@ async function runParentFollowup(args: {
   activeFollowups.add(args.taskId);
   try {
     const task = getAgentTask(args.taskId);
-    const stored = getMessages(args.sessionId).map(message => ({
+    const stored = getMessages(args.sessionId).map((message) => ({
       id: message.id,
       role: message.role,
       content: message.content,
@@ -90,7 +96,14 @@ async function runParentFollowup(args: {
       agentName: task?.assigner,
       messages: [...stored, { role: 'user', content: prompt }],
       sessionId: args.sessionId,
-      onFinish: async (text: string, toolCalls: unknown[], tokenUsage?: TokenUsage, reasoning?: string, parts?: unknown[], trace?: AgentStepTrace[]) => {
+      onFinish: async (
+        text: string,
+        toolCalls: unknown[],
+        tokenUsage?: TokenUsage,
+        reasoning?: string,
+        parts?: unknown[],
+        trace?: AgentStepTrace[],
+      ) => {
         saveMessage({
           id: randomUUID(),
           session_id: args.sessionId,
@@ -108,7 +121,10 @@ async function runParentFollowup(args: {
     });
     await response.text();
   } catch (err) {
-    injectMessage(args.sessionId, `[Sub-agent follow-up failed · ${args.assignee}]\n\n${err instanceof Error ? err.message : String(err)}\n\nTask: ${args.taskId}`);
+    injectMessage(
+      args.sessionId,
+      `[Sub-agent follow-up failed · ${args.assignee}]\n\n${err instanceof Error ? err.message : String(err)}\n\nTask: ${args.taskId}`,
+    );
   } finally {
     activeFollowups.delete(args.taskId);
   }
@@ -182,6 +198,8 @@ export function startSubagentMonitor(args: {
     }
   };
 
-  const timer = setInterval(() => { void poll(); }, intervalSeconds * 1000);
+  const timer = setInterval(() => {
+    void poll();
+  }, intervalSeconds * 1000);
   activeMonitors.set(args.taskId, timer);
 }

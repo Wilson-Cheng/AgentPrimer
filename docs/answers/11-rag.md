@@ -117,7 +117,7 @@ Ingest a document with the phrase "automotive vehicle". Then search for "car".
 
 ## Exercise 5: Add auto-retrieval
 
-In `lib/agent.ts`, modify `buildSystemPrompt()` to auto-retrieve context from the RAG index:
+In `lib/agent/prompt.ts`, modify `buildSystemPrompt()` to auto-retrieve context from the RAG index:
 
 ```typescript
 import { retrieveChunks } from './rag';

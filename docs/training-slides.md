@@ -557,7 +557,7 @@ proxy.ts  ← JWT auth check
     ▼
 /api/chat/route.ts  ← save user message to SQLite
     ▼
-lib/agent.ts  ← createStreamingAgent()
+lib/agent/streaming-agent.ts  ← createStreamingAgent()
     ├─ load agents/<agent>/agent.md config
     ├─ load data/agents/<agent>/memory.md
     ├─ load skill tools (subprocess)

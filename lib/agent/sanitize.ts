@@ -92,7 +92,11 @@ const ROLE_TAG_PATTERNS: Array<{ name: string; re: RegExp; replacement: string }
   // `<|im_start|>` token (some implementations insert spaces), case variations,
   // and deliberately malformed injection attempts that interleave the role
   // name with delimiters (e.g. `<| im_start | SYSTEM >`).
-  { name: 'chatml-user', re: /<\|\s*im_start[\s|]*>[\s|]*(user)\b/gi, replacement: '⟪chatml:user⟫' },
+  {
+    name: 'chatml-user',
+    re: /<\|\s*im_start[\s|]*>[\s|]*(user)\b/gi,
+    replacement: '⟪chatml:user⟫',
+  },
   {
     name: 'chatml-assistant',
     re: /<\|\s*im_start[\s|]*>[\s|]*(assistant)\b/gi,

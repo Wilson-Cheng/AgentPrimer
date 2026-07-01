@@ -8,7 +8,7 @@ let tempDir: string;
 async function loadModules() {
   vi.resetModules();
   const loader = await import('../lib/function-tools-loader');
-  const db     = await import('../lib/db');
+  const db = await import('../lib/db');
   return { ...loader, ...db };
 }
 
@@ -29,15 +29,22 @@ afterEach(() => {
 });
 
 // Helper: register one function tool whose index.js exports the given source.
-function registerTool(upsert: (ft: {
-  id: string; name: string; github_url: string; local_path: string;
-  enabled: number; manifest_json: string;
-}) => void, opts: {
-  name: string;
-  manifest: object;
-  indexJs: string;
-  enabled?: number;
-}) {
+function registerTool(
+  upsert: (ft: {
+    id: string;
+    name: string;
+    github_url: string;
+    local_path: string;
+    enabled: number;
+    manifest_json: string;
+  }) => void,
+  opts: {
+    name: string;
+    manifest: object;
+    indexJs: string;
+    enabled?: number;
+  },
+) {
   const toolDir = path.join(tempDir, 'data', 'function-tools', opts.name);
   fs.mkdirSync(toolDir, { recursive: true });
   fs.writeFileSync(path.join(toolDir, 'function.json'), JSON.stringify(opts.manifest), 'utf-8');
@@ -61,7 +68,11 @@ describe('function-tools-loader', () => {
       manifest: {
         name: 'echo',
         description: 'Echo back the input',
-        parameters: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] },
+        parameters: {
+          type: 'object',
+          properties: { text: { type: 'string' } },
+          required: ['text'],
+        },
       },
       indexJs: `module.exports = { async echo({ text }) { return { echoed: text }; } };`,
     });
@@ -106,8 +117,22 @@ describe('function-tools-loader', () => {
       name: 'mathkit',
       manifest: {
         functions: [
-          { name: 'add', description: 'Add two numbers', parameters: { type: 'object', properties: { a: { type: 'number' }, b: { type: 'number' } } } },
-          { name: 'sub', description: 'Subtract',          parameters: { type: 'object', properties: { a: { type: 'number' }, b: { type: 'number' } } } },
+          {
+            name: 'add',
+            description: 'Add two numbers',
+            parameters: {
+              type: 'object',
+              properties: { a: { type: 'number' }, b: { type: 'number' } },
+            },
+          },
+          {
+            name: 'sub',
+            description: 'Subtract',
+            parameters: {
+              type: 'object',
+              properties: { a: { type: 'number' }, b: { type: 'number' } },
+            },
+          },
         ],
       },
       indexJs: `module.exports = {
@@ -129,7 +154,11 @@ describe('function-tools-loader', () => {
       manifest: {
         name: 'multiply',
         description: 'Multiply two integers',
-        parameters: { type: 'object', properties: { a: { type: 'number' }, b: { type: 'number' } }, required: ['a', 'b'] },
+        parameters: {
+          type: 'object',
+          properties: { a: { type: 'number' }, b: { type: 'number' } },
+          required: ['a', 'b'],
+        },
       },
       indexJs: `module.exports = { async multiply({ a, b }) { return { product: a * b }; } };`,
     });

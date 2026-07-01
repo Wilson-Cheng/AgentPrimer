@@ -29,24 +29,33 @@ export const ACTIVE_PREVIEW_CONTENT_SECURITY_POLICY = activePreviewContentSecuri
 export function isSameOriginPreviewAssetRequest(request: Request): boolean {
   if (request.method !== 'GET') return false;
   const requestUrl = new URL(request.url);
-  if (!requestUrl.pathname.startsWith('/api/workspace/') && !requestUrl.pathname.startsWith('/api/editor/preview/')) return false;
+  if (
+    !requestUrl.pathname.startsWith('/api/workspace/') &&
+    !requestUrl.pathname.startsWith('/api/editor/preview/')
+  )
+    return false;
 
   const referrer = request.headers.get('referer');
   if (referrer) {
     try {
       const referrerUrl = new URL(referrer);
-      return requestUrl.origin === referrerUrl.origin
-        && (referrerUrl.pathname.startsWith('/api/workspace/') || referrerUrl.pathname.startsWith('/api/editor/preview/'));
+      return (
+        requestUrl.origin === referrerUrl.origin &&
+        (referrerUrl.pathname.startsWith('/api/workspace/') ||
+          referrerUrl.pathname.startsWith('/api/editor/preview/'))
+      );
     } catch {
       return false;
     }
   }
 
-  return request.headers.get('sec-fetch-dest') === 'script'
-    || request.headers.get('sec-fetch-dest') === 'style'
-    || request.headers.get('sec-fetch-dest') === 'image'
-    || request.headers.get('sec-fetch-dest') === 'font'
-    || request.headers.get('sec-fetch-dest') === 'empty';
+  return (
+    request.headers.get('sec-fetch-dest') === 'script' ||
+    request.headers.get('sec-fetch-dest') === 'style' ||
+    request.headers.get('sec-fetch-dest') === 'image' ||
+    request.headers.get('sec-fetch-dest') === 'font' ||
+    request.headers.get('sec-fetch-dest') === 'empty'
+  );
 }
 
 export function isActivePreviewContentType(contentType: string): boolean {
@@ -58,7 +67,7 @@ export const PREVIEW_STORAGE_SHIM = `<script>(()=>{function s(){const m=new Map;
 export function injectPreviewStorageShim(contentType: string, content: string): string {
   if (!contentType.startsWith('text/html')) return content;
   if (content.includes('localStorage') || content.includes('sessionStorage')) {
-    return content.replace(/<head(\s[^>]*)?>/i, match => `${match}${PREVIEW_STORAGE_SHIM}`);
+    return content.replace(/<head(\s[^>]*)?>/i, (match) => `${match}${PREVIEW_STORAGE_SHIM}`);
   }
   return content;
 }

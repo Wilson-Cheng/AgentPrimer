@@ -76,7 +76,9 @@ describe('resolveDataPath (legacy)', () => {
   });
 
   it('resolves a missing path under DATA_ROOT when the parent is safe', () => {
-    expect(resolveDataPath('new-folder/new-file.txt')).toBe(path.join(DATA_ROOT, 'new-folder', 'new-file.txt'));
+    expect(resolveDataPath('new-folder/new-file.txt')).toBe(
+      path.join(DATA_ROOT, 'new-folder', 'new-file.txt'),
+    );
   });
 
   it('refuses a missing path below an escaping symlink parent', () => {

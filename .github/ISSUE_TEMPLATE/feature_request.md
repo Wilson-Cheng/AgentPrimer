@@ -29,7 +29,7 @@ Is this:
   - A new function tool to ship?      → see defaults/function-tools/
   - A new SKILL.md skill to ship?     → see defaults/skills/
   - A UI change?                       → see components/ and app/(main)/
-  - A change to the agent loop itself? → see lib/agent.ts
+  - A change to the agent loop itself? → see lib/agent/loop.ts
   - Something else?
 -->
 

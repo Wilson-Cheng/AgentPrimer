@@ -18,7 +18,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { path: filePath, content } = await req.json() as { path: string; content: string };
+  const { path: filePath, content } = (await req.json()) as { path: string; content: string };
   if (!filePath || typeof content !== 'string') {
     return NextResponse.json({ error: 'path and content are required' }, { status: 400 });
   }

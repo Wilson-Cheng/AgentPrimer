@@ -10,10 +10,20 @@ import { useState, useEffect, useRef } from 'react';
 import Button from '@/components/ui/Button';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Brain, FileText, Save, Eye, Code2, Check, RefreshCw, Info, Plus, BookOpen } from 'lucide-react';
+import {
+  Brain,
+  FileText,
+  Save,
+  Eye,
+  Code2,
+  Check,
+  RefreshCw,
+  Info,
+  Plus,
+  BookOpen,
+} from 'lucide-react';
 import CustomDropDown from '@/components/ui/CustomDropDown';
 import WritingGuideModal, { type GuideFile } from '@/components/WritingGuideModal';
-
 
 type ViewMode = 'edit' | 'preview';
 
@@ -21,13 +31,19 @@ function LeaveDialog({ onLeave, onCancel }: { onLeave: () => void; onCancel: () 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-sm w-full">
-        <h3 className="font-700 text-gray-900 dark:text-gray-100 text-base mb-2">Unsaved changes</h3>
+        <h3 className="font-700 text-gray-900 dark:text-gray-100 text-base mb-2">
+          Unsaved changes
+        </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
           You have unsaved changes. If you leave now they will be lost.
         </p>
         <div className="flex gap-3 justify-end">
-          <Button variant="secondary" size="sm" onClick={onCancel}>Cancel</Button>
-          <Button variant="primary" size="sm" onClick={onLeave}>Leave</Button>
+          <Button variant="secondary" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button variant="primary" size="sm" onClick={onLeave}>
+            Leave
+          </Button>
         </div>
       </div>
     </div>
@@ -35,7 +51,6 @@ function LeaveDialog({ onLeave, onCancel }: { onLeave: () => void; onCancel: () 
 }
 
 export default function AgentsPage() {
-
   const [files, setFiles] = useState<string[]>([]);
   const [activeFile, setActiveFile] = useState('system.md');
   const [contents, setContents] = useState<Record<string, string>>({});
@@ -68,7 +83,11 @@ export default function AgentsPage() {
     try {
       const listRes = await fetch('/api/data-files');
       const listData = await listRes.json();
-      const fileList: string[] = listData.files ?? ['system.md', 'agents/main/agent.md', 'agents/main/memory.md'];
+      const fileList: string[] = listData.files ?? [
+        'system.md',
+        'agents/main/agent.md',
+        'agents/main/memory.md',
+      ];
       setFiles(fileList);
       const pairs = await Promise.all(
         fileList.map(async (f) => {
@@ -85,9 +104,14 @@ export default function AgentsPage() {
     }
   };
 
-  const loadAll = () => { setLoading(true); doLoadAll(); };
+  const loadAll = () => {
+    setLoading(true);
+    doLoadAll();
+  };
 
-  useEffect(() => { doLoadAll(); }, []);
+  useEffect(() => {
+    doLoadAll();
+  }, []);
 
   const handleCreateFile = async () => {
     const raw = newFileName.trim();
@@ -112,9 +136,9 @@ export default function AgentsPage() {
       body: JSON.stringify({ file: fullName, content: initial }),
     });
     if (res.ok) {
-      setFiles(prev => [...prev, fullName]);
-      setContents(prev => ({ ...prev, [fullName]: initial }));
-      setSavedContents(prev => ({ ...prev, [fullName]: initial }));
+      setFiles((prev) => [...prev, fullName]);
+      setContents((prev) => ({ ...prev, [fullName]: initial }));
+      setSavedContents((prev) => ({ ...prev, [fullName]: initial }));
       setActiveFile(fullName);
       setNewFileDialog(false);
       setNewFileName('');
@@ -136,12 +160,14 @@ export default function AgentsPage() {
     });
     setSaving(false);
     setSaved(true);
-    setSavedContents(prev => ({ ...prev, [activeFile]: content }));
+    setSavedContents((prev) => ({ ...prev, [activeFile]: content }));
     setTimeout(() => setSaved(false), 2000);
   };
 
   const handleSaveRef = useRef(handleSave);
-  useEffect(() => { handleSaveRef.current = handleSave; });
+  useEffect(() => {
+    handleSaveRef.current = handleSave;
+  });
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -157,24 +183,36 @@ export default function AgentsPage() {
   const handleTabSwitch = (file: string) => {
     if (file === activeFile) return;
     if (isDirty(activeFile)) {
-      setLeaveDialog({ onConfirm: () => { setLeaveDialog(null); setActiveFile(file); } });
+      setLeaveDialog({
+        onConfirm: () => {
+          setLeaveDialog(null);
+          setActiveFile(file);
+        },
+      });
     } else {
       setActiveFile(file);
     }
   };
 
-
   const isAgentFile = (file: string) => file.startsWith('agents/') && file.endsWith('/agent.md');
   const isMemoryFile = (file: string) => file.startsWith('agents/') && file.endsWith('/memory.md');
   const getAgentNameFromFile = (file: string) => file.match(/^agents\/([^/]+)\//)?.[1] ?? '';
-  const agentNames = Array.from(new Set(files
-    .filter(file => isAgentFile(file) || isMemoryFile(file))
-    .map(getAgentNameFromFile)
-    .filter(Boolean)))
-    .sort((a, b) => a === 'main' ? -1 : b === 'main' ? 1 : a.localeCompare(b));
-  const visibleFiles = selectedFileSet === 'system'
-    ? files.filter(file => file === 'system.md')
-    : files.filter(file => file === `agents/${selectedFileSet}/agent.md` || file === `agents/${selectedFileSet}/memory.md`);
+  const agentNames = Array.from(
+    new Set(
+      files
+        .filter((file) => isAgentFile(file) || isMemoryFile(file))
+        .map(getAgentNameFromFile)
+        .filter(Boolean),
+    ),
+  ).sort((a, b) => (a === 'main' ? -1 : b === 'main' ? 1 : a.localeCompare(b)));
+  const visibleFiles =
+    selectedFileSet === 'system'
+      ? files.filter((file) => file === 'system.md')
+      : files.filter(
+          (file) =>
+            file === `agents/${selectedFileSet}/agent.md` ||
+            file === `agents/${selectedFileSet}/memory.md`,
+        );
 
   useEffect(() => {
     if (visibleFiles.length && !visibleFiles.includes(activeFile)) {
@@ -184,15 +222,24 @@ export default function AgentsPage() {
 
   const handleFileSetSwitch = (nextSet: string) => {
     if (nextSet === selectedFileSet) return;
-    const nextFiles = nextSet === 'system'
-      ? files.filter(file => file === 'system.md')
-      : files.filter(file => file === `agents/${nextSet}/agent.md` || file === `agents/${nextSet}/memory.md`);
+    const nextFiles =
+      nextSet === 'system'
+        ? files.filter((file) => file === 'system.md')
+        : files.filter(
+            (file) =>
+              file === `agents/${nextSet}/agent.md` || file === `agents/${nextSet}/memory.md`,
+          );
     const switchSet = () => {
       setSelectedFileSet(nextSet);
       if (nextFiles.length) setActiveFile(nextFiles[0]);
     };
     if (isDirty(activeFile)) {
-      setLeaveDialog({ onConfirm: () => { setLeaveDialog(null); switchSet(); } });
+      setLeaveDialog({
+        onConfirm: () => {
+          setLeaveDialog(null);
+          switchSet();
+        },
+      });
     } else {
       switchSet();
     }
@@ -212,39 +259,49 @@ export default function AgentsPage() {
   };
 
   const infoBannerStyle = (file: string) => {
-    if (isAgentFile(file)) return 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300';
-    if (isMemoryFile(file)) return 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300';
-    if (file === 'system.md') return 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300';
+    if (isAgentFile(file))
+      return 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300';
+    if (isMemoryFile(file))
+      return 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300';
+    if (file === 'system.md')
+      return 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300';
     return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400';
   };
 
   return (
     <>
       {leaveDialog && (
-        <LeaveDialog
-          onLeave={leaveDialog.onConfirm}
-          onCancel={() => setLeaveDialog(null)}
-        />
+        <LeaveDialog onLeave={leaveDialog.onConfirm} onCancel={() => setLeaveDialog(null)} />
       )}
 
       {/* Writing-guide modal */}
-      {guideFile && (
-        <WritingGuideModal file={guideFile} onClose={() => setGuideFile(null)} />
-      )}
+      {guideFile && <WritingGuideModal file={guideFile} onClose={() => setGuideFile(null)} />}
 
       {/* New-file dialog */}
       {newFileDialog && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-sm w-full">
             <h3 className="font-700 text-gray-900 dark:text-gray-100 text-base mb-1">New file</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Enter a filename — it will be saved in the data directory.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Enter a filename — it will be saved in the data directory.
+            </p>
             <div className="flex items-center gap-2">
               <input
                 autoFocus
                 type="text"
                 value={newFileName}
-                onChange={e => { setNewFileName(e.target.value); setNewFileError(''); }}
-                onKeyDown={e => { if (e.key === 'Enter') handleCreateFile(); if (e.key === 'Escape') { setNewFileDialog(false); setNewFileName(''); setNewFileError(''); } }}
+                onChange={(e) => {
+                  setNewFileName(e.target.value);
+                  setNewFileError('');
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCreateFile();
+                  if (e.key === 'Escape') {
+                    setNewFileDialog(false);
+                    setNewFileName('');
+                    setNewFileError('');
+                  }
+                }}
                 placeholder="my-notes"
                 className="flex-1 h-9 px-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:border-blue-500 transition-colors"
               />
@@ -255,7 +312,11 @@ export default function AgentsPage() {
             )}
             <div className="flex gap-3 justify-end mt-5">
               <button
-                onClick={() => { setNewFileDialog(false); setNewFileName(''); setNewFileError(''); }}
+                onClick={() => {
+                  setNewFileDialog(false);
+                  setNewFileName('');
+                  setNewFileError('');
+                }}
                 className="px-4 py-2 rounded-lg text-sm font-600 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
               >
                 Cancel
@@ -265,7 +326,11 @@ export default function AgentsPage() {
                 disabled={creatingFile || !newFileName.trim()}
                 className="px-4 py-2 rounded-lg text-sm font-600 text-white bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
               >
-                {creatingFile ? <RefreshCw size={14} className="animate-spin" /> : <Plus size={14} />}
+                {creatingFile ? (
+                  <RefreshCw size={14} className="animate-spin" />
+                ) : (
+                  <Plus size={14} />
+                )}
                 Create
               </button>
             </div>
@@ -283,13 +348,17 @@ export default function AgentsPage() {
                 <Brain size={24} className="text-white" />
               </div>
               <div className="min-w-0 overflow-hidden">
-                <h1 className="text-2xl md:text-3xl font-800 text-white tracking-tight truncate">Prompts &amp; Memory</h1>
-                <p className="text-violet-200 text-sm truncate">Configure agent behaviour and persistent memory</p>
+                <h1 className="text-2xl md:text-3xl font-800 text-white tracking-tight truncate">
+                  Prompts &amp; Memory
+                </h1>
+                <p className="text-violet-200 text-sm truncate">
+                  Configure agent behaviour and persistent memory
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3 flex-shrink-0">
               <div className="flex gap-1 bg-gray-800 rounded-lg p-1">
-                {(['edit', 'preview'] as ViewMode[]).map(m => (
+                {(['edit', 'preview'] as ViewMode[]).map((m) => (
                   <button
                     key={m}
                     onClick={() => setViewMode(m)}
@@ -307,7 +376,15 @@ export default function AgentsPage() {
                 loading={saving}
                 title={`Save (${modKey}S)`}
               >
-                {saved ? <><Check size={14} /> Saved!</> : <><Save size={14} /> Save</>}
+                {saved ? (
+                  <>
+                    <Check size={14} /> Saved!
+                  </>
+                ) : (
+                  <>
+                    <Save size={14} /> Save
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -328,7 +405,7 @@ export default function AgentsPage() {
             />
           </div>
           <div className="flex gap-0.5 items-center min-w-0 flex-1 overflow-x-auto overflow-y-visible">
-            {visibleFiles.map(f => (
+            {visibleFiles.map((f) => (
               <button
                 key={f}
                 onClick={() => handleTabSwitch(f)}
@@ -356,14 +433,26 @@ export default function AgentsPage() {
           </div>
         ) : (
           <div className="flex-1 overflow-hidden flex flex-col">
-            <div className={`mx-8 mt-4 mb-3 flex flex-col lg:flex-row items-center gap-2.5 text-sm rounded-lg px-4 py-2 ${infoBannerStyle(activeFile)}`}>
+            <div
+              className={`mx-8 mt-4 mb-3 flex flex-col lg:flex-row items-center gap-2.5 text-sm rounded-lg px-4 py-2 ${infoBannerStyle(activeFile)}`}
+            >
               <div className="flex items-center gap-1.5 px-3 py-1.5 ">
                 <Info size={14} className="flex-shrink-0 mt-0.5" />
                 <span className="flex-1 min-w-0">{infoBanner(activeFile)}</span>
               </div>
-              {(activeFile === 'system.md' || isAgentFile(activeFile) || isMemoryFile(activeFile)) && (
+              {(activeFile === 'system.md' ||
+                isAgentFile(activeFile) ||
+                isMemoryFile(activeFile)) && (
                 <button
-                  onClick={() => setGuideFile(activeFile === 'system.md' ? 'system.md' : isAgentFile(activeFile) ? 'agent.md' : 'memory.md')}
+                  onClick={() =>
+                    setGuideFile(
+                      activeFile === 'system.md'
+                        ? 'system.md'
+                        : isAgentFile(activeFile)
+                          ? 'agent.md'
+                          : 'memory.md',
+                    )
+                  }
                   className="flex items-center gap-1 px-2 py-0.5 -my-0.5 rounded font-600 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40 border border-amber-300/70 dark:border-amber-700/60 transition-colors flex-shrink-0 whitespace-nowrap"
                   title={`How to write ${activeFile}`}
                 >
@@ -376,7 +465,9 @@ export default function AgentsPage() {
               {viewMode === 'edit' ? (
                 <textarea
                   value={contents[activeFile] ?? ''}
-                  onChange={e => setContents(prev => ({ ...prev, [activeFile]: e.target.value }))}
+                  onChange={(e) =>
+                    setContents((prev) => ({ ...prev, [activeFile]: e.target.value }))
+                  }
                   className="w-full h-full p-5 text-sm font-mono text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 resize-none focus:outline-none leading-relaxed"
                   placeholder={
                     isAgentFile(activeFile)

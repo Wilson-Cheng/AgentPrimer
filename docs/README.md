@@ -140,7 +140,9 @@ agentprimer/
 │   ├── api/statistics/    # Token usage statistics
 │   └── api/auth/          # JWT login / logout / register
 ├── lib/
-│   ├── agent.ts           # ★ Core agent loop (ReAct, streaming, tool dispatch)
+│   ├── agent.ts           # Agent barrel export; real implementation lives in lib/agent/*
+│   ├── agent/loop.ts      # ★ Core ReAct loop, streaming, and tool dispatch
+│   ├── agent/streaming-agent.ts # ★ Streaming agent entry point used by /api/chat
 │   ├── db.ts              # SQLite layer — all persistent state
 │   ├── memory.ts          # agents/<agent>/memory.md / agents/<agent>/agent.md read-write helpers
 │   ├── skills-loader.ts   # SKILL.md skill loader (injects instructions into system prompt)

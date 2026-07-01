@@ -24,9 +24,7 @@ export function CustomConfirmDialog({
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-md w-full">
         <h3 className="font-700 text-gray-900 dark:text-gray-100 text-base mb-2">{title}</h3>
-        <div className="text-sm text-gray-600 dark:text-gray-300 mb-5 space-y-2">
-          {message}
-        </div>
+        <div className="text-sm text-gray-600 dark:text-gray-300 mb-5 space-y-2">{message}</div>
         <div className="flex gap-3 justify-end">
           <Button variant="secondary" size="sm" onClick={onCancel}>
             Cancel
@@ -56,7 +54,7 @@ export function useConfirm() {
       message: React.ReactNode,
       options?: { title?: string; confirmLabel?: string; confirmVariant?: 'primary' | 'danger' },
     ): Promise<boolean> =>
-      new Promise(resolve => {
+      new Promise((resolve) => {
         setPending({ message, ...options, resolve });
       }),
     [],
@@ -68,8 +66,14 @@ export function useConfirm() {
       message={pending.message}
       confirmLabel={pending.confirmLabel}
       confirmVariant={pending.confirmVariant}
-      onConfirm={() => { pending.resolve(true); setPending(null); }}
-      onCancel={() => { pending.resolve(false); setPending(null); }}
+      onConfirm={() => {
+        pending.resolve(true);
+        setPending(null);
+      }}
+      onCancel={() => {
+        pending.resolve(false);
+        setPending(null);
+      }}
     />
   ) : null;
 

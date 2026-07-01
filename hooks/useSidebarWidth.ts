@@ -29,8 +29,8 @@ export function useSidebarWidth(): number {
 
     // Fall back to the server-persisted preference (first load ever)
     fetch('/api/data-files?file=.ui-settings.json')
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
         if (!data?.content) return;
         const prefs = JSON.parse(data.content || '{}');
         if (typeof prefs.sidebarWidthPct === 'number') {

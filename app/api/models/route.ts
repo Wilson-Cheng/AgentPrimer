@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 export async function GET() {
   try {
     const modelList = await fetchAvailableModels();
-    const models = modelList.map(m => m.id);
+    const models = modelList.map((m) => m.id);
     const details: Record<string, { context_length?: number; max_output_tokens?: number }> = {};
     for (const m of modelList) {
       details[m.id] = { context_length: m.context_length, max_output_tokens: m.max_output_tokens };
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
   try {
     const { endpoint, api_key } = await request.json().catch(() => ({}));
     const modelList = await fetchAvailableModels(endpoint, api_key);
-    const models = modelList.map(m => m.id);
+    const models = modelList.map((m) => m.id);
     const details: Record<string, { context_length?: number; max_output_tokens?: number }> = {};
     for (const m of modelList) {
       details[m.id] = { context_length: m.context_length, max_output_tokens: m.max_output_tokens };

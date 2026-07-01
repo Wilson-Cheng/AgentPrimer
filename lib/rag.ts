@@ -26,19 +26,19 @@ import OpenAI from 'openai';
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface KnowledgeSource {
-  id:              number;
-  name:            string;
-  source_type:     string;
+  id: number;
+  name: string;
+  source_type: string;
   embedding_model: string | null;
-  chunk_count:     number;
-  ingested_at:     number;
+  chunk_count: number;
+  ingested_at: number;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const CHUNK_SIZE    = 1600;   // ≈ 400 tokens  (1 token ≈ 4 chars for English prose)
-const CHUNK_OVERLAP = 200;    // ≈  50 tokens overlap — preserves cross-boundary sentences
-const EMBEDDING_BATCH_SIZE = 50;     // max texts per embedding API call
+const CHUNK_SIZE = 1600; // ≈ 400 tokens  (1 token ≈ 4 chars for English prose)
+const CHUNK_OVERLAP = 200; // ≈  50 tokens overlap — preserves cross-boundary sentences
+const EMBEDDING_BATCH_SIZE = 50; // max texts per embedding API call
 
 // ── Private helpers ───────────────────────────────────────────────────────────
 
@@ -68,13 +68,15 @@ export function chunkText(text: string): string[] {
     if (end >= normalized.length) break;
     start = end - CHUNK_OVERLAP;
   }
-  return chunks.filter(c => c.length > 0);
+  return chunks.filter((c) => c.length > 0);
 }
 
 function cosineSimilarity(a: number[], b: number[]): number {
-  let dot = 0, magA = 0, magB = 0;
+  let dot = 0,
+    magA = 0,
+    magB = 0;
   for (let i = 0; i < a.length; i++) {
-    dot  += a[i] * b[i];
+    dot += a[i] * b[i];
     magA += a[i] * a[i];
     magB += b[i] * b[i];
   }
@@ -115,17 +117,18 @@ export async function embedTexts(texts: string[]): Promise<number[][] | null> {
   // Embedding endpoint/key/model can be set independently of the chat
   // endpoint; fall back to the chat endpoint/key when not provided so
   // existing single-endpoint configs keep working.
-  const apiKey  = getSetting('embedding_api_key') || getSetting('api_key');
-  const baseURL = getSetting('embedding_endpoint') || getSetting('endpoint') || 'https://api.openai.com/v1';
-  const model   = getSetting('embedding_model') || 'text-embedding-3-small';
+  const apiKey = getSetting('embedding_api_key') || getSetting('api_key');
+  const baseURL =
+    getSetting('embedding_endpoint') || getSetting('endpoint') || 'https://api.openai.com/v1';
+  const model = getSetting('embedding_model') || 'text-embedding-3-small';
   if (!apiKey) {
     console.error('[rag] openai embedding: no api_key configured');
     return null;
   }
   try {
     const openai = new OpenAI({ apiKey, baseURL });
-    const resp   = await openai.embeddings.create({ model, input: texts });
-    return resp.data.map(d => d.embedding);
+    const resp = await openai.embeddings.create({ model, input: texts });
+    return resp.data.map((d) => d.embedding);
   } catch (e) {
     console.error('[rag] openai embed failed:', e);
     return null;
@@ -134,11 +137,11 @@ export async function embedTexts(texts: string[]): Promise<number[][] | null> {
 
 /** Check whether the configured embedding provider is reachable and ready. */
 export async function checkEmbedHealth(): Promise<{
-  ok:      boolean;
-  status:  string;
-  model?:  string;
+  ok: boolean;
+  status: string;
+  model?: string;
   backend?: string;
-  error?:  string;
+  error?: string;
 }> {
   const provider = getSetting('embedding_provider') || 'local';
 
@@ -147,36 +150,38 @@ export async function checkEmbedHealth(): Promise<{
   }
 
   const hasKey = !!(getSetting('embedding_api_key') || getSetting('api_key'));
-  const model  = getSetting('embedding_model') || 'text-embedding-3-small';
+  const model = getSetting('embedding_model') || 'text-embedding-3-small';
   return {
-    ok:     hasKey,
+    ok: hasKey,
     status: hasKey ? 'ok' : 'no_key',
     model,
-    error:  hasKey ? undefined : 'No API key configured in Settings',
+    error: hasKey ? undefined : 'No API key configured in Settings',
   };
 }
 
 // ── Ingestion ─────────────────────────────────────────────────────────────────
 
 export async function ingestDocument(params: {
-  name:        string;
+  name: string;
   sourceType?: string;
-  content:     string;
+  content: string;
   /** Original document for the RAG page View panel.
    *  Verbatim text for text/markdown/html. */
   originalContent?: string;
   /** Raw bytes — used for PDFs. */
-  originalBytes?:   Buffer | Uint8Array;
-  originalMime?:    string;
+  originalBytes?: Buffer | Uint8Array;
+  originalMime?: string;
 }): Promise<{ sourceId: number; chunks: number; embedded: boolean; skipped: boolean }> {
-  const db    = getDb();
-  const hash  = md5(params.content);
+  const db = getDb();
+  const hash = md5(params.content);
   const model = currentModelId();
 
   // Idempotent: skip if identical content + model already ingested
-  const existing = db.prepare(
-    'SELECT id, chunk_count FROM knowledge_sources WHERE name = ? AND content_md5 = ? AND embedding_model = ?'
-  ).get(params.name, hash, model) as { id: number; chunk_count: number } | undefined;
+  const existing = db
+    .prepare(
+      'SELECT id, chunk_count FROM knowledge_sources WHERE name = ? AND content_md5 = ? AND embedding_model = ?',
+    )
+    .get(params.name, hash, model) as { id: number; chunk_count: number } | undefined;
   if (existing) {
     return { sourceId: existing.id, chunks: existing.chunk_count, embedded: true, skipped: true };
   }
@@ -189,7 +194,7 @@ export async function ingestDocument(params: {
   let embedded = false;
   for (let i = 0; i < chunks.length; i += EMBEDDING_BATCH_SIZE) {
     const batch = chunks.slice(i, i + EMBEDDING_BATCH_SIZE);
-    const vecs  = await embedTexts(batch);
+    const vecs = await embedTexts(batch);
     if (vecs) {
       for (let j = 0; j < vecs.length; j++) embeddings[i + j] = vecs[j];
       embedded = true;
@@ -199,11 +204,13 @@ export async function ingestDocument(params: {
   // Default originalContent/originalMime: when not supplied, store the
   // extracted text as text/plain so the View button still has something
   // to show. Callers with PDF bytes pass `originalBytes`.
-  const originalMime  = params.originalMime    ?? 'text/plain';
-  const isPdf         = originalMime === 'application/pdf';
-  const originalText  = isPdf ? null : (params.originalContent ?? params.content);
-  const originalBlob  = isPdf
-    ? (params.originalBytes ? Buffer.from(params.originalBytes) : null)
+  const originalMime = params.originalMime ?? 'text/plain';
+  const isPdf = originalMime === 'application/pdf';
+  const originalText = isPdf ? null : (params.originalContent ?? params.content);
+  const originalBlob = isPdf
+    ? params.originalBytes
+      ? Buffer.from(params.originalBytes)
+      : null
     : null;
 
   // Atomic ingest: delete any previous same-name row + insert the new
@@ -213,11 +220,11 @@ export async function ingestDocument(params: {
   // time the caller can react, so we never end up with a half-deleted row.
   const insertSource = db.prepare(
     `INSERT INTO knowledge_sources (name, source_type, content_md5, embedding_model, chunk_count, original_content, original_blob, original_mime)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   );
   const deleteOld = db.prepare('DELETE FROM knowledge_sources WHERE name = ?');
   const insertChunk = db.prepare(
-    'INSERT INTO knowledge_chunks (source_id, chunk_index, chunk_text, embedding) VALUES (?, ?, ?, ?)'
+    'INSERT INTO knowledge_chunks (source_id, chunk_index, chunk_text, embedding) VALUES (?, ?, ?, ?)',
   );
 
   const sourceId = db.transaction((): number => {
@@ -256,27 +263,29 @@ export async function ingestDocument(params: {
  *   2. Otherwise → FTS5 keyword search (always available, never empty)
  */
 export async function retrieveChunks(query: string, topK = 5): Promise<string[]> {
-  const db    = getDb();
+  const db = getDb();
   const model = currentModelId();
 
   // Load chunks that were embedded with the current model
-  const rows = db.prepare(
-    `SELECT kc.chunk_text, kc.embedding
+  const rows = db
+    .prepare(
+      `SELECT kc.chunk_text, kc.embedding
      FROM knowledge_chunks kc
      JOIN knowledge_sources ks ON kc.source_id = ks.id
-     WHERE ks.embedding_model = ? AND kc.embedding IS NOT NULL`
-  ).all(model) as Array<{ chunk_text: string; embedding: string }>;
+     WHERE ks.embedding_model = ? AND kc.embedding IS NOT NULL`,
+    )
+    .all(model) as Array<{ chunk_text: string; embedding: string }>;
 
   if (rows.length > 0) {
     const vecs = await embedTexts([query]);
     if (vecs) {
-      const qv     = vecs[0];
-      const scored = rows.map(r => ({
-        text:  r.chunk_text,
+      const qv = vecs[0];
+      const scored = rows.map((r) => ({
+        text: r.chunk_text,
         score: cosineSimilarity(qv, JSON.parse(r.embedding) as number[]),
       }));
       scored.sort((a, b) => b.score - a.score);
-      return scored.slice(0, topK).map(r => r.text);
+      return scored.slice(0, topK).map((r) => r.text);
     }
   }
 
@@ -284,14 +293,16 @@ export async function retrieveChunks(query: string, topK = 5): Promise<string[]>
   const safe = query.replace(/["*()[\]{}^~?:\\]/g, ' ').trim();
   if (!safe) return [];
   try {
-    const fts = db.prepare(
-      `SELECT kc.chunk_text
+    const fts = db
+      .prepare(
+        `SELECT kc.chunk_text
        FROM knowledge_fts kf
        JOIN knowledge_chunks kc ON kf.rowid = kc.id
        WHERE knowledge_fts MATCH ?
-       LIMIT ?`
-    ).all(safe, topK) as Array<{ chunk_text: string }>;
-    return fts.map(r => r.chunk_text);
+       LIMIT ?`,
+      )
+      .all(safe, topK) as Array<{ chunk_text: string }>;
+    return fts.map((r) => r.chunk_text);
   } catch {
     // FTS5 may still reject malformed queries; degrade to empty result
     return [];
@@ -301,11 +312,13 @@ export async function retrieveChunks(query: string, topK = 5): Promise<string[]>
 // ── Source management ─────────────────────────────────────────────────────────
 
 export function listSources(): KnowledgeSource[] {
-  return getDb().prepare(
-    `SELECT id, name, source_type, embedding_model, chunk_count, ingested_at
+  return getDb()
+    .prepare(
+      `SELECT id, name, source_type, embedding_model, chunk_count, ingested_at
      FROM knowledge_sources
-     ORDER BY ingested_at DESC`
-  ).all() as KnowledgeSource[];
+     ORDER BY ingested_at DESC`,
+    )
+    .all() as KnowledgeSource[];
 }
 
 export function deleteSource(id: number): void {
@@ -318,13 +331,13 @@ export function deleteSource(id: number): void {
  *  Used by the View panel to decide which renderer to use without paying
  *  for the multi-MB content fetch on PDFs. */
 export function getSourceMeta(id: number): {
-  id:   number;
+  id: number;
   name: string;
   mime: string;
 } | null {
-  const row = getDb().prepare(
-    `SELECT id, name, original_mime FROM knowledge_sources WHERE id = ?`
-  ).get(id) as { id: number; name: string; original_mime: string | null } | undefined;
+  const row = getDb()
+    .prepare(`SELECT id, name, original_mime FROM knowledge_sources WHERE id = ?`)
+    .get(id) as { id: number; name: string; original_mime: string | null } | undefined;
   if (!row) return null;
   return { id: row.id, name: row.name, mime: row.original_mime ?? 'text/plain' };
 }
@@ -334,28 +347,33 @@ export function getSourceMeta(id: number): {
  *  - For application/pdf:    `bytes` is the raw PDF buffer and `content` is empty.
  *  Returns null when the source doesn't exist. */
 export function getSourceContent(id: number): {
-  id:      number;
-  name:    string;
-  mime:    string;
+  id: number;
+  name: string;
+  mime: string;
   content: string;
-  bytes:   Buffer | null;
+  bytes: Buffer | null;
 } | null {
-  const row = getDb().prepare(
-    `SELECT id, name, original_content, original_blob, original_mime
-     FROM knowledge_sources WHERE id = ?`
-  ).get(id) as {
-    id: number; name: string;
-    original_content: string | null;
-    original_blob:    Buffer | null;
-    original_mime:    string | null;
-  } | undefined;
+  const row = getDb()
+    .prepare(
+      `SELECT id, name, original_content, original_blob, original_mime
+     FROM knowledge_sources WHERE id = ?`,
+    )
+    .get(id) as
+    | {
+        id: number;
+        name: string;
+        original_content: string | null;
+        original_blob: Buffer | null;
+        original_mime: string | null;
+      }
+    | undefined;
   if (!row) return null;
   return {
-    id:      row.id,
-    name:    row.name,
-    mime:    row.original_mime    ?? 'text/plain',
+    id: row.id,
+    name: row.name,
+    mime: row.original_mime ?? 'text/plain',
     content: row.original_content ?? '',
-    bytes:   row.original_blob    ?? null,
+    bytes: row.original_blob ?? null,
   };
 }
 

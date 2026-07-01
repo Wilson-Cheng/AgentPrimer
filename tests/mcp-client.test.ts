@@ -132,15 +132,14 @@ describe('loadMcpTools', () => {
     const tools = await loadMcpTools();
 
     expect(Object.keys(tools)).toEqual(['datetime__now']);
-    expect((tools['datetime__now'] as { description: string }).description).toContain('[datetime MCP]');
+    expect((tools['datetime__now'] as { description: string }).description).toContain(
+      '[datetime MCP]',
+    );
   });
 
   it('filters tools by tool name', async () => {
     mockServers.push(defineServer());
-    fixture.tools = [
-      { name: 'now' },
-      { name: 'parse' },
-    ];
+    fixture.tools = [{ name: 'now' }, { name: 'parse' }];
 
     const { loadMcpTools } = await loadClient();
     const tools = await loadMcpTools(['now']);
@@ -148,7 +147,7 @@ describe('loadMcpTools', () => {
     expect(Object.keys(tools)).toEqual(['datetime__now']);
   });
 
-  it('includes all of a server\'s tools when filtering by server name', async () => {
+  it("includes all of a server's tools when filtering by server name", async () => {
     mockServers.push(defineServer());
     fixture.tools = [{ name: 'now' }, { name: 'parse' }];
 
@@ -171,7 +170,8 @@ describe('loadMcpTools', () => {
 
     const { loadMcpTools } = await loadClient();
     const tools = await loadMcpTools();
-    const execute = (tools['datetime__now'] as { execute: (a: object) => Promise<unknown> }).execute;
+    const execute = (tools['datetime__now'] as { execute: (a: object) => Promise<unknown> })
+      .execute;
 
     await expect(execute({})).resolves.toBe('line1\nline2');
   });

@@ -29,7 +29,7 @@ export function AgentFileCard({ file }: { file: AgentFileResult }) {
   const isImage = file.mime_type.startsWith('image/');
   const isVideo = file.mime_type.startsWith('video/');
   const isAudio = file.mime_type.startsWith('audio/');
-  const isText  = file.mime_type.startsWith('text/') || file.mime_type === 'application/json';
+  const isText = file.mime_type.startsWith('text/') || file.mime_type === 'application/json';
 
   // Lazy-load text content for inline preview
   const [textContent, setTextContent] = useState<string | null>(null);
@@ -67,13 +67,7 @@ export function AgentFileCard({ file }: { file: AgentFileResult }) {
       )}
 
       {/* Video preview */}
-      {isVideo && (
-        <video
-          src={file.url}
-          controls
-          className="w-full max-h-72 bg-black"
-        />
-      )}
+      {isVideo && <video src={file.url} controls className="w-full max-h-72 bg-black" />}
 
       {/* Audio preview */}
       {isAudio && (
@@ -86,7 +80,10 @@ export function AgentFileCard({ file }: { file: AgentFileResult }) {
       {isText && (
         <div className="p-3 pb-0">
           <button
-            onClick={() => { setTextExpanded(v => !v); if (!textExpanded) loadText(); }}
+            onClick={() => {
+              setTextExpanded((v) => !v);
+              if (!textExpanded) loadText();
+            }}
             className="flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline"
           >
             <FileIcon size={14} />
@@ -94,13 +91,13 @@ export function AgentFileCard({ file }: { file: AgentFileResult }) {
           </button>
           {textExpanded && (
             <div className="mt-2">
-              {textLoading
-                ? <p className="text-sm text-gray-400 animate-pulse">Loading…</p>
-                : (
-                  <pre className="text-sm bg-gray-50 dark:bg-gray-900 rounded-lg p-3 overflow-x-auto max-h-64 text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                    {textContent}
-                  </pre>
-                )}
+              {textLoading ? (
+                <p className="text-sm text-gray-400 animate-pulse">Loading…</p>
+              ) : (
+                <pre className="text-sm bg-gray-50 dark:bg-gray-900 rounded-lg p-3 overflow-x-auto max-h-64 text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                  {textContent}
+                </pre>
+              )}
             </div>
           )}
         </div>
@@ -112,11 +109,15 @@ export function AgentFileCard({ file }: { file: AgentFileResult }) {
           <FileIcon size={18} className="text-gray-500 dark:text-gray-400" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-600 text-gray-900 dark:text-gray-100 truncate">{file.filename}</p>
+          <p className="text-sm font-600 text-gray-900 dark:text-gray-100 truncate">
+            {file.filename}
+          </p>
           {file.description && (
             <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{file.description}</p>
           )}
-          <p className="text-sm text-gray-400 dark:text-gray-500">{formatBytes(file.size)} · {file.mime_type}</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">
+            {formatBytes(file.size)} · {file.mime_type}
+          </p>
         </div>
         <a
           href={file.url}
@@ -134,7 +135,13 @@ export function AgentFileCard({ file }: { file: AgentFileResult }) {
 // ---------------------------------------------------------------------------
 // AttachmentRow – images inline, other files as chips
 // ---------------------------------------------------------------------------
-export function AttachmentRow({ attachments, isUser }: { attachments: Attachment[]; isUser: boolean }) {
+export function AttachmentRow({
+  attachments,
+  isUser,
+}: {
+  attachments: Attachment[];
+  isUser: boolean;
+}) {
   return (
     <div className={`flex flex-col gap-2 ${isUser ? 'items-end' : 'items-start'}`}>
       {attachments.map((att, i) => {
@@ -155,9 +162,7 @@ export function AttachmentRow({ attachments, isUser }: { attachments: Attachment
           );
         }
         if (isVideo) {
-          return (
-            <video key={i} src={att.url} controls className="max-h-48 max-w-xs rounded-lg" />
-          );
+          return <video key={i} src={att.url} controls className="max-h-48 max-w-xs rounded-lg" />;
         }
         if (isAudio) {
           return (

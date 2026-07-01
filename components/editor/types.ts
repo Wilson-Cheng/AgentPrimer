@@ -34,9 +34,9 @@ export interface TreeNode {
 
 /** A single open tab in the editor. */
 export interface OpenTab {
-  path: string;         // relative to data root
-  label: string;        // filename
-  content: string;      // current (possibly dirty) content
+  path: string; // relative to data root
+  label: string; // filename
+  content: string; // current (possibly dirty) content
   savedContent: string; // content as last saved / loaded
   loading: boolean;
   /** True for binary/preview-only kinds (image/video/audio/pdf). The editor

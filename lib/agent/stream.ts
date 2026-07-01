@@ -195,8 +195,7 @@ export function createThinkExtractor(): ThinkExtractor {
 
 export function normalizeChatCompletionChunk(chunk: unknown): NormalizedChatDelta {
   const choice = (chunk as { choices?: unknown[] })?.choices?.[0] as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   if (!choice) return { textDelta: '', reasoningDelta: '', toolCallDeltas: [] };
 
   const delta = (choice.delta ?? choice.message ?? {}) as Record<string, unknown>;

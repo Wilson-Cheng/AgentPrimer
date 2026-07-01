@@ -408,7 +408,9 @@ export async function runAgentLoop(params: {
             args: clientArgs,
           }),
         );
-        writer.write(formatDataStreamPart('tool_result', { toolCallId: tc.id, result: clientResult }));
+        writer.write(
+          formatDataStreamPart('tool_result', { toolCallId: tc.id, result: clientResult }),
+        );
         allToolCalls.push({
           toolCallId: tc.id,
           toolName: tc.name,
@@ -433,7 +435,8 @@ export async function runAgentLoop(params: {
         };
       });
       let stepFinishReason = finishReason;
-      let incompleteMarker: { reason: 'length' | 'connection_lost' | 'error'; detail?: string } | undefined;
+      let incompleteMarker:
+        { reason: 'length' | 'connection_lost' | 'error'; detail?: string } | undefined;
       if (streamInterrupted) {
         stepFinishReason =
           streamInterrupted.reason === 'connection_lost' ? 'connection_lost' : 'error';
@@ -444,8 +447,7 @@ export async function runAgentLoop(params: {
         stepText += notice;
         totalText += notice;
         const lastPart = allParts[allParts.length - 1] as
-          | { type?: string; text?: string }
-          | undefined;
+          { type?: string; text?: string } | undefined;
         if (lastPart?.type === 'text' && typeof lastPart.text === 'string') {
           lastPart.text += notice;
         } else {
@@ -458,8 +460,7 @@ export async function runAgentLoop(params: {
         stepText += notice;
         totalText += notice;
         const lastPart = allParts[allParts.length - 1] as
-          | { type?: string; text?: string }
-          | undefined;
+          { type?: string; text?: string } | undefined;
         if (lastPart?.type === 'text' && typeof lastPart.text === 'string') {
           lastPart.text += notice;
         } else {
@@ -549,7 +550,11 @@ export async function runAgentLoop(params: {
       }
       const clientArgs = sanitizeArgsForClient(tc.name, args);
       writer.write(
-        formatDataStreamPart('tool_call', { toolCallId: tc.id, toolName: tc.name, args: clientArgs }),
+        formatDataStreamPart('tool_call', {
+          toolCallId: tc.id,
+          toolName: tc.name,
+          args: clientArgs,
+        }),
       );
       allToolCalls.push({ toolCallId: tc.id, toolName: tc.name, args: clientArgs });
       let result: unknown;
@@ -573,7 +578,9 @@ export async function runAgentLoop(params: {
           result: clientResult,
         },
       });
-      writer.write(formatDataStreamPart('tool_result', { toolCallId: tc.id, result: clientResult }));
+      writer.write(
+        formatDataStreamPart('tool_result', { toolCallId: tc.id, result: clientResult }),
+      );
       msgs.push({
         role: 'tool',
         tool_call_id: tc.id,
@@ -637,9 +644,7 @@ export async function runAgentLoop(params: {
 
     if (tracingEnabled) {
       const toolCallsTrace = completedTCs.map((tc) => {
-        const entry = allToolCalls.find(
-          (a) => (a as Record<string, unknown>).toolCallId === tc.id,
-        );
+        const entry = allToolCalls.find((a) => (a as Record<string, unknown>).toolCallId === tc.id);
         return {
           toolCallId: tc.id,
           toolName: tc.name,

@@ -169,9 +169,9 @@ AgentPrimer includes several built-in tools to help you understand what the agen
 
 - **Browser DevTools (Network tab)** — Open the Network tab, filter by `/api/chat`, and watch AI SDK data stream events arrive in real-time. Each line is a typed event (`0:` for text, `b:`/`c:` for tool call fragments, `9:` for complete tool calls, `a:` for tool results). See [Module 04](docs/04-streaming.md) for the full wire format reference.
 
-- **`console.log` in the agent loop** — The fastest way to debug: add `console.log` statements inside the agent loop in `lib/agent.ts`. Log the current step number, `finish_reason`, tool call arguments, or token counts. The output appears in the server terminal.
+- **`console.log` in the agent loop** — The fastest way to debug: add `console.log` statements inside the agent loop in `lib/agent/loop.ts`. Log the current step number, `finish_reason`, tool call arguments, or token counts. The output appears in the server terminal.
 
-- **VS Code debugger** — Set breakpoints in `lib/agent.ts` or `app/api/chat/route.ts`. Use the Node.js debugger configuration (`.vscode/launch.json`) to attach to the running dev server. This lets you step through the ReAct loop iteration by iteration.
+- **VS Code debugger** — Set breakpoints in `lib/agent/loop.ts`, `lib/agent/streaming-agent.ts`, or `app/api/chat/route.ts`. Use the Node.js debugger configuration (`.vscode/launch.json`) to attach to the running dev server. This lets you step through the ReAct loop iteration by iteration.
 
 - **Trace Drawer** — Click the "Show trace" button on any assistant message in the chat UI. This shows the exact LLM request (messages and tools sent), tool I/O (inputs and outputs), token counts, timing per step, and finish reasons. No server-side changes needed.
 

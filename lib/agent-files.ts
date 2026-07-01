@@ -123,9 +123,7 @@ export function saveAgentFile(
   const dir = path.join(AGENT_FILES_DIR, id);
   fs.mkdirSync(dir, { recursive: true });
 
-  const buf = encoding === 'base64'
-    ? Buffer.from(content, 'base64')
-    : Buffer.from(content, 'utf8');
+  const buf = encoding === 'base64' ? Buffer.from(content, 'base64') : Buffer.from(content, 'utf8');
   fs.writeFileSync(path.join(dir, safe), buf);
 
   return buildResult(id, safe, dir, description, mimeOverride);

@@ -52,17 +52,16 @@ export const runtime = 'nodejs';
 // client can't accidentally trigger a partial reset of something we
 // didn't design for.
 type ResetTarget =
-  | 'system'
-  | 'agents'
-  | 'agent'
-  | 'mcp-servers'
-  | 'skills'
-  | 'function-tools'
-  | 'full';
+  'system' | 'agents' | 'agent' | 'mcp-servers' | 'skills' | 'function-tools' | 'full';
 
 const VALID_TARGETS = new Set<ResetTarget>([
-  'system', 'agents', 'agent',
-  'mcp-servers', 'skills', 'function-tools', 'full',
+  'system',
+  'agents',
+  'agent',
+  'mcp-servers',
+  'skills',
+  'function-tools',
+  'full',
 ]);
 
 const FILE_TARGETS: Record<string, string> = {
@@ -75,7 +74,7 @@ const FILE_TARGETS: Record<string, string> = {
  * files), the data file is just deleted.
  */
 function restoreMarkdownFile(filename: string): void {
-  const dataPath    = path.join(DATA_DIR, filename);
+  const dataPath = path.join(DATA_DIR, filename);
   const defaultPath = path.join(DEFAULTS_DIR, filename);
   if (fs.existsSync(dataPath)) fs.rmSync(dataPath);
   if (fs.existsSync(defaultPath)) fs.copyFileSync(defaultPath, dataPath);
@@ -166,7 +165,9 @@ export async function POST(request: NextRequest) {
   // error out otherwise — and a stale connection pointing at a deleted
   // binary would crash the next request.
   if (wantsFull || targets.includes('mcp-servers')) {
-    try { await disconnectAll(); } catch (err) {
+    try {
+      await disconnectAll();
+    } catch (err) {
       console.warn('[reset] disconnectAll failed (continuing):', err);
     }
   }

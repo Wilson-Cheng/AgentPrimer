@@ -38,7 +38,11 @@ interface SystemPromptData {
 
 type TabKey = 'composed' | 'source' | 'tools' | 'payload';
 
-export default function SystemPromptModal({ agentName, sessionId, onClose }: {
+export default function SystemPromptModal({
+  agentName,
+  sessionId,
+  onClose,
+}: {
   agentName: string;
   sessionId?: string;
   onClose: () => void;
@@ -59,9 +63,15 @@ export default function SystemPromptModal({ agentName, sessionId, onClose }: {
     const params = new URLSearchParams({ agent: agentName });
     if (sessionId) params.set('sessionId', sessionId);
     fetch(`/api/system-prompt?${params}`)
-      .then(r => r.json())
-      .then(d => { setData(d); setLoading(false); })
-      .catch(e => { setError(e.message); setLoading(false); });
+      .then((r) => r.json())
+      .then((d) => {
+        setData(d);
+        setLoading(false);
+      })
+      .catch((e) => {
+        setError(e.message);
+        setLoading(false);
+      });
   }, [agentName, sessionId]);
 
   // Second fetch (deferred): triggered the first time the user opens the
@@ -73,20 +83,24 @@ export default function SystemPromptModal({ agentName, sessionId, onClose }: {
     const params = new URLSearchParams({ agent: agentName, includeTools: '1' });
     if (sessionId) params.set('sessionId', sessionId);
     fetch(`/api/system-prompt?${params}`)
-      .then(r => r.json())
+      .then((r) => r.json())
       .then((d: SystemPromptData) => {
-        setData(prev => prev ? {
-          ...prev,
-          tools: d.tools,
-          toolSources: d.toolSources,
-          toolsLoaded: true,
-          toolsError: d.toolsError,
-          examplePayload: d.examplePayload,
-        } : d);
+        setData((prev) =>
+          prev
+            ? {
+                ...prev,
+                tools: d.tools,
+                toolSources: d.toolSources,
+                toolsLoaded: true,
+                toolsError: d.toolsError,
+                examplePayload: d.examplePayload,
+              }
+            : d,
+        );
         setToolsLoading(false);
       })
-      .catch(e => {
-        setData(prev => prev ? { ...prev, toolsError: e.message, toolsLoaded: true } : prev);
+      .catch((e) => {
+        setData((prev) => (prev ? { ...prev, toolsError: e.message, toolsLoaded: true } : prev));
         setToolsLoading(false);
       });
   }, [toolsRequested, agentName, sessionId, data]);
@@ -138,7 +152,7 @@ export default function SystemPromptModal({ agentName, sessionId, onClose }: {
   };
 
   const sourceFor = (name: string): ToolSource['source'] | undefined =>
-    data?.toolSources.find(s => s.name === name)?.source;
+    data?.toolSources.find((s) => s.name === name)?.source;
 
   const sourceBadgeStyles: Record<ToolSource['source'], string> = {
     builtin: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300',
@@ -155,10 +169,13 @@ export default function SystemPromptModal({ agentName, sessionId, onClose }: {
     : '';
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
       <div
         className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
@@ -226,12 +243,12 @@ export default function SystemPromptModal({ agentName, sessionId, onClose }: {
           ) : activeTab === 'composed' ? (
             <div className="space-y-3">
               <TipBanner>
-                This is the <strong>full system message</strong>{' '}the model receives at the start of
-                every turn. It&apos;s assembled from{' '}system prompt
-                (<strong>system.md</strong>) + the active agent&apos;s
-                prompt (<strong>agents/&lt;agent&gt;/agent.md</strong>) + the active agent&apos;s private memory + the{' '}
-                description of available skills (see <strong>## Available Skills</strong>)
-                + the output schema (if any). The skills section is generated from the discovery list. See the
+                This is the <strong>full system message</strong> the model receives at the start of
+                every turn. It&apos;s assembled from system prompt (<strong>system.md</strong>) +
+                the active agent&apos;s prompt (<strong>agents/&lt;agent&gt;/agent.md</strong>) +
+                the active agent&apos;s private memory + the description of available skills (see{' '}
+                <strong>## Available Skills</strong>) + the output schema (if any). The skills
+                section is generated from the discovery list. See the
                 <em> Source Files</em> tab to inspect each piece individually.
               </TipBanner>
               <pre className="text-sm font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 max-h-[50vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
@@ -252,9 +269,18 @@ export default function SystemPromptModal({ agentName, sessionId, onClose }: {
                 </Link>{' '}
                 — changes take effect on the next message.
               </TipBanner>
-              <SourceSection label="system.md (System Prompt)" content={data!.systemBase || '(empty)'} />
-              <SourceSection label={`${data!.agentPath ?? `agents/${agentName}/agent.md`} (Agent Prompt)`} content={data!.agentSystemPrompt} />
-              <SourceSection label={`${data!.memoryPath ?? `agents/${agentName}/memory.md`} (Agent Memory)`} content={data!.memory} />
+              <SourceSection
+                label="system.md (System Prompt)"
+                content={data!.systemBase || '(empty)'}
+              />
+              <SourceSection
+                label={`${data!.agentPath ?? `agents/${agentName}/agent.md`} (Agent Prompt)`}
+                content={data!.agentSystemPrompt}
+              />
+              <SourceSection
+                label={`${data!.memoryPath ?? `agents/${agentName}/memory.md`} (Agent Memory)`}
+                content={data!.memory}
+              />
             </div>
           ) : activeTab === 'tools' ? (
             <div className="space-y-4">
@@ -264,8 +290,8 @@ export default function SystemPromptModal({ agentName, sessionId, onClose }: {
                 from the system prompt. The model reads each{' '}
                 <code className="font-mono">description</code> to decide <em>when</em> to call a
                 tool, and the <code className="font-mono">parameters</code> JSON Schema to know{' '}
-                <em>what</em> arguments to produce. Clear descriptions are the single highest-leverage
-                way to improve tool-calling reliability.
+                <em>what</em> arguments to produce. Clear descriptions are the single
+                highest-leverage way to improve tool-calling reliability.
               </TipBanner>
               {!data!.toolsLoaded ? (
                 <div className="flex items-center justify-center gap-2 py-12 text-gray-400">
@@ -273,13 +299,18 @@ export default function SystemPromptModal({ agentName, sessionId, onClose }: {
                   Loading tools…
                 </div>
               ) : data!.toolsError ? (
-                <div className="text-sm text-red-500 py-4">Failed to load tools: {data!.toolsError}</div>
+                <div className="text-sm text-red-500 py-4">
+                  Failed to load tools: {data!.toolsError}
+                </div>
               ) : data!.tools.length === 0 ? (
                 <div className="text-sm text-gray-400 italic py-4">
-                  No tools sent this turn{data!.isStructured ? ' (this structured-output agent has **Tools:** none in agent.md).' : '.'}
+                  No tools sent this turn
+                  {data!.isStructured
+                    ? ' (this structured-output agent has **Tools:** none in agent.md).'
+                    : '.'}
                 </div>
               ) : (
-                data!.tools.map(t => {
+                data!.tools.map((t) => {
                   const src = sourceFor(t.function.name);
                   return (
                     <div
@@ -293,7 +324,9 @@ export default function SystemPromptModal({ agentName, sessionId, onClose }: {
                             {t.function.name}
                           </code>
                           {src && (
-                            <span className={`text-sm font-mono uppercase tracking-wide px-1.5 py-0.5 rounded ${sourceBadgeStyles[src]}`}>
+                            <span
+                              className={`text-sm font-mono uppercase tracking-wide px-1.5 py-0.5 rounded ${sourceBadgeStyles[src]}`}
+                            >
                               {src}
                             </span>
                           )}
@@ -301,14 +334,20 @@ export default function SystemPromptModal({ agentName, sessionId, onClose }: {
                       </div>
                       <div className="px-4 py-3 space-y-2">
                         <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                          {t.function.description || <em className="text-gray-400">(no description)</em>}
+                          {t.function.description || (
+                            <em className="text-gray-400">(no description)</em>
+                          )}
                         </p>
                         <details className="text-sm">
                           <summary className="cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 select-none">
                             parameters (JSON Schema)
                           </summary>
                           <div className="mt-2 bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
-                            <JsonView value={t.function.parameters} initialDepth={2} maxHeight="max-h-64" />
+                            <JsonView
+                              value={t.function.parameters}
+                              initialDepth={2}
+                              maxHeight="max-h-64"
+                            />
                           </div>
                         </details>
                       </div>
@@ -335,7 +374,11 @@ export default function SystemPromptModal({ agentName, sessionId, onClose }: {
                 </div>
               ) : (
                 <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-                  <JsonView value={renderedPayload} initialDepth={Infinity} maxHeight="max-h-[55vh]" />
+                  <JsonView
+                    value={renderedPayload}
+                    initialDepth={Infinity}
+                    maxHeight="max-h-[55vh]"
+                  />
                 </div>
               )}
             </div>
@@ -344,15 +387,23 @@ export default function SystemPromptModal({ agentName, sessionId, onClose }: {
 
         {/* Footer */}
         <div className="px-6 py-3 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-400 dark:text-gray-500 flex-shrink-0">
-          Everything shown here — system prompt, tool schemas, and message history — is what the model sees
-          on each turn.
+          Everything shown here — system prompt, tool schemas, and message history — is what the
+          model sees on each turn.
         </div>
       </div>
     </div>
   );
 }
 
-function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <button
       onClick={onClick}

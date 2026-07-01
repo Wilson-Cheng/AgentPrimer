@@ -11,13 +11,16 @@ export const runtime = 'nodejs';
  *   days – number of calendar days to look back (default: 30)
  */
 export async function GET(request: NextRequest) {
-  const days = Math.min(365, Math.max(1, parseInt(request.nextUrl.searchParams.get('days') ?? '30', 10) || 30));
+  const days = Math.min(
+    365,
+    Math.max(1, parseInt(request.nextUrl.searchParams.get('days') ?? '30', 10) || 30),
+  );
 
   const daily = getDailyTokenStats(days);
 
   // Summary totals for last 1 / 7 / 30 days
-  const last1d  = getTotalTokenStats(1);
-  const last7d  = getTotalTokenStats(7);
+  const last1d = getTotalTokenStats(1);
+  const last7d = getTotalTokenStats(7);
   const last30d = getTotalTokenStats(30);
 
   return NextResponse.json({ daily, summary: { last1d, last7d, last30d } });

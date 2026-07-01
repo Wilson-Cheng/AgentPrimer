@@ -187,7 +187,9 @@ export function createBuiltinTools(
       parameters: z.object({
         content: z
           .string()
-          .describe("The new content that will completely replace this agent's private memory file"),
+          .describe(
+            "The new content that will completely replace this agent's private memory file",
+          ),
       }),
       execute: async ({ content }) => {
         writeMemory(content as string, agentName);
@@ -203,7 +205,10 @@ export function createBuiltinTools(
           .string()
           .min(1)
           .describe('Agent name. It will be converted to a safe folder name under data/agents/.'),
-        system_prompt: z.string().min(1).describe('The role-specific system prompt for the new agent.'),
+        system_prompt: z
+          .string()
+          .min(1)
+          .describe('The role-specific system prompt for the new agent.'),
         tools: z
           .string()
           .optional()
@@ -213,7 +218,9 @@ export function createBuiltinTools(
         model: z
           .string()
           .optional()
-          .describe('Optional model for **Model:**. Use "default" to inherit Settings → Default Model.'),
+          .describe(
+            'Optional model for **Model:**. Use "default" to inherit Settings → Default Model.',
+          ),
         memory: z
           .string()
           .optional()
@@ -223,7 +230,9 @@ export function createBuiltinTools(
         overwrite: z
           .boolean()
           .optional()
-          .describe('Set true only when the user explicitly wants to replace an existing agent folder.'),
+          .describe(
+            'Set true only when the user explicitly wants to replace an existing agent folder.',
+          ),
       }),
       execute: async ({ name, system_prompt, tools, model, memory, overwrite }) => {
         const safeName = safeAgentDirName(name as string);
@@ -364,7 +373,10 @@ export function createBuiltinTools(
             );
             const content = await fs.promises.readFile(taskFile, 'utf8');
             if (!content.includes('] FINISHED:')) {
-              await appendTaskLog(taskFile, `FINISHED: ${result || '(completed with no text output)'}`);
+              await appendTaskLog(
+                taskFile,
+                `FINISHED: ${result || '(completed with no text output)'}`,
+              );
             }
             const finalContent = await fs.promises.readFile(taskFile, 'utf8');
             await fs.promises.writeFile(
@@ -492,7 +504,10 @@ export function createBuiltinTools(
           .describe(
             'Path to the file to read, relative to the project data directory or absolute (e.g. "data/system.md"). Must resolve to a file under ./data/.',
           ),
-        encoding: z.enum(['utf8', 'base64', 'hex']).default('utf8').describe('File encoding (default: utf8)'),
+        encoding: z
+          .enum(['utf8', 'base64', 'hex'])
+          .default('utf8')
+          .describe('File encoding (default: utf8)'),
       }),
       execute: async ({ file_path, encoding }) => {
         // Zod `.default('utf8')` only fires when the schema validates the input
@@ -542,7 +557,10 @@ export function createBuiltinTools(
             'Path to write to, relative to the project data directory or absolute. Must resolve to a file under ./data/.',
           ),
         content: z.string().describe('Content to write'),
-        encoding: z.enum(['utf8', 'base64']).default('utf8').describe('Encoding for the content string'),
+        encoding: z
+          .enum(['utf8', 'base64'])
+          .default('utf8')
+          .describe('Encoding for the content string'),
       }),
       execute: async ({ file_path, content, encoding }) => {
         const enc: BufferEncoding = (encoding as BufferEncoding) ?? 'utf8';
@@ -593,7 +611,10 @@ export function createBuiltinTools(
           .describe(
             'Directory to list, relative to the project data directory or absolute. Must resolve to a directory under ./data/.',
           ),
-        recursive: z.boolean().default(false).describe('Whether to list recursively (default: false)'),
+        recursive: z
+          .boolean()
+          .default(false)
+          .describe('Whether to list recursively (default: false)'),
       }),
       execute: async ({ dir_path, recursive }) => {
         const resolved = resolveAgentPath(dir_path as string);
@@ -647,7 +668,10 @@ export function createBuiltinTools(
           .describe(
             'Path to delete, relative to the project data directory or absolute. Must resolve to a path under ./data/.',
           ),
-        recursive: z.boolean().default(false).describe('Required true to delete non-empty directories'),
+        recursive: z
+          .boolean()
+          .default(false)
+          .describe('Required true to delete non-empty directories'),
       }),
       execute: async ({ target_path, recursive }) => {
         const resolved = resolveAgentPath(target_path as string);
@@ -873,8 +897,13 @@ export function createBuiltinTools(
         'The source path must resolve to a file under the project data directory (./data/).',
       ].join(' '),
       parameters: z.object({
-        filename: z.string().describe('Filename with extension, e.g. "chart.png", "report.csv", "song.mp3"'),
-        description: z.string().optional().describe('Caption shown to the user below the file preview'),
+        filename: z
+          .string()
+          .describe('Filename with extension, e.g. "chart.png", "report.csv", "song.mp3"'),
+        description: z
+          .string()
+          .optional()
+          .describe('Caption shown to the user below the file preview'),
         file_path: z
           .string()
           .describe(
@@ -883,7 +912,9 @@ export function createBuiltinTools(
         mime_type: z
           .string()
           .optional()
-          .describe('MIME type override, e.g. "image/png". Auto-detected from extension if omitted.'),
+          .describe(
+            'MIME type override, e.g. "image/png". Auto-detected from extension if omitted.',
+          ),
       }),
       execute: async ({
         filename,
@@ -977,7 +1008,9 @@ export function createBuiltinTools(
           .describe(
             'The exact text to find and replace. Must match exactly including whitespace. Include 3–5 lines of context to uniquely identify the location.',
           ),
-        new_string: z.string().describe('The replacement text to substitute in place of old_string'),
+        new_string: z
+          .string()
+          .describe('The replacement text to substitute in place of old_string'),
       }),
       execute: async ({ file_path, old_string, new_string }) => {
         const resolved = resolveAgentPath(file_path as string);

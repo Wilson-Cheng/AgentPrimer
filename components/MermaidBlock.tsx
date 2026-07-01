@@ -6,7 +6,7 @@ let mermaidPromise: Promise<typeof import('mermaid')> | null = null;
 
 function loadMermaid() {
   if (!mermaidPromise) {
-    mermaidPromise = import('mermaid').then(m => {
+    mermaidPromise = import('mermaid').then((m) => {
       m.default.initialize({
         startOnLoad: false,
         theme: 'neutral',
@@ -48,7 +48,9 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
       }
     });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [code]);
 
   if (error) {

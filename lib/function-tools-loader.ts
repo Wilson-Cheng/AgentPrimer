@@ -78,19 +78,23 @@
  * All three are merged into a single ToolSet before the agent loop starts.
  */
 
-import { spawn }  from 'child_process';
-import path       from 'path';
-import { tool }   from 'ai';
+import { spawn } from 'child_process';
+import path from 'path';
+import { tool } from 'ai';
 import { listFunctionTools } from './db';
-import { jsonSchemaToZod }   from './schema-utils';
+import { jsonSchemaToZod } from './schema-utils';
 
 // The worker script provides subprocess isolation for function tool execution.
 // It is a generic "require index.js and call the named function" worker.
-const WORKER_SCRIPT: string = path.join(/* turbopackIgnore: true */ process.cwd(), 'lib', 'function-tool-worker.js');
+const WORKER_SCRIPT: string = path.join(
+  /* turbopackIgnore: true */ process.cwd(),
+  'lib',
+  'function-tool-worker.js',
+);
 
 // Resource limits applied to every tool invocation subprocess
-const TOOL_TIMEOUT_MS = 35_000;  // hard kill after this many ms (SIGKILL)
-const TOOL_MEMORY_MB  = 256;     // --max-old-space-size for the worker process
+const TOOL_TIMEOUT_MS = 35_000; // hard kill after this many ms (SIGKILL)
+const TOOL_MEMORY_MB = 256; // --max-old-space-size for the worker process
 
 // ── Subprocess runner ─────────────────────────────────────────────────────
 
@@ -147,7 +151,9 @@ function runInSubprocess(toolIndexPath: string, toolName: string, args: object):
     // Collect all stdout chunks into a single buffer
     let outputBuffer = '';
     worker.stdout!.setEncoding('utf8');
-    worker.stdout!.on('data', (chunk: string) => { outputBuffer += chunk; });
+    worker.stdout!.on('data', (chunk: string) => {
+      outputBuffer += chunk;
+    });
 
     worker.stdout!.on('end', () => {
       clearTimeout(killTimer);
@@ -203,7 +209,7 @@ interface FunctionDef {
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function loadFunctionTools(filterNames: string[] | 'all' = 'all'): Record<string, any> {
-  const functionTools = listFunctionTools().filter(ft => ft.enabled === 1);
+  const functionTools = listFunctionTools().filter((ft) => ft.enabled === 1);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tools: Record<string, any> = {};
 
@@ -219,19 +225,23 @@ export function loadFunctionTools(filterNames: string[] | 'all' = 'all'): Record
 
     // function.json can declare a single function (top-level name/description/parameters)
     // or an array of functions under a "functions" key.
-    const defs: FunctionDef[] = manifest.functions
-      ?? (manifest.name ? [manifest as FunctionDef] : []);
+    const defs: FunctionDef[] =
+      manifest.functions ?? (manifest.name ? [manifest as FunctionDef] : []);
 
     for (const def of defs) {
       // Apply the per-agent filter: match on individual function name or package name
-      if (filterNames !== 'all' && !filterNames.includes(def.name) && !filterNames.includes(ft.name)) {
+      if (
+        filterNames !== 'all' &&
+        !filterNames.includes(def.name) &&
+        !filterNames.includes(ft.name)
+      ) {
         continue;
       }
 
       // Build the absolute path to this tool's index.js
-      const toolIndexPath  = path.join(ft.local_path, 'index.js');
-      const capturedName   = def.name;
-      const capturedPath   = toolIndexPath;
+      const toolIndexPath = path.join(ft.local_path, 'index.js');
+      const capturedName = def.name;
+      const capturedPath = toolIndexPath;
 
       // Register the tool using the Vercel AI SDK's `tool()` helper.
       // The AI SDK converts the Zod schema back to JSON Schema for the OpenAI API.

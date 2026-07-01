@@ -14,21 +14,25 @@ export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
   const rel = request.nextUrl.searchParams.get('path') ?? '';
   const abs = resolveDataPath(rel || '.');
-  if (!abs || !fs.existsSync(abs)) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  if (!abs || !fs.existsSync(abs))
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
   try {
     const stat = fs.statSync(abs);
-    if (!stat.isDirectory()) return NextResponse.json({ error: 'not a directory' }, { status: 400 });
+    if (!stat.isDirectory())
+      return NextResponse.json({ error: 'not a directory' }, { status: 400 });
 
-    const entries = fs.readdirSync(abs, { withFileTypes: true }).flatMap(e => {
+    const entries = fs.readdirSync(abs, { withFileTypes: true }).flatMap((e) => {
       const fullPath = path.join(abs, e.name);
       const resolved = resolveDataPath(path.relative(DATA_ROOT, fullPath));
       if (!resolved) return [];
-      return [{
-        name: e.name,
-        isDir: e.isDirectory(),
-        path: path.relative(DATA_ROOT, resolved),
-      }];
+      return [
+        {
+          name: e.name,
+          isDir: e.isDirectory(),
+          path: path.relative(DATA_ROOT, resolved),
+        },
+      ];
     });
 
     entries.sort((a, b) => {

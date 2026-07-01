@@ -8,7 +8,7 @@ let tempDir: string;
 async function loadAgent() {
   vi.resetModules();
   const agent = await import('../lib/agent');
-  const reg   = await import('../lib/builtin-tools-registry');
+  const reg = await import('../lib/builtin-tools-registry');
   return { ...agent, ...reg };
 }
 
@@ -18,7 +18,11 @@ beforeEach(() => {
   // System prompt + main agent files so buildSystemPrompt doesn't error.
   fs.writeFileSync(path.join(tempDir, 'data', 'system.md'), 'You are a test agent.', 'utf-8');
   fs.mkdirSync(path.join(tempDir, 'data', 'agents', 'main'), { recursive: true });
-  fs.writeFileSync(path.join(tempDir, 'data', 'agents', 'main', 'agent.md'), '# main\n**System Prompt:** test\n**Tools:** all\n', 'utf-8');
+  fs.writeFileSync(
+    path.join(tempDir, 'data', 'agents', 'main', 'agent.md'),
+    '# main\n**System Prompt:** test\n**Tools:** all\n',
+    'utf-8',
+  );
   fs.writeFileSync(path.join(tempDir, 'data', 'agents', 'main', 'memory.md'), '', 'utf-8');
   vi.spyOn(process, 'cwd').mockReturnValue(tempDir);
 });
@@ -136,7 +140,9 @@ describe('built-in filesystem tools', () => {
     const coderPath = path.join(tempDir, 'data', 'agents', 'coder', 'memory.md');
     const researcherPath = path.join(tempDir, 'data', 'agents', 'researcher', 'memory.md');
     const coderResult = await coderTools.read_file.execute!({ file_path: coderPath });
-    const researcherResult = await researcherTools.read_file.execute!({ file_path: researcherPath });
+    const researcherResult = await researcherTools.read_file.execute!({
+      file_path: researcherPath,
+    });
     expect((coderResult as { content: string }).content).toContain('remember Alice');
     expect((coderResult as { content: string }).content).not.toContain('remember Bob');
     expect((researcherResult as { content: string }).content).toContain('remember Bob');
@@ -174,7 +180,9 @@ describe('built-in filesystem tools', () => {
       new_string: 'changed',
     });
     // edit_file returns an error envelope when the match is ambiguous instead of throwing
-    expect(result).toMatchObject({ error: expect.stringMatching(/multiple|ambiguous|more than once|matches \d+ locations/i) });
+    expect(result).toMatchObject({
+      error: expect.stringMatching(/multiple|ambiguous|more than once|matches \d+ locations/i),
+    });
   });
 
   it('list_directory returns the entries of an existing directory', async () => {
@@ -206,7 +214,9 @@ describe('built-in filesystem tools', () => {
       new_string: 'changed',
     });
 
-    expect(result).toMatchObject({ error: expect.stringMatching(/outside the project data directory/i) });
+    expect(result).toMatchObject({
+      error: expect.stringMatching(/outside the project data directory/i),
+    });
     expect(fs.readFileSync(target, 'utf-8')).toBe('secret');
   });
 
@@ -214,9 +224,13 @@ describe('built-in filesystem tools', () => {
     const { createBuiltinTools } = await loadAgent();
     const tools = createBuiltinTools('main');
 
-    const result = await tools.open_preview.execute!({ file_path: path.join(tempDir, 'outside.html') });
+    const result = await tools.open_preview.execute!({
+      file_path: path.join(tempDir, 'outside.html'),
+    });
 
-    expect(result).toMatchObject({ error: expect.stringMatching(/outside the project data directory/i) });
+    expect(result).toMatchObject({
+      error: expect.stringMatching(/outside the project data directory/i),
+    });
   });
 
   it('dangerous approval-backed tools fail closed without session context', async () => {

@@ -27,7 +27,7 @@ export async function GET(
   const { id, filename } = await params;
 
   // Security: prevent path traversal in both segments
-  const safeId       = id.replace(/[^a-zA-Z0-9\-]/g, '');
+  const safeId = id.replace(/[^a-zA-Z0-9\-]/g, '');
   const safeFilename = path.basename(decodeURIComponent(filename));
 
   if (!safeId || !safeFilename) {
@@ -39,7 +39,7 @@ export async function GET(
     return NextResponse.json({ error: 'File not found' }, { status: 404 });
   }
 
-  const buffer   = fs.readFileSync(filePath);
+  const buffer = fs.readFileSync(filePath);
   const mimeType = detectMimeType(safeFilename);
   const disposition = /^(text\/html|image\/svg\+xml|text\/xml|application\/xml)/i.test(mimeType)
     ? 'attachment'
@@ -47,10 +47,10 @@ export async function GET(
 
   return new NextResponse(buffer, {
     headers: {
-      'Content-Type':        mimeType,
+      'Content-Type': mimeType,
       'Content-Disposition': `${disposition}; filename="${safeFilename}"`,
-      'Content-Length':      String(buffer.length),
-      'Cache-Control':       'public, max-age=31536000, immutable',
+      'Content-Length': String(buffer.length),
+      'Cache-Control': 'public, max-age=31536000, immutable',
       'X-Content-Type-Options': 'nosniff',
     },
   });

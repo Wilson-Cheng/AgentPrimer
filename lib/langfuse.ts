@@ -16,7 +16,10 @@ function getConfig() {
   return {
     publicKey: getSetting('langfuse_public_key') || process.env.LANGFUSE_PUBLIC_KEY || '',
     secretKey: getSetting('langfuse_secret_key') || process.env.LANGFUSE_SECRET_KEY || '',
-    baseUrl: getSetting('langfuse_base_url') || process.env.LANGFUSE_BASE_URL || 'https://cloud.langfuse.com',
+    baseUrl:
+      getSetting('langfuse_base_url') ||
+      process.env.LANGFUSE_BASE_URL ||
+      'https://cloud.langfuse.com',
   };
 }
 
@@ -27,7 +30,11 @@ function getClient(): Langfuse | null {
 
   const key = `${config.publicKey}:${config.secretKey}:${config.baseUrl}`;
   if (!client || clientKey !== key) {
-    client = new Langfuse({ publicKey: config.publicKey, secretKey: config.secretKey, baseUrl: config.baseUrl });
+    client = new Langfuse({
+      publicKey: config.publicKey,
+      secretKey: config.secretKey,
+      baseUrl: config.baseUrl,
+    });
     clientKey = key;
   }
   return client;
@@ -89,11 +96,13 @@ export function endGeneration(params: {
   try {
     params.generation.end({
       output: params.output,
-      usage: params.usage ? {
-        promptTokens: params.usage.input,
-        completionTokens: params.usage.output,
-        totalTokens: params.usage.input + params.usage.output,
-      } : undefined,
+      usage: params.usage
+        ? {
+            promptTokens: params.usage.input,
+            completionTokens: params.usage.output,
+            totalTokens: params.usage.input + params.usage.output,
+          }
+        : undefined,
       metadata: params.metadata,
     });
   } catch (err) {

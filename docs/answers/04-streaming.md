@@ -80,7 +80,7 @@ Key observations:
 
 ## Exercise 3: Inject an error
 
-In `lib/agent.ts`, add before the first LLM call (before line 413):
+In `lib/agent/loop.ts`, add before the first LLM call:
 
 ```typescript
 throw new Error('simulated crash');

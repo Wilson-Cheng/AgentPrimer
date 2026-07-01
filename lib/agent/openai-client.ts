@@ -113,8 +113,7 @@ export async function fetchAvailableModels(
       const meta = m as unknown as Record<string, unknown>;
       const fromProvider = meta.context_length as number | undefined;
       const outputFromProvider = (meta.max_output_tokens ?? meta.max_completion_tokens) as
-        | number
-        | undefined;
+        number | undefined;
       return {
         id: m.id,
         context_length: fromProvider ?? lookupContextLength(m.id),

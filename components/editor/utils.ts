@@ -28,12 +28,18 @@ export function parentPath(p: string): string {
 export function extToLanguage(filename: string): string {
   const ext = filename.split('.').pop()?.toLowerCase() ?? '';
   const map: Record<string, string> = {
-    ts: 'typescript', tsx: 'typescript',
-    js: 'javascript', jsx: 'javascript',
-    json: 'json', md: 'markdown',
-    py: 'python', sh: 'shell',
-    yaml: 'yaml', yml: 'yaml',
-    html: 'html', css: 'css',
+    ts: 'typescript',
+    tsx: 'typescript',
+    js: 'javascript',
+    jsx: 'javascript',
+    json: 'json',
+    md: 'markdown',
+    py: 'python',
+    sh: 'shell',
+    yaml: 'yaml',
+    yml: 'yaml',
+    html: 'html',
+    css: 'css',
     txt: 'plaintext',
   };
   return map[ext] ?? 'plaintext';
@@ -45,11 +51,11 @@ export function extToLanguage(filename: string): string {
 export function previewKind(filename: string): PreviewKind {
   const ext = filename.split('.').pop()?.toLowerCase() ?? '';
   if (ext === 'md' || ext === 'markdown') return 'markdown';
-  if (ext === 'html' || ext === 'htm')    return 'html';
+  if (ext === 'html' || ext === 'htm') return 'html';
   if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)) return 'image';
   if (['mp4', 'webm', 'm4v', 'mov', 'ogv'].includes(ext)) return 'video';
   if (['mp3', 'wav', 'm4a', 'flac', 'ogg', 'oga', 'opus', 'aac'].includes(ext)) return 'audio';
-  if (ext === 'pdf')                       return 'pdf';
+  if (ext === 'pdf') return 'pdf';
   return null;
 }
 
@@ -73,5 +79,7 @@ export async function patchUiSettings(patch: Record<string, unknown>): Promise<v
         content: JSON.stringify({ ...current, ...patch }),
       }),
     });
-  } catch { /* best-effort */ }
+  } catch {
+    /* best-effort */
+  }
 }

@@ -32,10 +32,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import { FileText, SaveAll, X, Loader2, Eye } from 'lucide-react';
-import FileBrowser    from './editor/FileBrowser';
-import PreviewPane    from './editor/PreviewPane';
-import ContextMenu    from './editor/ContextMenu';
-import EditorTabBar   from './editor/EditorTabBar';
+import FileBrowser from './editor/FileBrowser';
+import PreviewPane from './editor/PreviewPane';
+import ContextMenu from './editor/ContextMenu';
+import EditorTabBar from './editor/EditorTabBar';
 import type { ContextMenuState, OpenTab } from './editor/types';
 import { basename, extToLanguage, patchUiSettings, previewKind } from './editor/utils';
 import { useSidebarResize, usePreviewSplit, useDarkMode } from './editor/hooks';
@@ -62,14 +62,17 @@ function isPreviewOnly(filePath: string): boolean {
   return k === 'image' || k === 'video' || k === 'audio' || k === 'pdf';
 }
 
-export default function CodeEditorPanel({ initialFolder = '', className = 'h-full' }: CodeEditorPanelProps) {
+export default function CodeEditorPanel({
+  initialFolder = '',
+  className = 'h-full',
+}: CodeEditorPanelProps) {
   // ── Tabs & save state ───────────────────────────────────────────────────
-  const [tabs, setTabs]                   = useState<OpenTab[]>([]);
+  const [tabs, setTabs] = useState<OpenTab[]>([]);
   const [activeTabPath, setActiveTabPath] = useState<string | null>(null);
-  const [saving, setSaving]               = useState<Set<string>>(new Set());
-  const [saveError, setSaveError]         = useState<string | null>(null);
-  const [hasRestored, setHasRestored]     = useState(false);
-  const [revealSignal, setRevealSignal]   = useState<{ path: string; tick: number } | null>(null);
+  const [saving, setSaving] = useState<Set<string>>(new Set());
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [hasRestored, setHasRestored] = useState(false);
+  const [revealSignal, setRevealSignal] = useState<{ path: string; tick: number } | null>(null);
   const [tabContextMenu, setTabContextMenu] = useState<ContextMenuState | null>(null);
 
   // ── Theme follows global <html class="dark"> ────────────────────────────
@@ -90,15 +93,17 @@ export default function CodeEditorPanel({ initialFolder = '', className = 'h-ful
   /** Container ref used by the split-drag hook to convert px → percent. */
   const splitContainerRef = useRef<HTMLDivElement>(null);
   const preview = usePreviewSplit({
-    initial: 50, min: PREVIEW_MIN_PCT, max: PREVIEW_MAX_PCT,
+    initial: 50,
+    min: PREVIEW_MIN_PCT,
+    max: PREVIEW_MAX_PCT,
     containerRef: splitContainerRef,
   });
 
   // ── Other refs ──────────────────────────────────────────────────────────
   const sidebarToggleSyncRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const tabScrollRef         = useRef<HTMLDivElement>(null);
-  const activeTabRef         = useRef<HTMLDivElement>(null);
-  const serverSyncRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tabScrollRef = useRef<HTMLDivElement>(null);
+  const activeTabRef = useRef<HTMLDivElement>(null);
+  const serverSyncRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Auto-scroll tab bar so the active tab stays visible ─────────────────
   useEffect(() => {
@@ -124,8 +129,8 @@ export default function CodeEditorPanel({ initialFolder = '', className = 'h-ful
   // ── Restore visual prefs from .ui-settings.json (server-of-truth) ───────
   useEffect(() => {
     fetch('/api/data-files?file=.ui-settings.json')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
         if (!d?.content) return;
         const prefs = JSON.parse(d.content as string);
         if (prefs.editorSidebarCollapsed === true) setSidebarCollapsed(true);
@@ -136,7 +141,10 @@ export default function CodeEditorPanel({ initialFolder = '', className = 'h-ful
         }
         if (prefs.editorPreviewEnabled === true) setPreviewEnabled(true);
         if (typeof prefs.editorPreviewWidthPct === 'number') {
-          const pct = Math.max(PREVIEW_MIN_PCT, Math.min(PREVIEW_MAX_PCT, prefs.editorPreviewWidthPct));
+          const pct = Math.max(
+            PREVIEW_MIN_PCT,
+            Math.min(PREVIEW_MAX_PCT, prefs.editorPreviewWidthPct),
+          );
           preview.setWidthPct(pct);
         }
       })
@@ -145,24 +153,26 @@ export default function CodeEditorPanel({ initialFolder = '', className = 'h-ful
 
   // ── Sidebar collapse: persist with the same debounce shape as resize ────
   const toggleSidebar = useCallback(() => {
-    setSidebarCollapsed(prev => {
+    setSidebarCollapsed((prev) => {
       const next = !prev;
       localStorage.setItem('editor-sidebar-collapsed', String(next));
       if (sidebarToggleSyncRef.current) clearTimeout(sidebarToggleSyncRef.current);
       sidebarToggleSyncRef.current = setTimeout(
-        () => patchUiSettings({ editorSidebarCollapsed: next }), 800);
+        () => patchUiSettings({ editorSidebarCollapsed: next }),
+        800,
+      );
       return next;
     });
   }, []);
 
   // ── Preview toggle (debounced persistence) ──────────────────────────────
   const togglePreview = useCallback(() => {
-    setPreviewEnabled(prev => {
+    setPreviewEnabled((prev) => {
       const next = !prev;
       patchUiSettings({ editorPreviewEnabled: next });
       // Force refresh when the pane re-opens, so saves made while it was
       // closed are reflected.
-      if (next) setPreviewRefreshKey(k => k + 1);
+      if (next) setPreviewRefreshKey((k) => k + 1);
       return next;
     });
   }, []);
@@ -171,33 +181,52 @@ export default function CodeEditorPanel({ initialFolder = '', className = 'h-ful
   useEffect(() => {
     const restore = async (raw: { paths: string[]; activePath: string | null }) => {
       const { paths, activePath } = raw;
-      if (!Array.isArray(paths) || paths.length === 0) { setHasRestored(true); return; }
+      if (!Array.isArray(paths) || paths.length === 0) {
+        setHasRestored(true);
+        return;
+      }
 
       // previewOnly is derived from the path so the persisted tab list
       // doesn't need a schema migration.
       const makeTab = (p: string, loading: boolean): OpenTab => ({
-        path: p, label: basename(p), content: '', savedContent: '', loading, previewOnly: isPreviewOnly(p),
+        path: p,
+        label: basename(p),
+        content: '',
+        savedContent: '',
+        loading,
+        previewOnly: isPreviewOnly(p),
       });
-      setTabs(paths.map(p => makeTab(p, !isPreviewOnly(p))));
+      setTabs(paths.map((p) => makeTab(p, !isPreviewOnly(p))));
       setActiveTabPath(activePath ?? paths[0]);
 
-      const textPaths = paths.filter(p => !isPreviewOnly(p));
+      const textPaths = paths.filter((p) => !isPreviewOnly(p));
       const results = await Promise.all(
-        textPaths.map(p =>
+        textPaths.map((p) =>
           fetch(`/api/editor/file?path=${encodeURIComponent(p)}`)
-            .then(res => res.ok
-              ? res.json().then((d: { content: string }) => ({ path: p, content: d.content, ok: true }))
-              : { path: p, content: '', ok: false })
-            .catch(() => ({ path: p, content: '', ok: false }))
-        )
+            .then((res) =>
+              res.ok
+                ? res
+                    .json()
+                    .then((d: { content: string }) => ({ path: p, content: d.content, ok: true }))
+                : { path: p, content: '', ok: false },
+            )
+            .catch(() => ({ path: p, content: '', ok: false })),
+        ),
       );
-      const alive = results.filter(r => r.ok);
-      setTabs(alive.map(r => ({
-        path: r.path, label: basename(r.path),
-        content: r.content, savedContent: r.content, loading: false,
-        previewOnly: isPreviewOnly(r.path),
-      })));
-      setActiveTabPath(prev => alive.some(r => r.path === prev) ? prev : (alive[0]?.path ?? null));
+      const alive = results.filter((r) => r.ok);
+      setTabs(
+        alive.map((r) => ({
+          path: r.path,
+          label: basename(r.path),
+          content: r.content,
+          savedContent: r.content,
+          loading: false,
+          previewOnly: isPreviewOnly(r.path),
+        })),
+      );
+      setActiveTabPath((prev) =>
+        alive.some((r) => r.path === prev) ? prev : (alive[0]?.path ?? null),
+      );
       setHasRestored(true);
     };
 
@@ -208,14 +237,19 @@ export default function CodeEditorPanel({ initialFolder = '', className = 'h-ful
         const parsed = JSON.parse(stored) as { paths: string[]; activePath: string | null };
         restore(parsed);
         return;
-      } catch { /* fall through */ }
+      } catch {
+        /* fall through */
+      }
     }
 
     // 2) .ui-settings.json (first load on a new browser)
     fetch('/api/data-files?file=.ui-settings.json')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (!d?.content) { setHasRestored(true); return; }
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d?.content) {
+          setHasRestored(true);
+          return;
+        }
         const prefs = JSON.parse(d.content as string);
         if (prefs.editorTabs) restore(prefs.editorTabs);
         else setHasRestored(true);
@@ -226,109 +260,148 @@ export default function CodeEditorPanel({ initialFolder = '', className = 'h-ful
   // ── Persist open tabs — localStorage immediately, server debounced 1s ───
   useEffect(() => {
     if (!hasRestored) return;
-    const snapshot = { paths: tabs.map(t => t.path), activePath: activeTabPath };
+    const snapshot = { paths: tabs.map((t) => t.path), activePath: activeTabPath };
     localStorage.setItem('editor-open-tabs', JSON.stringify(snapshot));
     if (serverSyncRef.current) clearTimeout(serverSyncRef.current);
     serverSyncRef.current = setTimeout(() => patchUiSettings({ editorTabs: snapshot }), 1000);
   }, [tabs, activeTabPath, hasRestored]);
 
   // ── Derived ─────────────────────────────────────────────────────────────
-  const activeTab     = tabs.find(t => t.path === activeTabPath) ?? null;
-  const dirtyCount    = tabs.filter(t => t.content !== t.savedContent).length;
+  const activeTab = tabs.find((t) => t.path === activeTabPath) ?? null;
+  const dirtyCount = tabs.filter((t) => t.content !== t.savedContent).length;
   const activeIsDirty = !!activeTab && activeTab.content !== activeTab.savedContent;
 
   // ── Tab operations ──────────────────────────────────────────────────────
-  const openFile = useCallback(async (filePath: string) => {
-    if (tabs.find(t => t.path === filePath)) { setActiveTabPath(filePath); return; }
-
-    const label      = basename(filePath);
-    const previewOnly = isPreviewOnly(filePath);
-    setTabs(prev => [...prev, {
-      // Keep text tabs in the loading state until the initial file content is
-      // available, so Monaco mounts once with the correct initial model value.
-      // Preview-only files skip this because their bytes stream via PreviewPane.
-      path: filePath, label, content: '', savedContent: '', loading: !previewOnly, previewOnly,
-    }]);
-    setActiveTabPath(filePath);
-
-    if (previewOnly) {
-      // Auto-open the preview pane and skip the text fetch entirely —
-      // preview bytes stream directly from /api/editor/preview/<path>.
-      setPreviewEnabled(true);
-      return;
-    }
-
-    const res = await fetch(`/api/editor/file?path=${encodeURIComponent(filePath)}`);
-    if (res.ok) {
-      const data = await res.json();
-      setTabs(prev => prev.map(t =>
-        t.path === filePath ? { ...t, content: data.content, savedContent: data.content, loading: false } : t));
-    } else {
-      setTabs(prev => prev.filter(t => t.path !== filePath));
-    }
-  }, [tabs]);
-
-  const closeTab = useCallback((filePath: string) => {
-    setTabs(prev => {
-      const next = prev.filter(t => t.path !== filePath);
-      if (activeTabPath === filePath) {
-        setActiveTabPath(next.length > 0 ? next[next.length - 1].path : null);
+  const openFile = useCallback(
+    async (filePath: string) => {
+      if (tabs.find((t) => t.path === filePath)) {
+        setActiveTabPath(filePath);
+        return;
       }
-      return next;
-    });
-  }, [activeTabPath]);
+
+      const label = basename(filePath);
+      const previewOnly = isPreviewOnly(filePath);
+      setTabs((prev) => [
+        ...prev,
+        {
+          // Keep text tabs in the loading state until the initial file content is
+          // available, so Monaco mounts once with the correct initial model value.
+          // Preview-only files skip this because their bytes stream via PreviewPane.
+          path: filePath,
+          label,
+          content: '',
+          savedContent: '',
+          loading: !previewOnly,
+          previewOnly,
+        },
+      ]);
+      setActiveTabPath(filePath);
+
+      if (previewOnly) {
+        // Auto-open the preview pane and skip the text fetch entirely —
+        // preview bytes stream directly from /api/editor/preview/<path>.
+        setPreviewEnabled(true);
+        return;
+      }
+
+      const res = await fetch(`/api/editor/file?path=${encodeURIComponent(filePath)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setTabs((prev) =>
+          prev.map((t) =>
+            t.path === filePath
+              ? { ...t, content: data.content, savedContent: data.content, loading: false }
+              : t,
+          ),
+        );
+      } else {
+        setTabs((prev) => prev.filter((t) => t.path !== filePath));
+      }
+    },
+    [tabs],
+  );
+
+  const closeTab = useCallback(
+    (filePath: string) => {
+      setTabs((prev) => {
+        const next = prev.filter((t) => t.path !== filePath);
+        if (activeTabPath === filePath) {
+          setActiveTabPath(next.length > 0 ? next[next.length - 1].path : null);
+        }
+        return next;
+      });
+    },
+    [activeTabPath],
+  );
 
   const closeOthers = useCallback((filePath: string) => {
-    setTabs(prev => prev.filter(t => t.path === filePath));
+    setTabs((prev) => prev.filter((t) => t.path === filePath));
     setActiveTabPath(filePath);
   }, []);
 
   const closeSaved = useCallback(() => {
-    setTabs(prev => {
-      const next = prev.filter(t => t.content !== t.savedContent);
-      if (!next.some(t => t.path === activeTabPath)) {
+    setTabs((prev) => {
+      const next = prev.filter((t) => t.content !== t.savedContent);
+      if (!next.some((t) => t.path === activeTabPath)) {
         setActiveTabPath(next.length > 0 ? next[next.length - 1].path : null);
       }
       return next;
     });
   }, [activeTabPath]);
 
-  const closeAll = useCallback(() => { setTabs([]); setActiveTabPath(null); }, []);
+  const closeAll = useCallback(() => {
+    setTabs([]);
+    setActiveTabPath(null);
+  }, []);
 
-  const handleEditorChange = useCallback((value: string | undefined) => {
-    if (!activeTabPath) return;
-    setTabs(prev => prev.map(t => t.path === activeTabPath ? { ...t, content: value ?? '' } : t));
-  }, [activeTabPath]);
+  const handleEditorChange = useCallback(
+    (value: string | undefined) => {
+      if (!activeTabPath) return;
+      setTabs((prev) =>
+        prev.map((t) => (t.path === activeTabPath ? { ...t, content: value ?? '' } : t)),
+      );
+    },
+    [activeTabPath],
+  );
 
-  const saveTab = useCallback(async (filePath: string) => {
-    const tab = tabs.find(t => t.path === filePath);
-    if (!tab || tab.content === tab.savedContent) return;
-    setSaving(prev => new Set([...prev, filePath]));
-    setSaveError(null);
-    try {
-      const res = await fetch('/api/editor/file', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: filePath, content: tab.content }),
-      });
-      if (!res.ok) throw new Error('save failed');
-      setTabs(prev => prev.map(t => t.path === filePath ? { ...t, savedContent: t.content } : t));
-      // Refresh the preview iframe / re-fetch markdown so the user sees
-      // their just-saved bytes. We bump unconditionally — checking whether
-      // the saved file matches the active tab would miss the case where
-      // the user uses Ctrl+S then switches tabs before the preview catches
-      // up. The cost of an extra refresh on an unaffected file is zero.
-      setPreviewRefreshKey(k => k + 1);
-    } catch {
-      setSaveError(`Failed to save ${basename(filePath)}`);
-    } finally {
-      setSaving(prev => { const s = new Set(prev); s.delete(filePath); return s; });
-    }
-  }, [tabs]);
+  const saveTab = useCallback(
+    async (filePath: string) => {
+      const tab = tabs.find((t) => t.path === filePath);
+      if (!tab || tab.content === tab.savedContent) return;
+      setSaving((prev) => new Set([...prev, filePath]));
+      setSaveError(null);
+      try {
+        const res = await fetch('/api/editor/file', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: filePath, content: tab.content }),
+        });
+        if (!res.ok) throw new Error('save failed');
+        setTabs((prev) =>
+          prev.map((t) => (t.path === filePath ? { ...t, savedContent: t.content } : t)),
+        );
+        // Refresh the preview iframe / re-fetch markdown so the user sees
+        // their just-saved bytes. We bump unconditionally — checking whether
+        // the saved file matches the active tab would miss the case where
+        // the user uses Ctrl+S then switches tabs before the preview catches
+        // up. The cost of an extra refresh on an unaffected file is zero.
+        setPreviewRefreshKey((k) => k + 1);
+      } catch {
+        setSaveError(`Failed to save ${basename(filePath)}`);
+      } finally {
+        setSaving((prev) => {
+          const s = new Set(prev);
+          s.delete(filePath);
+          return s;
+        });
+      }
+    },
+    [tabs],
+  );
 
   const saveAll = useCallback(async () => {
-    const dirty = tabs.filter(t => t.content !== t.savedContent);
-    await Promise.all(dirty.map(t => saveTab(t.path)));
+    const dirty = tabs.filter((t) => t.content !== t.savedContent);
+    await Promise.all(dirty.map((t) => saveTab(t.path)));
   }, [tabs, saveTab]);
 
   // Ctrl/Cmd+S to save current file
@@ -346,8 +419,9 @@ export default function CodeEditorPanel({ initialFolder = '', className = 'h-ful
   // ── Render ──────────────────────────────────────────────────────────────
   return (
     <div className={`flex flex-col ${className} overflow-hidden`}>
-      <div className={`flex flex-1 min-h-0 overflow-hidden${sidebar.isDragging ? ' cursor-col-resize select-none' : ''}`}>
-
+      <div
+        className={`flex flex-1 min-h-0 overflow-hidden${sidebar.isDragging ? ' cursor-col-resize select-none' : ''}`}
+      >
         {/* File browser */}
         <div
           style={{ width: sidebarCollapsed ? 0 : sidebar.width }}
@@ -389,7 +463,10 @@ export default function CodeEditorPanel({ initialFolder = '', className = 'h-ful
             activeTabRef={activeTabRef}
             onToggleSidebar={toggleSidebar}
             onTogglePreview={togglePreview}
-            onSelectTab={path => { setActiveTabPath(path); setRevealSignal({ path, tick: Date.now() }); }}
+            onSelectTab={(path) => {
+              setActiveTabPath(path);
+              setRevealSignal({ path, tick: Date.now() });
+            }}
             onCloseTab={closeTab}
             onSaveActive={() => activeTabPath && saveTab(activeTabPath)}
             onSaveAll={saveAll}
@@ -399,10 +476,18 @@ export default function CodeEditorPanel({ initialFolder = '', className = 'h-ful
                 x: e.clientX,
                 y: e.clientY,
                 items: [
-                  { label: 'Close',        icon: <X size={14} />,       onClick: () => closeTab(path) },
-                  { label: 'Close Others', icon: <X size={14} />,       onClick: () => closeOthers(path) },
-                  { label: 'Close Saved',  icon: <SaveAll size={14} />, onClick: () => closeSaved() },
-                  { label: 'Close All',    icon: <X size={14} />,       onClick: () => closeAll() },
+                  { label: 'Close', icon: <X size={14} />, onClick: () => closeTab(path) },
+                  {
+                    label: 'Close Others',
+                    icon: <X size={14} />,
+                    onClick: () => closeOthers(path),
+                  },
+                  {
+                    label: 'Close Saved',
+                    icon: <SaveAll size={14} />,
+                    onClick: () => closeSaved(),
+                  },
+                  { label: 'Close All', icon: <X size={14} />, onClick: () => closeAll() },
                 ],
               });
             }}
@@ -423,8 +508,9 @@ export default function CodeEditorPanel({ initialFolder = '', className = 'h-ful
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">
                   <Eye size={14} className="text-emerald-600 dark:text-emerald-400" />
                   <span>
-                    Preview-only file — not editable.
-                    Extension <span className="font-mono">.{activeTab.label.split('.').pop()}</span> is binary; the preview pane streams the raw bytes.
+                    Preview-only file — not editable. Extension{' '}
+                    <span className="font-mono">.{activeTab.label.split('.').pop()}</span> is
+                    binary; the preview pane streams the raw bytes.
                   </span>
                 </div>
                 <div className="flex-1 min-h-0 overflow-hidden">
@@ -443,14 +529,14 @@ export default function CodeEditorPanel({ initialFolder = '', className = 'h-ful
               // inline styles so the divider drag can update them at 60fps
               // without triggering a Tailwind class swap.
               <div ref={splitContainerRef} className="flex-1 min-h-0 overflow-hidden flex">
-                {preview.isDragging && (
-                  <div className="fixed inset-0 z-[9999] cursor-col-resize" />
-                )}
+                {preview.isDragging && <div className="fixed inset-0 z-[9999] cursor-col-resize" />}
                 <div
                   className="min-h-0 overflow-hidden"
-                  style={previewEnabled
-                    ? { width: `${100 - preview.widthPct}%`, flexShrink: 0 }
-                    : { width: '100%', flexShrink: 0 }}
+                  style={
+                    previewEnabled
+                      ? { width: `${100 - preview.widthPct}%`, flexShrink: 0 }
+                      : { width: '100%', flexShrink: 0 }
+                  }
                 >
                   <Editor
                     key={activeTab.path}
@@ -512,5 +598,3 @@ export default function CodeEditorPanel({ initialFolder = '', className = 'h-ful
     </div>
   );
 }
-
-

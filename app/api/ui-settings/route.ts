@@ -18,7 +18,9 @@ function readSettings(): Record<string, unknown> {
     if (fs.existsSync(FILE_PATH)) {
       return JSON.parse(fs.readFileSync(FILE_PATH, 'utf8'));
     }
-  } catch { /* ignore parse errors */ }
+  } catch {
+    /* ignore parse errors */
+  }
   return {};
 }
 
@@ -33,7 +35,7 @@ export async function GET() {
 
 // PATCH /api/ui-settings – merges provided keys into existing settings
 export async function PATCH(request: NextRequest) {
-  const body = await request.json().catch(() => ({})) as Record<string, unknown>;
+  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const current = readSettings();
   const merged = { ...current, ...body };
   writeSettings(merged);

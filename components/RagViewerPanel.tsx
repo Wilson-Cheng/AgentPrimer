@@ -35,12 +35,12 @@ const DEFAULT_PCT = 38;
 interface Props {
   sourceId: number;
   /** Display name shown in the header. */
-  title:    string;
-  onClose:  () => void;
+  title: string;
+  onClose: () => void;
 }
 
 interface MetaResponse {
-  id:   number;
+  id: number;
   name: string;
   mime: string;
 }
@@ -50,23 +50,23 @@ interface ContentResponse extends MetaResponse {
 }
 
 export default function RagViewerPanel({ sourceId, title, onClose }: Props) {
-  const [widthPct, setWidthPct]    = useState(DEFAULT_PCT);
-  const [isMobile, setIsMobile]    = useState(false);
+  const [widthPct, setWidthPct] = useState(DEFAULT_PCT);
+  const [isMobile, setIsMobile] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [meta, setMeta]            = useState<MetaResponse | null>(null);
+  const [meta, setMeta] = useState<MetaResponse | null>(null);
   const [textContent, setTextContent] = useState<string>('');
-  const [loading, setLoading]      = useState(true);
-  const [error, setError]          = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const widthPctRef = useRef(DEFAULT_PCT);
-  const isDragging  = useRef(false);
-  const startX      = useRef(0);
-  const startPct    = useRef(DEFAULT_PCT);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const startPct = useRef(DEFAULT_PCT);
   /** rAF handle for the drag throttle so we don't setState 60+ times/sec
    *  during mousemove (which would re-render the panel and remount the
    *  iframe / MarkdownContent subtree). */
-  const dragRaf     = useRef<number | null>(null);
-  const pendingPct  = useRef(DEFAULT_PCT);
+  const dragRaf = useRef<number | null>(null);
+  const pendingPct = useRef(DEFAULT_PCT);
 
   // Mobile breakpoint
   useEffect(() => {
@@ -101,20 +101,20 @@ export default function RagViewerPanel({ sourceId, title, onClose }: Props) {
       try {
         const metaRes = await fetch(`/api/rag/sources/${sourceId}/content?meta=1`);
         if (!metaRes.ok) {
-          const err = await metaRes.json().catch(() => ({})) as { error?: string };
+          const err = (await metaRes.json().catch(() => ({}))) as { error?: string };
           throw new Error(err.error ?? `HTTP ${metaRes.status}`);
         }
-        const m = await metaRes.json() as MetaResponse;
+        const m = (await metaRes.json()) as MetaResponse;
         if (cancelled) return;
         setMeta(m);
 
         if (m.mime !== 'application/pdf') {
           const cRes = await fetch(`/api/rag/sources/${sourceId}/content`);
           if (!cRes.ok) {
-            const err = await cRes.json().catch(() => ({})) as { error?: string };
+            const err = (await cRes.json().catch(() => ({}))) as { error?: string };
             throw new Error(err.error ?? `HTTP ${cRes.status}`);
           }
-          const c = await cRes.json() as ContentResponse;
+          const c = (await cRes.json()) as ContentResponse;
           if (cancelled) return;
           setTextContent(c.content);
         }
@@ -125,7 +125,9 @@ export default function RagViewerPanel({ sourceId, title, onClose }: Props) {
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [sourceId]);
 
   // Drag-to-resize — rAF-throttled
@@ -133,9 +135,9 @@ export default function RagViewerPanel({ sourceId, title, onClose }: Props) {
     e.preventDefault();
     isDragging.current = true;
     setDragActive(true);
-    startX.current   = e.clientX;
+    startX.current = e.clientX;
     startPct.current = widthPctRef.current;
-    document.body.style.cursor    = 'col-resize';
+    document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
   }, []);
 
@@ -150,14 +152,14 @@ export default function RagViewerPanel({ sourceId, title, onClose }: Props) {
       if (e.buttons === 0) {
         isDragging.current = false;
         setDragActive(false);
-        document.body.style.cursor    = '';
+        document.body.style.cursor = '';
         document.body.style.userSelect = '';
         localStorage.setItem(STORAGE_KEY, String(widthPctRef.current));
         return;
       }
       const vw = window.innerWidth;
       if (vw === 0) return;
-      const deltaPct = (startX.current - e.clientX) / vw * 100;
+      const deltaPct = ((startX.current - e.clientX) / vw) * 100;
       const next = Math.max(MIN_PCT, Math.min(MAX_PCT, startPct.current + deltaPct));
       pendingPct.current = next;
       if (dragRaf.current === null) {
@@ -168,7 +170,7 @@ export default function RagViewerPanel({ sourceId, title, onClose }: Props) {
       if (!isDragging.current) return;
       isDragging.current = false;
       setDragActive(false);
-      document.body.style.cursor    = '';
+      document.body.style.cursor = '';
       document.body.style.userSelect = '';
       if (dragRaf.current !== null) {
         cancelAnimationFrame(dragRaf.current);
@@ -179,13 +181,13 @@ export default function RagViewerPanel({ sourceId, title, onClose }: Props) {
       localStorage.setItem(STORAGE_KEY, String(widthPctRef.current));
     };
     window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup',   onUp);
-    window.addEventListener('blur',      onUp);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('blur', onUp);
     return () => {
       onUp();
       window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup',   onUp);
-      window.removeEventListener('blur',      onUp);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('blur', onUp);
     };
   }, []);
 
@@ -229,7 +231,10 @@ export default function RagViewerPanel({ sourceId, title, onClose }: Props) {
               <span>Back</span>
             </button>
             <PanelRight size={20} className="hidden md:block text-gray-400 flex-shrink-0" />
-            <span className="flex-1 text-md font-600 text-gray-800 dark:text-gray-200 truncate min-w-0" title={title}>
+            <span
+              className="flex-1 text-md font-600 text-gray-800 dark:text-gray-200 truncate min-w-0"
+              title={title}
+            >
               <FileText size={14} className="inline-block mr-1.5 text-teal-500 align-[-2px]" />
               {title}
             </span>
@@ -262,7 +267,7 @@ export default function RagViewerPanel({ sourceId, title, onClose }: Props) {
               markdown subtree on each parent render. */}
           <div className="flex-1 overflow-hidden">
             {loading && <div className="p-4 text-sm text-gray-400">Loading…</div>}
-            {error   && <div className="p-4 text-sm text-red-500">Failed to load: {error}</div>}
+            {error && <div className="p-4 text-sm text-red-500">Failed to load: {error}</div>}
             {!loading && !error && meta && meta.mime === 'application/pdf' && (
               <iframe src={rawUrl} title="PDF" className="w-full h-full border-0" />
             )}
@@ -279,14 +284,16 @@ export default function RagViewerPanel({ sourceId, title, onClose }: Props) {
                 <MarkdownContent>{textContent}</MarkdownContent>
               </div>
             )}
-            {!loading && !error && meta &&
+            {!loading &&
+              !error &&
+              meta &&
               meta.mime !== 'application/pdf' &&
               meta.mime !== 'text/html' &&
               meta.mime !== 'text/markdown' && (
-              <pre className="w-full h-full overflow-auto p-4 text-sm font-mono text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-900 whitespace-pre-wrap break-all">
-                {textContent}
-              </pre>
-            )}
+                <pre className="w-full h-full overflow-auto p-4 text-sm font-mono text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-900 whitespace-pre-wrap break-all">
+                  {textContent}
+                </pre>
+              )}
           </div>
         </div>
       </div>

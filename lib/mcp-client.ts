@@ -50,7 +50,7 @@ function serverFingerprint(server: McpServer): string {
 // Connect to an MCP server (or return existing connection)
 // ---------------------------------------------------------------------------
 const MCP_CONNECT_TIMEOUT_MS = 15_000; // ms – give up on connecting to an MCP server after this
-const MCP_TOOL_TIMEOUT_MS   = 30_000; // ms – kill a hanging MCP tool call after this
+const MCP_TOOL_TIMEOUT_MS = 30_000; // ms – kill a hanging MCP tool call after this
 
 /**
  * Build the environment passed to a stdio MCP server subprocess.
@@ -183,10 +183,7 @@ async function connectMcpServer(server: McpServer): Promise<Client> {
     removeClient(server.id);
   }
 
-  const client = new Client(
-    { name: 'agentprimer', version: '1.0.0' },
-    { capabilities: {} }
-  );
+  const client = new Client({ name: 'agentprimer', version: '1.0.0' }, { capabilities: {} });
 
   let transport: StdioClientTransport | SSEClientTransport;
 
@@ -197,9 +194,14 @@ async function connectMcpServer(server: McpServer): Promise<Client> {
     //   "index.js"                           → resolve against local_path
     //   "data/mcp-servers/datetime/index.js" → resolve against app root
     let resolvedArgs = args;
-    if (server.local_path && args.length > 0 && !args[0].startsWith('/') && !args[0].startsWith('-')) {
+    if (
+      server.local_path &&
+      args.length > 0 &&
+      !args[0].startsWith('/') &&
+      !args[0].startsWith('-')
+    ) {
       const asLocal = path.resolve(server.local_path, args[0]);
-      const asRoot  = path.resolve(/* turbopackIgnore: true */ process.cwd(), args[0]);
+      const asRoot = path.resolve(/* turbopackIgnore: true */ process.cwd(), args[0]);
       resolvedArgs = [fs.existsSync(asLocal) ? asLocal : asRoot, ...args.slice(1)];
     }
     transport = new StdioClientTransport({
@@ -216,23 +218,39 @@ async function connectMcpServer(server: McpServer): Promise<Client> {
   // Enforce a timeout on the initial connection handshake
   const connectPromise = client.connect(transport);
   const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error(`Timed out connecting to MCP server "${server.name}" after ${MCP_CONNECT_TIMEOUT_MS}ms`)), MCP_CONNECT_TIMEOUT_MS),
+    setTimeout(
+      () =>
+        reject(
+          new Error(
+            `Timed out connecting to MCP server "${server.name}" after ${MCP_CONNECT_TIMEOUT_MS}ms`,
+          ),
+        ),
+      MCP_CONNECT_TIMEOUT_MS,
+    ),
   );
   try {
     await Promise.race([connectPromise, timeoutPromise]);
   } catch (err) {
-    try { transport.close(); } catch { /* ignore */ }
+    try {
+      transport.close();
+    } catch {
+      /* ignore */
+    }
     throw err;
   }
 
   // If the underlying process crashes after a successful connect, clean up
   // so subsequent agent requests don't try to reuse a dead connection.
   if (server.transport === 'stdio' && transport instanceof StdioClientTransport) {
-    const onClose = () => { removeClient(server.id); };
+    const onClose = () => {
+      removeClient(server.id);
+    };
     try {
       // The MCP SDK emits a 'close' event when the transport's process exits
       (transport as unknown as { onclose?: () => void }).onclose = onClose;
-    } catch { /* best-effort */ }
+    } catch {
+      /* best-effort */
+    }
   }
 
   activeClients.set(server.id, client);
@@ -243,7 +261,11 @@ async function connectMcpServer(server: McpServer): Promise<Client> {
 function removeClient(serverId: string): void {
   const client = activeClients.get(serverId);
   if (client) {
-    try { client.close(); } catch { /* ignore */ }
+    try {
+      client.close();
+    } catch {
+      /* ignore */
+    }
     activeClients.delete(serverId);
     activeClientFingerprints.delete(serverId);
   }
@@ -256,7 +278,9 @@ export async function disconnectAll(): Promise<void> {
   for (const [id, client] of activeClients) {
     try {
       await client.close();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     activeClients.delete(id);
     activeClientFingerprints.delete(id);
   }
@@ -266,8 +290,10 @@ export async function disconnectAll(): Promise<void> {
 // Load tools from all enabled MCP servers
 // Returns an AI SDK tool map ready to pass to streamText / generateText
 // ---------------------------------------------------------------------------
-export async function loadMcpTools(filterNames: string[] | 'all' = 'all'): Promise<Record<string, unknown>> {
-  const servers = listMcpServers().filter(s => s.enabled === 1);
+export async function loadMcpTools(
+  filterNames: string[] | 'all' = 'all',
+): Promise<Record<string, unknown>> {
+  const servers = listMcpServers().filter((s) => s.enabled === 1);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tools: Record<string, any> = {};
 
@@ -280,7 +306,11 @@ export async function loadMcpTools(filterNames: string[] | 'all' = 'all'): Promi
 
       for (const mcpTool of mcpTools) {
         // Apply filter (for agent-specific tool permissions)
-        if (filterNames !== 'all' && !filterNames.includes(mcpTool.name) && !filterNames.includes(server.name)) {
+        if (
+          filterNames !== 'all' &&
+          !filterNames.includes(mcpTool.name) &&
+          !filterNames.includes(server.name)
+        ) {
           continue;
         }
 
@@ -301,12 +331,20 @@ export async function loadMcpTools(filterNames: string[] | 'all' = 'all'): Promi
               arguments: args as Record<string, unknown>,
             });
             const timeoutPromise = new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error(`MCP tool "${capturedToolName}" on server "${server.name}" timed out after ${MCP_TOOL_TIMEOUT_MS}ms`)), MCP_TOOL_TIMEOUT_MS),
+              setTimeout(
+                () =>
+                  reject(
+                    new Error(
+                      `MCP tool "${capturedToolName}" on server "${server.name}" timed out after ${MCP_TOOL_TIMEOUT_MS}ms`,
+                    ),
+                  ),
+                MCP_TOOL_TIMEOUT_MS,
+              ),
             );
             const result = await Promise.race([callPromise, timeoutPromise]);
             const textContent = (result.content as Array<{ type: string; text?: string }>)
-              .filter(c => c.type === 'text')
-              .map(c => c.text)
+              .filter((c) => c.type === 'text')
+              .map((c) => c.text)
               .join('\n');
             return textContent || result.content;
           },

@@ -17,8 +17,15 @@
 
 import React from 'react';
 import {
-  Save, SaveAll, X, Loader2, AlertCircle,
-  PanelLeftClose, PanelLeftOpen, Eye, EyeOff,
+  Save,
+  SaveAll,
+  X,
+  Loader2,
+  AlertCircle,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import type { OpenTab } from './types';
 
@@ -43,10 +50,23 @@ interface Props {
 }
 
 export default function EditorTabBar({
-  tabs, activeTabPath, sidebarCollapsed, saving, saveError, dirtyCount, activeIsDirty,
-  previewEnabled, tabScrollRef, activeTabRef,
-  onToggleSidebar, onTogglePreview, onSelectTab, onCloseTab,
-  onSaveActive, onSaveAll, onTabContextMenu,
+  tabs,
+  activeTabPath,
+  sidebarCollapsed,
+  saving,
+  saveError,
+  dirtyCount,
+  activeIsDirty,
+  previewEnabled,
+  tabScrollRef,
+  activeTabRef,
+  onToggleSidebar,
+  onTogglePreview,
+  onSelectTab,
+  onCloseTab,
+  onSaveActive,
+  onSaveAll,
+  onTabContextMenu,
 }: Props) {
   return (
     <div className="flex items-stretch flex-shrink-0 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
@@ -63,27 +83,34 @@ export default function EditorTabBar({
 
       {/* Scrollable tab strip */}
       <div ref={tabScrollRef} className="flex items-end min-w-0 flex-1 overflow-x-auto">
-        {tabs.map(tab => {
-          const isDirty  = tab.content !== tab.savedContent;
+        {tabs.map((tab) => {
+          const isDirty = tab.content !== tab.savedContent;
           const isActive = tab.path === activeTabPath;
           return (
             <div
               ref={isActive ? activeTabRef : undefined}
               key={tab.path}
               onClick={() => onSelectTab(tab.path)}
-              onContextMenu={e => onTabContextMenu(e, tab.path)}
+              onContextMenu={(e) => onTabContextMenu(e, tab.path)}
               className={`group flex items-center gap-1.5 px-3 py-2 text-md cursor-pointer flex-shrink-0 border-r border-gray-200 dark:border-gray-700 transition-colors
-                ${isActive
-                  ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border-b-2 border-b-blue-500'
-                  : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-750'}
+                ${
+                  isActive
+                    ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border-b-2 border-b-blue-500'
+                    : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-750'
+                }
               `}
             >
               {isDirty && <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />}
               <span className="max-w-40 truncate">{tab.label}</span>
               <button
-                onClick={e => { e.stopPropagation(); onCloseTab(tab.path); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCloseTab(tab.path);
+                }}
                 className="opacity-0 group-hover:opacity-100 ml-0.5 rounded hover:bg-gray-300 dark:hover:bg-gray-600 p-0.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-all flex-shrink-0"
-              ><X size={14} /></button>
+              >
+                <X size={14} />
+              </button>
             </div>
           );
         })}
@@ -93,7 +120,8 @@ export default function EditorTabBar({
       <div className="flex items-center gap-1.5 px-2 py-1.5 flex-shrink-0 border-l border-gray-200 dark:border-gray-700">
         {saveError && (
           <span className="flex items-center gap-1 text-red-500 text-sm mr-1">
-            <AlertCircle size={14} />{saveError}
+            <AlertCircle size={14} />
+            {saveError}
           </span>
         )}
         <button
@@ -101,7 +129,11 @@ export default function EditorTabBar({
           disabled={!activeIsDirty || saving.has(activeTabPath ?? '')}
           className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-blue-500 hover:bg-blue-600 disabled:bg-gray-200 dark:disabled:bg-gray-700 text-white disabled:text-gray-400 dark:disabled:text-gray-500"
         >
-          {saving.has(activeTabPath ?? '') ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+          {saving.has(activeTabPath ?? '') ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Save size={14} />
+          )}
           Save
         </button>
         <button

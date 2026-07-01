@@ -58,12 +58,22 @@ export default function JsonView({
       <pre
         className={`text-sm font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words ${maxHeight} overflow-y-auto ${className}`}
       >
-        {value.length > STRING_PREVIEW_LIMIT ? `${value.slice(0, STRING_PREVIEW_LIMIT)}\n… truncated ${value.length - STRING_PREVIEW_LIMIT} characters` : value}
+        {value.length > STRING_PREVIEW_LIMIT
+          ? `${value.slice(0, STRING_PREVIEW_LIMIT)}\n… truncated ${value.length - STRING_PREVIEW_LIMIT} characters`
+          : value}
       </pre>
     );
   }
 
-  return <JsonViewBody value={value} initialDepth={initialDepth} maxHeight={maxHeight} hideToolbar={hideToolbar} className={className} />;
+  return (
+    <JsonViewBody
+      value={value}
+      initialDepth={initialDepth}
+      maxHeight={maxHeight}
+      hideToolbar={hideToolbar}
+      className={className}
+    />
+  );
 }
 
 function JsonViewBody({
@@ -92,11 +102,11 @@ function JsonViewBody({
 
   const expandAll = useCallback(() => {
     setForceOpen(true);
-    setExpandSignal(s => s + 1);
+    setExpandSignal((s) => s + 1);
   }, []);
   const collapseAll = useCallback(() => {
     setForceOpen(false);
-    setExpandSignal(s => s + 1);
+    setExpandSignal((s) => s + 1);
   }, []);
 
   return (
@@ -132,7 +142,9 @@ function JsonViewBody({
           </button>
         </div>
       )}
-      <div className={`text-sm font-mono text-gray-800 dark:text-gray-200 ${maxHeight} overflow-auto`}>
+      <div
+        className={`text-sm font-mono text-gray-800 dark:text-gray-200 ${maxHeight} overflow-auto`}
+      >
         <JsonNode
           value={value}
           depth={0}
@@ -240,7 +252,10 @@ function JsonContainer({
     return (
       <div className="leading-snug" style={depth ? { paddingLeft: depth * 12 } : undefined}>
         {label !== undefined && <JsonKey label={label} />}
-        <span className="text-gray-500">{openBracket}{closeBracket}</span>
+        <span className="text-gray-500">
+          {openBracket}
+          {closeBracket}
+        </span>
         {hasComma ? <span className="text-gray-400">,</span> : null}
       </div>
     );
@@ -251,7 +266,7 @@ function JsonContainer({
       <div
         className="flex items-start gap-0.5 cursor-pointer select-none hover:bg-gray-100/60 dark:hover:bg-gray-700/40 rounded -mx-1 px-1"
         style={depth ? { paddingLeft: depth * 12 } : undefined}
-        onClick={() => setOpen(o => !o)}
+        onClick={() => setOpen((o) => !o)}
       >
         <ChevronRight
           size={12}
@@ -262,7 +277,9 @@ function JsonContainer({
           <span className="text-gray-500">{openBracket}</span>
           {!open && (
             <span className="text-gray-400 italic ml-1">
-              {isArr ? `${entries.length} item${entries.length === 1 ? '' : 's'}` : `${entries.length} key${entries.length === 1 ? '' : 's'}`}
+              {isArr
+                ? `${entries.length} item${entries.length === 1 ? '' : 's'}`
+                : `${entries.length} key${entries.length === 1 ? '' : 's'}`}
             </span>
           )}
           {!open && <span className="text-gray-500">{closeBracket}</span>}
@@ -284,7 +301,9 @@ function JsonContainer({
             />
           ))}
           <div style={{ paddingLeft: depth * 12 }} className="leading-snug">
-            <span className="text-gray-500" style={{ paddingLeft: 14 }}>{closeBracket}</span>
+            <span className="text-gray-500" style={{ paddingLeft: 14 }}>
+              {closeBracket}
+            </span>
             {!isRoot && hasComma ? <span className="text-gray-400">,</span> : null}
           </div>
         </>
@@ -310,11 +329,17 @@ function JsonPrimitive({ value }: { value: Primitive }) {
     // can still see them, but rely on the scroll viewport upstream.
     return (
       <span className="text-emerald-600 dark:text-emerald-400 break-all whitespace-pre-wrap">
-        &quot;{value.length > STRING_PREVIEW_LIMIT ? `${value.slice(0, STRING_PREVIEW_LIMIT)}… truncated ${value.length - STRING_PREVIEW_LIMIT} characters` : value}&quot;
+        &quot;
+        {value.length > STRING_PREVIEW_LIMIT
+          ? `${value.slice(0, STRING_PREVIEW_LIMIT)}… truncated ${value.length - STRING_PREVIEW_LIMIT} characters`
+          : value}
+        &quot;
       </span>
     );
   }
-  if (typeof value === 'number') return <span className="text-indigo-600 dark:text-indigo-400">{String(value)}</span>;
-  if (typeof value === 'boolean') return <span className="text-amber-600 dark:text-amber-400">{String(value)}</span>;
+  if (typeof value === 'number')
+    return <span className="text-indigo-600 dark:text-indigo-400">{String(value)}</span>;
+  if (typeof value === 'boolean')
+    return <span className="text-amber-600 dark:text-amber-400">{String(value)}</span>;
   return <span>{String(value)}</span>;
 }

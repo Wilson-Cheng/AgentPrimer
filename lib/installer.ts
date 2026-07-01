@@ -21,16 +21,28 @@ import { execSync, execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { DATA_DIR, getDb, upsertSkill, upsertMcpServer, deleteSkill, deleteMcpServer, getSkill, getMcpServer } from './db';
+import {
+  getDb,
+  upsertSkill,
+  upsertMcpServer,
+  deleteSkill,
+  deleteMcpServer,
+  getSkill,
+  getMcpServer,
+} from './db';
 
 // ---------------------------------------------------------------------------
 // Directory constants
 // ---------------------------------------------------------------------------
-export const SKILLS_DIR      = path.join(DATA_DIR, 'skills');
-export const MCP_SERVERS_DIR = path.join(DATA_DIR, 'mcp-servers');
+export const SKILLS_DIR = path.join(/* turbopackIgnore: true */ process.cwd(), 'data', 'skills');
+export const MCP_SERVERS_DIR = path.join(
+  /* turbopackIgnore: true */ process.cwd(),
+  'data',
+  'mcp-servers',
+);
 
 // Ensure directories exist
-if (!fs.existsSync(SKILLS_DIR))      fs.mkdirSync(SKILLS_DIR, { recursive: true });
+if (!fs.existsSync(SKILLS_DIR)) fs.mkdirSync(SKILLS_DIR, { recursive: true });
 if (!fs.existsSync(MCP_SERVERS_DIR)) fs.mkdirSync(MCP_SERVERS_DIR, { recursive: true });
 
 // ---------------------------------------------------------------------------
@@ -53,9 +65,14 @@ function assertGithubRepoUrl(githubUrl: string): void {
     throw new Error('GitHub URL must be a valid HTTPS URL.');
   }
 
-  const pathParts = parsed.pathname.replace(/\.git$/, '').split('/').filter(Boolean);
+  const pathParts = parsed.pathname
+    .replace(/\.git$/, '')
+    .split('/')
+    .filter(Boolean);
   if (parsed.protocol !== 'https:' || parsed.hostname !== 'github.com' || pathParts.length !== 2) {
-    throw new Error('GitHub URL must be an HTTPS repository URL like https://github.com/owner/repo.');
+    throw new Error(
+      'GitHub URL must be an HTTPS repository URL like https://github.com/owner/repo.',
+    );
   }
 }
 
@@ -90,7 +107,7 @@ function parseSkillMd(filePath: string): SkillManifest {
   if (!descMatch) throw new Error('SKILL.md frontmatter must include a "description" field.');
 
   return {
-    name:        nameMatch[1].trim(),
+    name: nameMatch[1].trim(),
     description: descMatch[1].trim(),
     raw,
   };
@@ -121,13 +138,18 @@ export function installSkill(githubUrl: string): InstallSkillResult {
 
   // Install npm dependencies if the skill ships scripts that need them
   if (fs.existsSync(path.join(localPath, 'package.json'))) {
-    execSync('npm install --omit=dev --ignore-scripts --no-audit', { cwd: localPath, stdio: 'pipe' });
+    execSync('npm install --omit=dev --ignore-scripts --no-audit', {
+      cwd: localPath,
+      stdio: 'pipe',
+    });
   }
 
   // Read and validate SKILL.md manifest
   const manifestPath = path.join(localPath, 'SKILL.md');
   if (!fs.existsSync(manifestPath)) {
-    throw new Error(`SKILL.md not found in repository. Skills must include a SKILL.md file at the repository root.`);
+    throw new Error(
+      `SKILL.md not found in repository. Skills must include a SKILL.md file at the repository root.`,
+    );
   }
 
   const manifest = parseSkillMd(manifestPath);
@@ -195,9 +217,9 @@ export interface InstallMcpResult {
 
 export interface McpInstallOptions {
   transport?: 'stdio' | 'sse';
-  command?: string;       // e.g. 'node', 'python3'
-  args?: string[];        // e.g. ['server.js']
-  url?: string;           // for SSE transport
+  command?: string; // e.g. 'node', 'python3'
+  args?: string[]; // e.g. ['server.js']
+  url?: string; // for SSE transport
   /**
    * Per-server environment variables forwarded to the stdio subprocess
    * (e.g. `{ GITHUB_TOKEN: 'ghp_…' }`). Merged on top of the global
@@ -220,11 +242,7 @@ export interface McpInstallOptions {
  *     install payload can't shadow them at the per-server layer.
  */
 const ENV_KEY_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
-const ENV_KEY_DENY = new Set([
-  'AGENT_PRIMER_SECRET',
-  'AGENTPRIMER_SECRET',
-  'CODE_SERVER_PASSWORD',
-]);
+const ENV_KEY_DENY = new Set(['AGENT_PRIMER_SECRET', 'AGENTPRIMER_SECRET', 'CODE_SERVER_PASSWORD']);
 
 export function sanitizeEnvInput(input: unknown): Record<string, string> {
   if (!input || typeof input !== 'object') return {};
@@ -247,22 +265,31 @@ export function sanitizeEnvInput(input: unknown): Record<string, string> {
  *  Exported for tests.
  */
 export function nameFromPackageArg(args: string[]): string {
-  const pkg = args.find(a => !a.startsWith('-'));
+  const pkg = args.find((a) => !a.startsWith('-'));
   if (!pkg) return '';
   // Strip @scope/ prefix and @version suffix, then sanitize
   const bare = pkg.replace(/^@[^/]+\//, '').replace(/@.*$/, '');
-  return bare.replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
+  return bare
+    .replace(/[^a-zA-Z0-9_-]/g, '-')
+    .toLowerCase()
+    .replace(/^-+|-+$/g, '');
 }
 
-export function installMcpServer(githubUrl: string, options: McpInstallOptions = {}): InstallMcpResult {
+export function installMcpServer(
+  githubUrl: string,
+  options: McpInstallOptions = {},
+): InstallMcpResult {
   if (githubUrl) assertGithubRepoUrl(githubUrl);
   // Derive a safe name from either the GitHub URL or the command (for npx-based servers)
-  const cmd  = options.command ?? '';
+  const cmd = options.command ?? '';
   const args = options.args ?? [];
   const repoName = githubUrl
     ? repoNameFromUrl(githubUrl)
-    : ((cmd === 'npx' || cmd === 'bunx') ? nameFromPackageArg(args) : '') ||
-      cmd.replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase().replace(/^-+|-+$/g, '') ||
+    : (cmd === 'npx' || cmd === 'bunx' ? nameFromPackageArg(args) : '') ||
+      cmd
+        .replace(/[^a-zA-Z0-9_-]/g, '-')
+        .toLowerCase()
+        .replace(/^-+|-+$/g, '') ||
       'mcp';
   const localPath = githubUrl ? path.join(MCP_SERVERS_DIR, repoName) : '';
 
@@ -276,7 +303,10 @@ export function installMcpServer(githubUrl: string, options: McpInstallOptions =
 
     // Install npm dependencies
     if (fs.existsSync(path.join(localPath, 'package.json'))) {
-      execSync('npm install --omit=dev --ignore-scripts --no-audit', { cwd: localPath, stdio: 'pipe' });
+      execSync('npm install --omit=dev --ignore-scripts --no-audit', {
+        cwd: localPath,
+        stdio: 'pipe',
+      });
     }
   }
 
@@ -295,7 +325,8 @@ export function installMcpServer(githubUrl: string, options: McpInstallOptions =
   // Use the repo name as the server name
   const name = repoName;
   // Reuse existing ID if a server with this name is already registered (prevents UNIQUE constraint failure on re-install)
-  const existing = getDb().prepare('SELECT id FROM mcp_servers WHERE name = ?').get(name) as { id: string } | undefined;
+  const existing = getDb().prepare('SELECT id FROM mcp_servers WHERE name = ?').get(name) as
+    { id: string } | undefined;
   const id = existing?.id ?? uuidv4();
 
   upsertMcpServer({

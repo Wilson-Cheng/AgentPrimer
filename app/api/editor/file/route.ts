@@ -9,7 +9,8 @@ export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
   const rel = request.nextUrl.searchParams.get('path') ?? '';
   const abs = resolveDataPath(rel);
-  if (!abs || !fs.existsSync(abs)) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  if (!abs || !fs.existsSync(abs))
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
   try {
     const content = fs.readFileSync(abs, 'utf8');
@@ -41,7 +42,8 @@ export async function PATCH(request: NextRequest) {
 
   const absFrom = resolveDataPath(from);
   const absTo = resolveDataPath(to);
-  if (!absFrom || !fs.existsSync(absFrom) || !absTo) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  if (!absFrom || !fs.existsSync(absFrom) || !absTo)
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
   fs.renameSync(absFrom, absTo);
   return NextResponse.json({ ok: true });
@@ -51,7 +53,8 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const rel = request.nextUrl.searchParams.get('path') ?? '';
   const abs = resolveDataPath(rel);
-  if (!abs || !fs.existsSync(abs)) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  if (!abs || !fs.existsSync(abs))
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
   try {
     const stat = fs.statSync(abs);

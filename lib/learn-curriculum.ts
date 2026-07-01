@@ -33,7 +33,8 @@ export const LESSONS: Lesson[] = [
     module: '00 Foundations',
     level: 'Beginner',
     estimatedMinutes: 24,
-    summary: 'Build the correct mental model: an agent is a goal-directed software loop that lets a model choose actions, observe results, and continue until a stopping condition is reached.',
+    summary:
+      'Build the correct mental model: an agent is a goal-directed software loop that lets a model choose actions, observe results, and continue until a stopping condition is reached.',
     objectives: [
       'Define agentic AI precisely',
       'Separate chatbots, workflows, copilots, and agents',
@@ -99,13 +100,15 @@ An agent is not "a model that thinks harder." The model is only one component. T
     experiments: [
       {
         title: 'Classify three prompts',
-        instructions: 'Open Chat and try three prompts: one pure explanation, one file-inspection task, and one multi-step task. Label each as chatbot-like, tool-assisted, or agentic based on whether the model acts and observes.',
+        instructions:
+          'Open Chat and try three prompts: one pure explanation, one file-inspection task, and one multi-step task. Label each as chatbot-like, tool-assisted, or agentic based on whether the model acts and observes.',
         href: '/chat',
         cta: 'Open Chat',
       },
       {
         title: 'Find the loop in the app',
-        instructions: 'Open Tool Playground and Skills & MCP. Identify which capabilities could become actions in an agent loop.',
+        instructions:
+          'Open Tool Playground and Skills & MCP. Identify which capabilities could become actions in an agent loop.',
         href: '/tools',
         cta: 'Open Tools',
       },
@@ -114,28 +117,51 @@ An agent is not "a model that thinks harder." The model is only one component. T
       {
         id: '00-definition',
         prompt: 'Which definition best describes agentic AI?',
-        options: ['A goal-directed program that lets a model choose actions, observe results, and continue within guardrails', 'A larger chatbot with no tools', 'A static prompt template', 'Any UI that streams tokens'],
+        options: [
+          'A goal-directed program that lets a model choose actions, observe results, and continue within guardrails',
+          'A larger chatbot with no tools',
+          'A static prompt template',
+          'Any UI that streams tokens',
+        ],
         answer: 0,
-        explanation: 'Agency comes from the loop that turns model decisions into actions and feeds observations back into context.',
+        explanation:
+          'Agency comes from the loop that turns model decisions into actions and feeds observations back into context.',
       },
       {
         id: '00-spectrum',
         prompt: 'Why is agency a spectrum rather than a yes/no property?',
-        options: ['Systems can have different degrees of autonomy, tools, memory, planning, and safety limits', 'All models are equally autonomous', 'Only robots can be agents', 'Streaming automatically makes a system autonomous'],
+        options: [
+          'Systems can have different degrees of autonomy, tools, memory, planning, and safety limits',
+          'All models are equally autonomous',
+          'Only robots can be agents',
+          'Streaming automatically makes a system autonomous',
+        ],
         answer: 0,
-        explanation: 'A single completion, a tool-using chat, and a long-running autonomous worker all have different levels of agency.',
+        explanation:
+          'A single completion, a tool-using chat, and a long-running autonomous worker all have different levels of agency.',
       },
       {
         id: '00-observation',
         prompt: 'Why does a tool result go back into the model context?',
-        options: ['So the model can observe what happened and decide the next step', 'So the UI can ignore it', 'So tools run twice', 'So the database can be deleted'],
+        options: [
+          'So the model can observe what happened and decide the next step',
+          'So the UI can ignore it',
+          'So tools run twice',
+          'So the database can be deleted',
+        ],
         answer: 0,
-        explanation: 'The observation changes the model’s next decision and lets the agent make progress.',
+        explanation:
+          'The observation changes the model’s next decision and lets the agent make progress.',
       },
       {
         id: '00-boundaries',
         prompt: 'What keeps an agent from becoming unsafe automation?',
-        options: ['Tool allowlists, approval gates, step limits, logs, tests, and clear operating boundaries', 'Removing all logs', 'Letting the model run every command silently', 'Only using a colorful UI'],
+        options: [
+          'Tool allowlists, approval gates, step limits, logs, tests, and clear operating boundaries',
+          'Removing all logs',
+          'Letting the model run every command silently',
+          'Only using a colorful UI',
+        ],
         answer: 0,
         explanation: 'Agentic systems need explicit guardrails because they can take real actions.',
       },
@@ -147,7 +173,8 @@ An agent is not "a model that thinks harder." The model is only one component. T
     module: '01 Architecture',
     level: 'Beginner',
     estimatedMinutes: 26,
-    summary: 'Trace one request through the browser, API route, agent runtime, tool layer, persistence, and observability surfaces.',
+    summary:
+      'Trace one request through the browser, API route, agent runtime, tool layer, persistence, and observability surfaces.',
     objectives: [
       'Map the major runtime layers',
       'Locate the real agent implementation files',
@@ -199,13 +226,15 @@ The goal is not to memorize file names. The goal is to understand where responsi
     experiments: [
       {
         title: 'Trace one request',
-        instructions: 'Send a file-inspection prompt, then map every visible UI event to one layer: browser, API, runtime, model, tool, or database.',
+        instructions:
+          'Send a file-inspection prompt, then map every visible UI event to one layer: browser, API, runtime, model, tool, or database.',
         href: '/chat',
         cta: 'Open Chat',
       },
       {
         title: 'Browse the implementation',
-        instructions: 'Open Agent Files and inspect lib/agent/streaming-agent.ts, lib/agent/loop.ts, and lib/agent/builtin-tools.ts. Identify the handoff points.',
+        instructions:
+          'Open Agent Files and inspect lib/agent/streaming-agent.ts, lib/agent/loop.ts, and lib/agent/builtin-tools.ts. Identify the handoff points.',
         href: '/editor?folder=lib/agent',
         cta: 'Open Agent Files',
       },
@@ -214,28 +243,49 @@ The goal is not to memorize file names. The goal is to understand where responsi
       {
         id: '01-runtime-files',
         prompt: 'Where does the real agent loop live now?',
-        options: ['lib/agent/loop.ts, called by lib/agent/streaming-agent.ts', 'Only lib/agent.ts', 'Only proxy.ts', 'Only package.json'],
+        options: [
+          'lib/agent/loop.ts, called by lib/agent/streaming-agent.ts',
+          'Only lib/agent.ts',
+          'Only proxy.ts',
+          'Only package.json',
+        ],
         answer: 0,
         explanation: 'lib/agent.ts is a barrel; the loop itself is in lib/agent/loop.ts.',
       },
       {
         id: '01-planes',
         prompt: 'Why separate control, data, action, and experience planes?',
-        options: ['To keep policy, state, side effects, and UI responsibilities clear', 'To make every feature slower', 'To hide tool calls from traces', 'To store secrets in the browser'],
+        options: [
+          'To keep policy, state, side effects, and UI responsibilities clear',
+          'To make every feature slower',
+          'To hide tool calls from traces',
+          'To store secrets in the browser',
+        ],
         answer: 0,
         explanation: 'Clear boundaries make the system safer to modify and easier to debug.',
       },
       {
         id: '01-state',
         prompt: 'Which layer persists sessions, messages, RAG metadata, tasks, and settings?',
-        options: ['SQLite plus files under data/', 'The browser DOM only', 'A CSS file', 'The model provider'],
+        options: [
+          'SQLite plus files under data/',
+          'The browser DOM only',
+          'A CSS file',
+          'The model provider',
+        ],
         answer: 0,
-        explanation: 'AgentPrimer stores durable app state in SQLite and human-editable files under data/.',
+        explanation:
+          'AgentPrimer stores durable app state in SQLite and human-editable files under data/.',
       },
       {
         id: '01-proxy',
         prompt: 'What does proxy.ts do in this Next.js version?',
-        options: ['Acts as the auth middleware boundary', 'Executes tools', 'Embeds documents', 'Renders Markdown'],
+        options: [
+          'Acts as the auth middleware boundary',
+          'Executes tools',
+          'Embeds documents',
+          'Renders Markdown',
+        ],
         answer: 0,
         explanation: 'proxy.ts validates the JWT cookie before protected pages/routes run.',
       },
@@ -247,7 +297,8 @@ The goal is not to memorize file names. The goal is to understand where responsi
     module: '02 Control Loop',
     level: 'Beginner',
     estimatedMinutes: 28,
-    summary: 'Understand the ReAct loop as the control system that turns language-model outputs into bounded action.',
+    summary:
+      'Understand the ReAct loop as the control system that turns language-model outputs into bounded action.',
     objectives: [
       'Explain the Reason → Act → Observe cycle',
       'Recognize loop failure modes',
@@ -309,13 +360,15 @@ Ask the agent: "Inspect package.json and tell me the test command." A non-agent 
     experiments: [
       {
         title: 'Trigger and inspect a tool call',
-        instructions: 'Ask the agent to inspect package.json. Open the trace drawer and identify the model call, tool call, tool result, and final answer.',
+        instructions:
+          'Ask the agent to inspect package.json. Open the trace drawer and identify the model call, tool call, tool result, and final answer.',
         href: '/chat',
         cta: 'Open Chat',
       },
       {
         title: 'Tune loop limits',
-        instructions: 'Open Settings and find the max agent steps setting. Decide what failure mode a very low limit and a very high limit would create.',
+        instructions:
+          'Open Settings and find the max agent steps setting. Decide what failure mode a very low limit and a very high limit would create.',
         href: '/settings',
         cta: 'Open Settings',
       },
@@ -324,28 +377,50 @@ Ask the agent: "Inspect package.json and tell me the test command." A non-agent 
       {
         id: '02-react',
         prompt: 'What does ReAct mean in agent design?',
-        options: ['Reason and Act, with observations fed back into context', 'Render and CSS', 'Retry all completions automatically', 'Remove every tool'],
+        options: [
+          'Reason and Act, with observations fed back into context',
+          'Render and CSS',
+          'Retry all completions automatically',
+          'Remove every tool',
+        ],
         answer: 0,
-        explanation: 'ReAct is the repeated pattern of reasoning, acting, observing, and continuing.',
+        explanation:
+          'ReAct is the repeated pattern of reasoning, acting, observing, and continuing.',
       },
       {
         id: '02-program-control',
         prompt: 'Which part should be controlled by program code rather than the model?',
-        options: ['Approval gates and max step limits', 'The exact prose of every answer', 'The user goal', 'The browser font'],
+        options: [
+          'Approval gates and max step limits',
+          'The exact prose of every answer',
+          'The user goal',
+          'The browser font',
+        ],
         answer: 0,
         explanation: 'Safety boundaries and control limits should be enforced by code.',
       },
       {
         id: '02-trace',
         prompt: 'What is the main purpose of an agent trace?',
-        options: ['Make the hidden loop visible and debuggable', 'Hide tool results', 'Replace authentication', 'Guarantee the model is always correct'],
+        options: [
+          'Make the hidden loop visible and debuggable',
+          'Hide tool results',
+          'Replace authentication',
+          'Guarantee the model is always correct',
+        ],
         answer: 0,
-        explanation: 'Traces expose model inputs, tool calls, tool outputs, usage, timing, and stop reasons.',
+        explanation:
+          'Traces expose model inputs, tool calls, tool outputs, usage, timing, and stop reasons.',
       },
       {
         id: '02-failure',
         prompt: 'What is a common sign of an unbounded agent loop?',
-        options: ['Repeating the same or similar tool call without progress', 'Returning a final answer', 'Saving a trace', 'Asking for approval'],
+        options: [
+          'Repeating the same or similar tool call without progress',
+          'Returning a final answer',
+          'Saving a trace',
+          'Asking for approval',
+        ],
         answer: 0,
         explanation: 'Repetition without new information is a classic loop failure.',
       },
@@ -357,7 +432,8 @@ Ask the agent: "Inspect package.json and tell me the test command." A non-agent 
     module: '03 Capabilities',
     level: 'Beginner',
     estimatedMinutes: 30,
-    summary: 'Learn how agents gain capabilities, why schemas matter, and how to choose between built-ins, function tools, skills, and MCP servers.',
+    summary:
+      'Learn how agents gain capabilities, why schemas matter, and how to choose between built-ins, function tools, skills, and MCP servers.',
     objectives: [
       'Separate actions from instructions',
       'Design tool schemas the model can use',
@@ -414,13 +490,15 @@ Open Tool Playground and choose a file tool. Imagine the model has never seen yo
     experiments: [
       {
         title: 'Compare capability types',
-        instructions: 'Open Skills & MCP. Pick one skill, one built-in tool, one function tool, and one MCP server. For each, decide whether it is instruction or action.',
+        instructions:
+          'Open Skills & MCP. Pick one skill, one built-in tool, one function tool, and one MCP server. For each, decide whether it is instruction or action.',
         href: '/skills',
         cta: 'Open Skills & MCP',
       },
       {
         title: 'Inspect a schema',
-        instructions: 'Open Tool Playground and inspect the parameters for read_file, write_file, and run_shell. Identify which fields are required and which are dangerous.',
+        instructions:
+          'Open Tool Playground and inspect the parameters for read_file, write_file, and run_shell. Identify which fields are required and which are dangerous.',
         href: '/tools',
         cta: 'Open Tool Playground',
       },
@@ -429,28 +507,51 @@ Open Tool Playground and choose a file tool. Imagine the model has never seen yo
       {
         id: '03-action-instruction',
         prompt: 'What is the key difference between a tool and a SKILL.md skill?',
-        options: ['A tool executes an action; a skill gives instructions the model should follow', 'A skill always runs shell commands', 'A tool is only a CSS component', 'There is no difference'],
+        options: [
+          'A tool executes an action; a skill gives instructions the model should follow',
+          'A skill always runs shell commands',
+          'A tool is only a CSS component',
+          'There is no difference',
+        ],
         answer: 0,
-        explanation: 'Tools return observations from executed code. Skills modify the model’s behavior through instructions.',
+        explanation:
+          'Tools return observations from executed code. Skills modify the model’s behavior through instructions.',
       },
       {
         id: '03-schema',
         prompt: 'Why do tool schemas matter?',
-        options: ['They help the model produce valid arguments and help the program validate them', 'They only change colors', 'They replace logs', 'They hide errors'],
+        options: [
+          'They help the model produce valid arguments and help the program validate them',
+          'They only change colors',
+          'They replace logs',
+          'They hide errors',
+        ],
         answer: 0,
-        explanation: 'The model reads tool names, descriptions, and schemas when deciding how to call tools.',
+        explanation:
+          'The model reads tool names, descriptions, and schemas when deciding how to call tools.',
       },
       {
         id: '03-mcp-env',
         prompt: 'Where should a per-server API key for a stdio MCP server be configured?',
-        options: ['On that MCP server’s Environment variables field in Skills & MCP', 'In every browser tab', 'Inside a random chat message', 'Only in CSS'],
+        options: [
+          'On that MCP server’s Environment variables field in Skills & MCP',
+          'In every browser tab',
+          'Inside a random chat message',
+          'Only in CSS',
+        ],
         answer: 0,
-        explanation: 'Per-server env scopes the key to one MCP subprocess instead of leaking it to every server.',
+        explanation:
+          'Per-server env scopes the key to one MCP subprocess instead of leaking it to every server.',
       },
       {
         id: '03-choice',
         prompt: 'When is a SKILL.md file the right capability type?',
-        options: ['When the agent needs procedural guidance but no new executable action', 'When the app needs a database migration', 'When the model must run a binary', 'When the UI needs authentication'],
+        options: [
+          'When the agent needs procedural guidance but no new executable action',
+          'When the app needs a database migration',
+          'When the model must run a binary',
+          'When the UI needs authentication',
+        ],
         answer: 0,
         explanation: 'Skills are best for reusable instructions, checklists, and workflows.',
       },
@@ -462,7 +563,8 @@ Open Tool Playground and choose a file tool. Imagine the model has never seen yo
     module: '04 Streaming',
     level: 'Intermediate',
     estimatedMinutes: 22,
-    summary: 'Understand why agent apps stream more than text: they stream reasoning, tool-call state, results, usage, and structured UI events.',
+    summary:
+      'Understand why agent apps stream more than text: they stream reasoning, tool-call state, results, usage, and structured UI events.',
     objectives: [
       'Explain streaming as user trust infrastructure',
       'Recognize text/tool/reasoning/data stream events',
@@ -502,13 +604,15 @@ Open DevTools → Network, send a prompt that causes a tool call, and watch the 
     experiments: [
       {
         title: 'Compare a simple answer and a tool-heavy answer',
-        instructions: 'Send one pure explanation prompt and one prompt that requires reading files. Compare the visible stream behavior in the chat UI.',
+        instructions:
+          'Send one pure explanation prompt and one prompt that requires reading files. Compare the visible stream behavior in the chat UI.',
         href: '/chat',
         cta: 'Open Chat',
       },
       {
         title: 'Inspect stream chunks',
-        instructions: 'Use browser DevTools to inspect /api/chat while a response streams. Identify at least two non-text event types.',
+        instructions:
+          'Use browser DevTools to inspect /api/chat while a response streams. Identify at least two non-text event types.',
         href: '/chat',
         cta: 'Open Chat',
       },
@@ -517,21 +621,38 @@ Open DevTools → Network, send a prompt that causes a tool call, and watch the 
       {
         id: '04-purpose',
         prompt: 'Why is streaming especially important for agents?',
-        options: ['Agent turns can include multiple hidden steps, so streaming makes progress and actions visible', 'It removes the need for tools', 'It guarantees correctness', 'It replaces the database'],
+        options: [
+          'Agent turns can include multiple hidden steps, so streaming makes progress and actions visible',
+          'It removes the need for tools',
+          'It guarantees correctness',
+          'It replaces the database',
+        ],
         answer: 0,
-        explanation: 'Streaming exposes progress during multi-step work and reduces user uncertainty.',
+        explanation:
+          'Streaming exposes progress during multi-step work and reduces user uncertainty.',
       },
       {
         id: '04-events',
         prompt: 'Which item can be streamed besides normal text?',
-        options: ['Tool-call lifecycle events', 'Only CSS variables', 'Only database table names', 'Only package versions'],
+        options: [
+          'Tool-call lifecycle events',
+          'Only CSS variables',
+          'Only database table names',
+          'Only package versions',
+        ],
         answer: 0,
-        explanation: 'AgentPrimer streams tool starts, deltas, results, data events, and finish events.',
+        explanation:
+          'AgentPrimer streams tool starts, deltas, results, data events, and finish events.',
       },
       {
         id: '04-approval',
         prompt: 'How should the UI treat a dangerous tool call?',
-        options: ['Pause and show explicit approve/deny controls', 'Run it invisibly', 'Hide the command', 'Pretend it completed'],
+        options: [
+          'Pause and show explicit approve/deny controls',
+          'Run it invisibly',
+          'Hide the command',
+          'Pretend it completed',
+        ],
         answer: 0,
         explanation: 'Dangerous actions need human-in-the-loop visibility and control.',
       },
@@ -543,7 +664,8 @@ Open DevTools → Network, send a prompt that causes a tool call, and watch the 
     module: '05 Memory',
     level: 'Beginner',
     estimatedMinutes: 28,
-    summary: 'Learn what belongs in system prompts, per-agent prompts, durable memory, pinned prompts, task files, and retrieved context.',
+    summary:
+      'Learn what belongs in system prompts, per-agent prompts, durable memory, pinned prompts, task files, and retrieved context.',
     objectives: [
       'Separate context from memory',
       'Design named agents with clear roles and tool policies',
@@ -596,13 +718,15 @@ Create or edit an agent memory entry that is small and durable, such as "When ex
     experiments: [
       {
         title: 'Inspect the composed prompt',
-        instructions: 'Open Chat, select an agent, and view the system prompt modal. Identify global prompt, agent prompt, memory, tools, and notifications.',
+        instructions:
+          'Open Chat, select an agent, and view the system prompt modal. Identify global prompt, agent prompt, memory, tools, and notifications.',
         href: '/chat',
         cta: 'Open Chat',
       },
       {
         title: 'Edit a named agent',
-        instructions: 'Open Prompts & Memory. Create a narrowly-scoped agent with a small tool allowlist and a short memory entry.',
+        instructions:
+          'Open Prompts & Memory. Create a narrowly-scoped agent with a small tool allowlist and a short memory entry.',
         href: '/agents',
         cta: 'Open Prompts & Memory',
       },
@@ -611,30 +735,51 @@ Create or edit an agent memory entry that is small and durable, such as "When ex
       {
         id: '05-context-memory',
         prompt: 'What is the difference between context and memory?',
-        options: ['Context is sent now; memory is durable information that may be injected later', 'They are identical', 'Memory is only CSS', 'Context is never sent to models'],
+        options: [
+          'Context is sent now; memory is durable information that may be injected later',
+          'They are identical',
+          'Memory is only CSS',
+          'Context is never sent to models',
+        ],
         answer: 0,
         explanation: 'Memory is stored state. Context is what the current model call receives.',
       },
       {
         id: '05-good-memory',
         prompt: 'Which memory entry is most useful?',
-        options: ['A compact durable preference that improves future behavior', 'A full copy of every conversation', 'A random stack trace with no meaning', 'The entire node_modules folder'],
+        options: [
+          'A compact durable preference that improves future behavior',
+          'A full copy of every conversation',
+          'A random stack trace with no meaning',
+          'The entire node_modules folder',
+        ],
         answer: 0,
         explanation: 'Good memory is compact, durable, and actionable.',
       },
       {
         id: '05-agent-role',
         prompt: 'What does an agent.md file configure?',
-        options: ['Role prompt, tool policy, model choice, and optional output schema', 'Only static images', 'Only browser cookies', 'Only database indexes'],
+        options: [
+          'Role prompt, tool policy, model choice, and optional output schema',
+          'Only static images',
+          'Only browser cookies',
+          'Only database indexes',
+        ],
         answer: 0,
         explanation: 'agent.md is the human-editable identity and policy file for a named agent.',
       },
       {
         id: '05-async-state',
         prompt: 'Why do async sub-agents use task files?',
-        options: ['They need durable progress state without a live browser session', 'They cannot write text', 'They replace all tools', 'They only exist for styling'],
+        options: [
+          'They need durable progress state without a live browser session',
+          'They cannot write text',
+          'They replace all tools',
+          'They only exist for styling',
+        ],
         answer: 0,
-        explanation: 'Task files give background agents a durable place to log progress and completion.',
+        explanation:
+          'Task files give background agents a durable place to log progress and completion.',
       },
     ],
   },
@@ -644,7 +789,8 @@ Create or edit an agent memory entry that is small and durable, such as "When ex
     module: '06 Safety',
     level: 'Beginner',
     estimatedMinutes: 24,
-    summary: 'Learn how approvals, deny paths, permanent permissions, and sub-agent constraints keep powerful tools under operator control.',
+    summary:
+      'Learn how approvals, deny paths, permanent permissions, and sub-agent constraints keep powerful tools under operator control.',
     objectives: [
       'Identify actions that need approval',
       'Choose once, session, or permanent approval scopes',
@@ -686,13 +832,15 @@ Ask the agent to run a harmless shell command after enabling run_shell. Approve 
     experiments: [
       {
         title: 'Trigger a harmless approval',
-        instructions: 'Enable run_shell, then ask the agent to run `pwd`. Approve once and observe the command result in the chat.',
+        instructions:
+          'Enable run_shell, then ask the agent to run `pwd`. Approve once and observe the command result in the chat.',
         href: '/chat',
         cta: 'Open Chat',
       },
       {
         title: 'Review permanent approvals',
-        instructions: 'Open Approvals and inspect which operations are permanently allowed. Think about which ones should remain temporary instead.',
+        instructions:
+          'Open Approvals and inspect which operations are permanently allowed. Think about which ones should remain temporary instead.',
         href: '/approvals',
         cta: 'Open Approvals',
       },
@@ -701,14 +849,24 @@ Ask the agent to run a harmless shell command after enabling run_shell. Approve 
       {
         id: '06-code-boundary',
         prompt: 'Why should approval gates be enforced in code?',
-        options: ['Because prompts alone cannot guarantee a model will not request risky actions', 'Because users dislike buttons', 'Because tools cannot return errors', 'Because CSS needs approval'],
+        options: [
+          'Because prompts alone cannot guarantee a model will not request risky actions',
+          'Because users dislike buttons',
+          'Because tools cannot return errors',
+          'Because CSS needs approval',
+        ],
         answer: 0,
         explanation: 'The program must enforce safety boundaries regardless of model text.',
       },
       {
         id: '06-async',
         prompt: 'Why can async sub-agents not ask for one-time browser approval?',
-        options: ['They run without a live interactive browser session', 'They cannot use models', 'They are CSS only', 'They never use tools'],
+        options: [
+          'They run without a live interactive browser session',
+          'They cannot use models',
+          'They are CSS only',
+          'They never use tools',
+        ],
         answer: 0,
         explanation: 'Background tasks cannot pause and render an approval UI to the user.',
       },
@@ -722,7 +880,12 @@ Ask the agent to run a harmless shell command after enabling run_shell. Approve 
       {
         id: '06-denial',
         prompt: 'How should the loop treat a denied action?',
-        options: ['As an observation that constrains the next decision', 'As permission to retry secretly', 'As a reason to delete logs', 'As a database backup'],
+        options: [
+          'As an observation that constrains the next decision',
+          'As permission to retry secretly',
+          'As a reason to delete logs',
+          'As a database backup',
+        ],
         answer: 0,
         explanation: 'The model should use denial as context and choose a safer alternative.',
       },
@@ -734,7 +897,8 @@ Ask the agent to run a harmless shell command after enabling run_shell. Approve 
     module: '07 Frontend',
     level: 'Intermediate',
     estimatedMinutes: 24,
-    summary: 'Learn how a frontend for agents differs from a normal chat UI: it must show state, tool activity, approvals, previews, traces, and recoverable history.',
+    summary:
+      'Learn how a frontend for agents differs from a normal chat UI: it must show state, tool activity, approvals, previews, traces, and recoverable history.',
     objectives: [
       'Identify UI states unique to agents',
       'Connect stream events to message rendering',
@@ -773,13 +937,15 @@ Open a chat with a tool call. Count how many UI states appear: streaming text, t
     experiments: [
       {
         title: 'Inspect a tool card',
-        instructions: 'Run a prompt that calls a file tool. Look at the live tool card and identify tool name, args, status, and result.',
+        instructions:
+          'Run a prompt that calls a file tool. Look at the live tool card and identify tool name, args, status, and result.',
         href: '/chat',
         cta: 'Open Chat',
       },
       {
         title: 'Open an artifact preview',
-        instructions: 'Ask the agent to create a small HTML or Markdown file and open it in the preview panel. Observe how editing and preview relate.',
+        instructions:
+          'Ask the agent to create a small HTML or Markdown file and open it in the preview panel. Observe how editing and preview relate.',
         href: '/chat',
         cta: 'Open Chat',
       },
@@ -788,21 +954,36 @@ Open a chat with a tool call. Count how many UI states appear: streaming text, t
       {
         id: '07-ui-agent',
         prompt: 'What makes an agent UI different from a simple chat UI?',
-        options: ['It must show work state such as tool calls, approvals, previews, and traces', 'It only needs bigger fonts', 'It should hide all intermediate actions', 'It cannot store history'],
+        options: [
+          'It must show work state such as tool calls, approvals, previews, and traces',
+          'It only needs bigger fonts',
+          'It should hide all intermediate actions',
+          'It cannot store history',
+        ],
         answer: 0,
         explanation: 'Agent UI needs to make multi-step work visible and recoverable.',
       },
       {
         id: '07-recover',
         prompt: 'Why persist message parts and tool calls?',
-        options: ['So reloads can reconstruct what happened', 'So the model never uses tools', 'So CSS compiles faster', 'So authentication is unnecessary'],
+        options: [
+          'So reloads can reconstruct what happened',
+          'So the model never uses tools',
+          'So CSS compiles faster',
+          'So authentication is unnecessary',
+        ],
         answer: 0,
         explanation: 'Persisted parts let the UI render history accurately after reload.',
       },
       {
         id: '07-trust',
         prompt: 'Which UI element improves trust during risky operations?',
-        options: ['An explicit approval card showing the requested action', 'A hidden spinner', 'A blank screen', 'A disabled trace drawer'],
+        options: [
+          'An explicit approval card showing the requested action',
+          'A hidden spinner',
+          'A blank screen',
+          'A disabled trace drawer',
+        ],
         answer: 0,
         explanation: 'Approval cards let users inspect and control risky actions.',
       },
@@ -814,7 +995,8 @@ Open a chat with a tool call. Count how many UI states appear: streaming text, t
     module: '08 Persistence',
     level: 'Intermediate',
     estimatedMinutes: 26,
-    summary: 'Understand why agent apps need durable state: messages, traces, tasks, RAG, settings, approvals, token usage, and lesson progress.',
+    summary:
+      'Understand why agent apps need durable state: messages, traces, tasks, RAG, settings, approvals, token usage, and lesson progress.',
     objectives: [
       'Identify durable state categories',
       'Explain why task and message history matter',
@@ -857,13 +1039,15 @@ Create a chat with one tool call. Reload the page. Confirm that text, tool cards
     experiments: [
       {
         title: 'Reload a tool-heavy chat',
-        instructions: 'Create a chat with a tool call, reload the browser, and verify the tool card still appears. This demonstrates persisted message parts.',
+        instructions:
+          'Create a chat with a tool call, reload the browser, and verify the tool card still appears. This demonstrates persisted message parts.',
         href: '/chat',
         cta: 'Open Chat',
       },
       {
         title: 'Inspect usage data',
-        instructions: 'Open Statistics after sending a few messages. Identify how token usage becomes both cost data and operational telemetry.',
+        instructions:
+          'Open Statistics after sending a few messages. Identify how token usage becomes both cost data and operational telemetry.',
         href: '/statistics',
         cta: 'Open Statistics',
       },
@@ -872,23 +1056,39 @@ Create a chat with one tool call. Reload the page. Confirm that text, tool cards
       {
         id: '08-state',
         prompt: 'Why does an agent app persist more than final text?',
-        options: ['Tool calls, traces, reasoning parts, and task state are needed for reload, audit, and debugging', 'Final text is never useful', 'Only CSS needs persistence', 'The browser cannot store strings'],
+        options: [
+          'Tool calls, traces, reasoning parts, and task state are needed for reload, audit, and debugging',
+          'Final text is never useful',
+          'Only CSS needs persistence',
+          'The browser cannot store strings',
+        ],
         answer: 0,
         explanation: 'Agent behavior is multi-step, so the intermediate path is important.',
       },
       {
         id: '08-migrations',
         prompt: 'What makes a database migration risky in an agent app?',
-        options: ['It may touch large historical message, trace, RAG, or task data', 'It changes a button label', 'It only edits comments', 'It never runs in production'],
+        options: [
+          'It may touch large historical message, trace, RAG, or task data',
+          'It changes a button label',
+          'It only edits comments',
+          'It never runs in production',
+        ],
         answer: 0,
         explanation: 'Historical agent data can be large and operationally important.',
       },
       {
         id: '08-task',
         prompt: 'Why persist async task rows and task files?',
-        options: ['So background work can be monitored and recovered across turns', 'So the model provider stores them', 'So all chats are deleted', 'So CSS can animate'],
+        options: [
+          'So background work can be monitored and recovered across turns',
+          'So the model provider stores them',
+          'So all chats are deleted',
+          'So CSS can animate',
+        ],
         answer: 0,
-        explanation: 'Async agents need durable progress state independent of the live browser session.',
+        explanation:
+          'Async agents need durable progress state independent of the live browser session.',
       },
     ],
   },
@@ -898,7 +1098,8 @@ Create a chat with one tool call. Reload the page. Confirm that text, tool cards
     module: '09 Ecosystem',
     level: 'Intermediate',
     estimatedMinutes: 22,
-    summary: 'Compare framework-first, protocol-first, product-first, and teaching-first approaches to building agents.',
+    summary:
+      'Compare framework-first, protocol-first, product-first, and teaching-first approaches to building agents.',
     objectives: [
       'Understand common agent platform patterns',
       'Evaluate when to use frameworks vs handwritten loops',
@@ -935,13 +1136,15 @@ Tools, context, memory, traces, approvals, RAG, structured outputs, and evals ap
     experiments: [
       {
         title: 'Compare abstraction levels',
-        instructions: 'Open Agent Files and inspect lib/agent/loop.ts. Then imagine what would be hidden if a framework owned that loop.',
+        instructions:
+          'Open Agent Files and inspect lib/agent/loop.ts. Then imagine what would be hidden if a framework owned that loop.',
         href: '/editor?folder=lib/agent',
         cta: 'Open Agent Files',
       },
       {
         title: 'Map capabilities to ecosystem patterns',
-        instructions: 'Open Skills & MCP. Decide which features are protocol-first (MCP), platform-owned (built-ins), or instruction-first (skills).',
+        instructions:
+          'Open Skills & MCP. Decide which features are protocol-first (MCP), platform-owned (built-ins), or instruction-first (skills).',
         href: '/skills',
         cta: 'Open Skills & MCP',
       },
@@ -949,22 +1152,39 @@ Tools, context, memory, traces, approvals, RAG, structured outputs, and evals ap
     questions: [
       {
         id: '09-handwritten',
-        prompt: 'Why would AgentPrimer handwrite its agent loop instead of hiding it behind a framework?',
-        options: ['To make the mechanics teachable and debuggable', 'To avoid using tools', 'To remove streaming', 'To hide traces'],
+        prompt:
+          'Why would AgentPrimer handwrite its agent loop instead of hiding it behind a framework?',
+        options: [
+          'To make the mechanics teachable and debuggable',
+          'To avoid using tools',
+          'To remove streaming',
+          'To hide traces',
+        ],
         answer: 0,
-        explanation: 'A visible loop lets learners inspect every model call, tool result, and stop reason.',
+        explanation:
+          'A visible loop lets learners inspect every model call, tool result, and stop reason.',
       },
       {
         id: '09-framework',
         prompt: 'When is a framework-first approach useful?',
-        options: ['When speed and standard integrations matter more than full loop control', 'When you never need debugging', 'When no tools exist', 'When UI is impossible'],
+        options: [
+          'When speed and standard integrations matter more than full loop control',
+          'When you never need debugging',
+          'When no tools exist',
+          'When UI is impossible',
+        ],
         answer: 0,
         explanation: 'Frameworks can accelerate common patterns but may hide control details.',
       },
       {
         id: '09-concepts',
         prompt: 'Which concept transfers across most serious agent platforms?',
-        options: ['Tools, context, memory, traces, approvals, RAG, structured outputs, and evals', 'Only one CSS framework', 'Only one logo', 'Only one database file name'],
+        options: [
+          'Tools, context, memory, traces, approvals, RAG, structured outputs, and evals',
+          'Only one CSS framework',
+          'Only one logo',
+          'Only one database file name',
+        ],
         answer: 0,
         explanation: 'The durable ideas matter more than one library’s API.',
       },
@@ -976,7 +1196,8 @@ Tools, context, memory, traces, approvals, RAG, structured outputs, and evals ap
     module: '10 Structured Output',
     level: 'Intermediate',
     estimatedMinutes: 24,
-    summary: 'Learn how agents produce machine-readable JSON through schemas, finalization calls, parsing, and UI rendering.',
+    summary:
+      'Learn how agents produce machine-readable JSON through schemas, finalization calls, parsing, and UI rendering.',
     objectives: [
       'Explain why final answers sometimes need schemas',
       'Understand the finalize-call pattern',
@@ -1013,13 +1234,15 @@ A robust structured-output system does not pretend parsing always works. It shou
     experiments: [
       {
         title: 'Run the extractor agent',
-        instructions: 'Open Chat, choose an extractor/structured-output agent if available, and ask it to extract entities from a paragraph. Inspect the structured panel.',
+        instructions:
+          'Open Chat, choose an extractor/structured-output agent if available, and ask it to extract entities from a paragraph. Inspect the structured panel.',
         href: '/chat',
         cta: 'Open Chat',
       },
       {
         title: 'Inspect an output schema',
-        instructions: 'Open Agent Files and look under data/agents for a schema file or Output Schema File reference. Identify required fields.',
+        instructions:
+          'Open Agent Files and look under data/agents for a schema file or Output Schema File reference. Identify required fields.',
         href: '/editor?folder=agents',
         cta: 'Open Agent Files',
       },
@@ -1028,21 +1251,36 @@ A robust structured-output system does not pretend parsing always works. It shou
       {
         id: '10-purpose',
         prompt: 'Why use structured output?',
-        options: ['So downstream code can consume a predictable JSON object', 'So the model never uses tools', 'So CSS compiles faster', 'So auth is disabled'],
+        options: [
+          'So downstream code can consume a predictable JSON object',
+          'So the model never uses tools',
+          'So CSS compiles faster',
+          'So auth is disabled',
+        ],
         answer: 0,
         explanation: 'Schemas make the final answer usable by programs, not just humans.',
       },
       {
         id: '10-finalize',
         prompt: 'What is the finalize call optimized for?',
-        options: ['Converting the completed transcript into schema-shaped JSON', 'Running shell commands', 'Replacing all tests', 'Rendering the sidebar'],
+        options: [
+          'Converting the completed transcript into schema-shaped JSON',
+          'Running shell commands',
+          'Replacing all tests',
+          'Rendering the sidebar',
+        ],
         answer: 0,
         explanation: 'The finalize call is a focused non-streaming JSON generation step.',
       },
       {
         id: '10-parse-error',
         prompt: 'What should happen if JSON.parse fails?',
-        options: ['Surface the parse error and raw response for debugging', 'Pretend the output was valid', 'Delete the schema', 'Hide the response'],
+        options: [
+          'Surface the parse error and raw response for debugging',
+          'Pretend the output was valid',
+          'Delete the schema',
+          'Hide the response',
+        ],
         answer: 0,
         explanation: 'Structured-output failures must be visible and debuggable.',
       },
@@ -1054,7 +1292,8 @@ A robust structured-output system does not pretend parsing always works. It shou
     module: '11 RAG',
     level: 'Intermediate',
     estimatedMinutes: 28,
-    summary: 'Learn how RAG gives agents access to large, source-grounded knowledge without stuffing everything into the prompt.',
+    summary:
+      'Learn how RAG gives agents access to large, source-grounded knowledge without stuffing everything into the prompt.',
     objectives: [
       'Explain chunking, embedding, retrieval, and fallback search',
       'Choose between memory and RAG',
@@ -1095,13 +1334,15 @@ Paste a short document into RAG. Ask a question whose answer is present and anot
     experiments: [
       {
         title: 'Index and search a document',
-        instructions: 'Open RAG, ingest a short document, then search for both an exact phrase and a related synonym. Compare vector vs keyword behavior.',
+        instructions:
+          'Open RAG, ingest a short document, then search for both an exact phrase and a related synonym. Compare vector vs keyword behavior.',
         href: '/knowledge',
         cta: 'Open RAG',
       },
       {
         title: 'Ask a grounded question',
-        instructions: 'After indexing a document, ask the agent a question that requires it. Check the trace for search_knowledge_base.',
+        instructions:
+          'After indexing a document, ask the agent a question that requires it. Check the trace for search_knowledge_base.',
         href: '/chat',
         cta: 'Open Chat',
       },
@@ -1110,28 +1351,48 @@ Paste a short document into RAG. Ask a question whose answer is present and anot
       {
         id: '11-purpose',
         prompt: 'What does RAG retrieve?',
-        options: ['Relevant chunks from indexed documents', 'Every file always', 'Only browser cookies', 'Only CSS classes'],
+        options: [
+          'Relevant chunks from indexed documents',
+          'Every file always',
+          'Only browser cookies',
+          'Only CSS classes',
+        ],
         answer: 0,
         explanation: 'RAG returns a small set of relevant chunks for a query.',
       },
       {
         id: '11-memory',
         prompt: 'When is RAG better than memory.md?',
-        options: ['When the source is large and only some passages are relevant', 'For a one-line durable preference', 'For the app logo', 'For disabling all tools'],
+        options: [
+          'When the source is large and only some passages are relevant',
+          'For a one-line durable preference',
+          'For the app logo',
+          'For disabling all tools',
+        ],
         answer: 0,
         explanation: 'RAG scales to larger corpora by retrieving on demand.',
       },
       {
         id: '11-fallback',
         prompt: 'What fallback keeps search working when embeddings are unavailable?',
-        options: ['SQLite FTS5 keyword search', 'Deleting all documents', 'Hiding the RAG page', 'Changing the font'],
+        options: [
+          'SQLite FTS5 keyword search',
+          'Deleting all documents',
+          'Hiding the RAG page',
+          'Changing the font',
+        ],
         answer: 0,
         explanation: 'FTS5 provides keyword search in degraded mode.',
       },
       {
         id: '11-quality',
         prompt: 'What should an agent do if retrieved context does not answer the question?',
-        options: ['Say the indexed material does not contain enough information', 'Invent an answer anyway', 'Delete the index', 'Run shell secretly'],
+        options: [
+          'Say the indexed material does not contain enough information',
+          'Invent an answer anyway',
+          'Delete the index',
+          'Run shell secretly',
+        ],
         answer: 0,
         explanation: 'RAG should reduce hallucination, not provide cover for guessing.',
       },
@@ -1143,7 +1404,8 @@ Paste a short document into RAG. Ask a question whose answer is present and anot
     module: '12 Production',
     level: 'Intermediate',
     estimatedMinutes: 30,
-    summary: 'Learn what changes when an agent leaves local development: persistence, secrets, backups, streaming proxies, monitoring, and incident response.',
+    summary:
+      'Learn what changes when an agent leaves local development: persistence, secrets, backups, streaming proxies, monitoring, and incident response.',
     objectives: [
       'Plan production persistence and backups',
       'Protect secrets and MCP credentials',
@@ -1188,13 +1450,15 @@ Open Settings, Skills & MCP, Approvals, Statistics, and RAG. For each page, iden
     experiments: [
       {
         title: 'Review production settings',
-        instructions: 'Open Settings and identify model endpoint, default model, tracing, embedding provider, and Langfuse options.',
+        instructions:
+          'Open Settings and identify model endpoint, default model, tracing, embedding provider, and Langfuse options.',
         href: '/settings',
         cta: 'Open Settings',
       },
       {
         title: 'Inspect operational signals',
-        instructions: 'Open Statistics after a few chats. Think about which chart would reveal cost runaway or unexpected usage.',
+        instructions:
+          'Open Statistics after a few chats. Think about which chart would reveal cost runaway or unexpected usage.',
         href: '/statistics',
         cta: 'Open Statistics',
       },
@@ -1203,30 +1467,51 @@ Open Settings, Skills & MCP, Approvals, Statistics, and RAG. For each page, iden
       {
         id: '12-volume',
         prompt: 'Why must data/ be persisted in production?',
-        options: ['It contains database, memory, settings, uploads, generated files, RAG data, and agent configs', 'It only contains temporary CSS', 'It is unused', 'It stores only browser cache'],
+        options: [
+          'It contains database, memory, settings, uploads, generated files, RAG data, and agent configs',
+          'It only contains temporary CSS',
+          'It is unused',
+          'It stores only browser cache',
+        ],
         answer: 0,
         explanation: 'Losing data/ can lose most durable app state.',
       },
       {
         id: '12-streaming',
         prompt: 'What can reverse-proxy buffering break?',
-        options: ['Real-time streamed chat updates', 'TypeScript type checking', 'SQLite table names', 'Markdown headings'],
+        options: [
+          'Real-time streamed chat updates',
+          'TypeScript type checking',
+          'SQLite table names',
+          'Markdown headings',
+        ],
         answer: 0,
         explanation: 'Buffered proxies can delay chunks until the entire response finishes.',
       },
       {
         id: '12-secrets',
         prompt: 'Where should a credential for one stdio MCP server go?',
-        options: ['That server’s per-server Environment variables field', 'A public markdown lesson', 'A chat message', 'The browser console'],
+        options: [
+          'That server’s per-server Environment variables field',
+          'A public markdown lesson',
+          'A chat message',
+          'The browser console',
+        ],
         answer: 0,
         explanation: 'Per-server env reduces cross-server secret exposure.',
       },
       {
         id: '12-monitor',
         prompt: 'What should production monitoring include?',
-        options: ['Latency, errors, token usage, tool failures, traces, and costs', 'Only page background color', 'Only package names', 'Only screenshots'],
+        options: [
+          'Latency, errors, token usage, tool failures, traces, and costs',
+          'Only page background color',
+          'Only package names',
+          'Only screenshots',
+        ],
         answer: 0,
-        explanation: 'Agents need operational visibility because behavior spans model calls and tools.',
+        explanation:
+          'Agents need operational visibility because behavior spans model calls and tools.',
       },
     ],
   },
@@ -1236,7 +1521,8 @@ Open Settings, Skills & MCP, Approvals, Statistics, and RAG. For each page, iden
     module: '13 Testing',
     level: 'Intermediate',
     estimatedMinutes: 30,
-    summary: 'Learn how to test deterministic code, mock model behavior, evaluate quality, and debug failures with traces.',
+    summary:
+      'Learn how to test deterministic code, mock model behavior, evaluate quality, and debug failures with traces.',
     objectives: [
       'Separate unit tests, integration tests, and evals',
       'Mock LLM behavior for deterministic loop tests',
@@ -1284,13 +1570,15 @@ Run a realistic prompt and inspect the trace. Write three scoring criteria: one 
     experiments: [
       {
         title: 'Run tests',
-        instructions: 'If running locally, run npm test. Identify which suites cover deterministic code and which mock model/tool behavior.',
+        instructions:
+          'If running locally, run npm test. Identify which suites cover deterministic code and which mock model/tool behavior.',
         href: '/tools',
         cta: 'Open Tools',
       },
       {
         title: 'Create a mini eval',
-        instructions: 'Pick one chat task and write a three-point rubric: correct tool use, grounded answer, safe behavior. Then compare the trace against it.',
+        instructions:
+          'Pick one chat task and write a three-point rubric: correct tool use, grounded answer, safe behavior. Then compare the trace against it.',
         href: '/chat',
         cta: 'Open Chat',
       },
@@ -1299,28 +1587,48 @@ Run a realistic prompt and inspect the trace. Write three scoring criteria: one 
       {
         id: '13-unit',
         prompt: 'Which component is best for deterministic unit tests?',
-        options: ['Schema conversion, parsers, DB helpers, and tool code', 'Whether a model subjectively sounds nice', 'A random output at high temperature', 'A user preference with no rubric'],
+        options: [
+          'Schema conversion, parsers, DB helpers, and tool code',
+          'Whether a model subjectively sounds nice',
+          'A random output at high temperature',
+          'A user preference with no rubric',
+        ],
         answer: 0,
         explanation: 'Pure or bounded code should be tested deterministically.',
       },
       {
         id: '13-mock',
         prompt: 'Why mock model responses in loop tests?',
-        options: ['To make tool-call sequences repeatable', 'To make tests slower', 'To hide all failures', 'To remove assertions'],
+        options: [
+          'To make tool-call sequences repeatable',
+          'To make tests slower',
+          'To hide all failures',
+          'To remove assertions',
+        ],
         answer: 0,
         explanation: 'Mocked responses let tests assert exact loop behavior.',
       },
       {
         id: '13-eval',
         prompt: 'What does an eval add beyond unit tests?',
-        options: ['A quality measurement for realistic agent behavior', 'A replacement for all code tests', 'A CSS snapshot only', 'A way to ignore traces'],
+        options: [
+          'A quality measurement for realistic agent behavior',
+          'A replacement for all code tests',
+          'A CSS snapshot only',
+          'A way to ignore traces',
+        ],
         answer: 0,
         explanation: 'Evals test behavior quality under realistic tasks and rubrics.',
       },
       {
         id: '13-debug',
         prompt: 'Where should you start debugging a bad agent answer?',
-        options: ['The trace: model input, tool calls, observations, and stop reason', 'The app logo', 'Only the final sentence', 'A random package version'],
+        options: [
+          'The trace: model input, tool calls, observations, and stop reason',
+          'The app logo',
+          'Only the final sentence',
+          'A random package version',
+        ],
         answer: 0,
         explanation: 'The trace shows the hidden path that produced the answer.',
       },
@@ -1332,7 +1640,8 @@ Run a realistic prompt and inspect the trace. Write three scoring criteria: one 
     module: '14 Orchestration',
     level: 'Advanced',
     estimatedMinutes: 32,
-    summary: 'Learn when to delegate to sub-agents, how background tasks communicate, and how to avoid turning multi-agent systems into uncontrolled complexity.',
+    summary:
+      'Learn when to delegate to sub-agents, how background tasks communicate, and how to avoid turning multi-agent systems into uncontrolled complexity.',
     objectives: [
       'Decide when multi-agent delegation is useful',
       'Explain async task files and notifications',
@@ -1389,13 +1698,15 @@ Pick a realistic task such as "audit this repo and fix docs drift." Design three
     experiments: [
       {
         title: 'Create a specialist agent',
-        instructions: 'Open Prompts & Memory and create a read-only reviewer agent. Give it a narrow system prompt and limited tools.',
+        instructions:
+          'Open Prompts & Memory and create a read-only reviewer agent. Give it a narrow system prompt and limited tools.',
         href: '/agents',
         cta: 'Open Prompts & Memory',
       },
       {
         title: 'Launch a background task',
-        instructions: 'From Chat, ask the main agent to delegate a small read-only task to your specialist. Then inspect the returned task file in Agent Files.',
+        instructions:
+          'From Chat, ask the main agent to delegate a small read-only task to your specialist. Then inspect the returned task file in Agent Files.',
         href: '/chat',
         cta: 'Open Chat',
       },
@@ -1404,28 +1715,50 @@ Pick a realistic task such as "audit this repo and fix docs drift." Design three
       {
         id: '14-when',
         prompt: 'When should you use a sub-agent?',
-        options: ['When work is independent, parallel, or benefits from a specialist role/tool policy', 'For every single prompt', 'Only to avoid writing tests', 'When you want hidden state'],
+        options: [
+          'When work is independent, parallel, or benefits from a specialist role/tool policy',
+          'For every single prompt',
+          'Only to avoid writing tests',
+          'When you want hidden state',
+        ],
         answer: 0,
-        explanation: 'Sub-agents add overhead and should be used for decomposition or specialization.',
+        explanation:
+          'Sub-agents add overhead and should be used for decomposition or specialization.',
       },
       {
         id: '14-task-file',
         prompt: 'Why does an async sub-agent write to a task file?',
-        options: ['To provide durable progress and final evidence to the parent', 'To hide its work', 'To delete approvals', 'To replace all messages'],
+        options: [
+          'To provide durable progress and final evidence to the parent',
+          'To hide its work',
+          'To delete approvals',
+          'To replace all messages',
+        ],
         answer: 0,
-        explanation: 'The task file is the communication channel between background work and the parent.',
+        explanation:
+          'The task file is the communication channel between background work and the parent.',
       },
       {
         id: '14-tools',
         prompt: 'What is a safe tool policy for a reviewer agent?',
-        options: ['Mostly read-only tools and trace inspection', 'Unrestricted delete and shell by default', 'No ability to read anything', 'Only UI theme controls'],
+        options: [
+          'Mostly read-only tools and trace inspection',
+          'Unrestricted delete and shell by default',
+          'No ability to read anything',
+          'Only UI theme controls',
+        ],
         answer: 0,
         explanation: 'Specialist agents should get the minimum tools needed for their role.',
       },
       {
         id: '14-approval',
         prompt: 'Why do async sub-agents need special handling for dangerous tools?',
-        options: ['They cannot show live browser approval UI, so only permanent approvals can apply', 'They cannot use models', 'They always run in the browser', 'They never write logs'],
+        options: [
+          'They cannot show live browser approval UI, so only permanent approvals can apply',
+          'They cannot use models',
+          'They always run in the browser',
+          'They never write logs',
+        ],
         answer: 0,
         explanation: 'Background agents lack an interactive session for one-time approval prompts.',
       },
@@ -1434,15 +1767,15 @@ Pick a realistic task such as "audit this repo and fix docs drift." Design three
 ];
 
 export function getLesson(slug: string): Lesson | undefined {
-  return LESSONS.find(lesson => lesson.slug === slug);
+  return LESSONS.find((lesson) => lesson.slug === slug);
 }
 
 export function getNextLesson(slug: string): Lesson | undefined {
-  const index = LESSONS.findIndex(lesson => lesson.slug === slug);
+  const index = LESSONS.findIndex((lesson) => lesson.slug === slug);
   return index >= 0 ? LESSONS[index + 1] : undefined;
 }
 
 export function getPreviousLesson(slug: string): Lesson | undefined {
-  const index = LESSONS.findIndex(lesson => lesson.slug === slug);
+  const index = LESSONS.findIndex((lesson) => lesson.slug === slug);
   return index > 0 ? LESSONS[index - 1] : undefined;
 }

@@ -43,10 +43,16 @@ export async function POST(request: NextRequest) {
   };
 
   if (!githubUrl && !command && transport !== 'sse') {
-    return NextResponse.json({ error: 'Provide a GitHub URL or a command (e.g. npx)' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Provide a GitHub URL or a command (e.g. npx)' },
+      { status: 400 },
+    );
   }
   if (!githubUrl && transport === 'sse' && !url) {
-    return NextResponse.json({ error: 'Provide a GitHub URL or a server URL for SSE transport' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Provide a GitHub URL or a server URL for SSE transport' },
+      { status: 400 },
+    );
   }
 
   // Split "npx -y pkg@latest" style command strings into command + args
@@ -112,7 +118,8 @@ export async function PATCH(request: NextRequest) {
     env !== undefined ||
     envPatch !== undefined;
   if (!hasSettingsUpdate) {
-    if (enabled === undefined) return NextResponse.json({ error: 'enabled or settings required' }, { status: 400 });
+    if (enabled === undefined)
+      return NextResponse.json({ error: 'enabled or settings required' }, { status: 400 });
     setMcpServerEnabled(id, enabled);
     return NextResponse.json({ ok: true });
   }
@@ -141,10 +148,16 @@ export async function PATCH(request: NextRequest) {
   const cleanEnv = env === undefined ? undefined : sanitizeEnvInput(env);
   const cleanEnvPatch = envPatch === undefined ? undefined : sanitizeEnvInput(envPatch);
   if (nextTransport === 'sse' && cleanEnv && Object.keys(cleanEnv).length > 0) {
-    return NextResponse.json({ error: 'env vars are only supported for stdio MCP servers' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'env vars are only supported for stdio MCP servers' },
+      { status: 400 },
+    );
   }
   if (nextTransport === 'sse' && cleanEnvPatch && Object.keys(cleanEnvPatch).length > 0) {
-    return NextResponse.json({ error: 'env vars are only supported for stdio MCP servers' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'env vars are only supported for stdio MCP servers' },
+      { status: 400 },
+    );
   }
   const nextEnvJson =
     cleanEnv !== undefined

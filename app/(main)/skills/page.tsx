@@ -20,9 +20,24 @@ import { Toggle } from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import { useConfirm } from '@/components/ui/CustomConfirmDialog';
 import {
-  Zap, Server, Plus, Trash2, GitBranch, RefreshCw, Pencil,
-  AlertCircle, Terminal, ShieldAlert, HardDrive, Brain, Bot, PackageOpen, Code2, Loader2,
-  FunctionSquare, BookOpen,
+  Zap,
+  Server,
+  Plus,
+  Trash2,
+  GitBranch,
+  RefreshCw,
+  Pencil,
+  AlertCircle,
+  Terminal,
+  ShieldAlert,
+  HardDrive,
+  Brain,
+  Bot,
+  PackageOpen,
+  Code2,
+  Loader2,
+  FunctionSquare,
+  BookOpen,
 } from 'lucide-react';
 
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -81,7 +96,10 @@ function parseEnvText(text: string): Record<string, string> {
     if (idx <= 0) continue;
     const key = line.slice(0, idx).trim();
     let val = line.slice(idx + 1).trim();
-    if (val.length >= 2 && ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'")))) {
+    if (
+      val.length >= 2 &&
+      ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'")))
+    ) {
       val = val.slice(1, -1);
     }
     if (!key || !val) continue;
@@ -183,10 +201,15 @@ export default function SkillsPage() {
   };
 
   // Manual refresh button shows loading spinner
-  const refresh = () => { setLoading(true); doRefresh(); };
+  const refresh = () => {
+    setLoading(true);
+    doRefresh();
+  };
 
   // Initial load
-  useEffect(() => { doRefresh(); }, []);
+  useEffect(() => {
+    doRefresh();
+  }, []);
 
   const handleInstall = async () => {
     if (tab === 'skills' && !githubUrl) return;
@@ -195,7 +218,12 @@ export default function SkillsPage() {
     setInstalling(true);
     setInstallError('');
 
-    const url = tab === 'skills' ? '/api/skills' : tab === 'function_tools' ? '/api/function-tools' : '/api/mcp';
+    const url =
+      tab === 'skills'
+        ? '/api/skills'
+        : tab === 'function_tools'
+          ? '/api/function-tools'
+          : '/api/mcp';
     let body: Record<string, unknown>;
     if (tab === 'mcp') {
       // Only attach `env` when the user actually typed something AND the
@@ -236,7 +264,9 @@ export default function SkillsPage() {
     setEditMcp(server);
     setEditMcpName(server.name);
     setEditMcpTransport(server.transport);
-    setEditMcpCommand(server.transport === 'stdio' ? [server.command, ...args].filter(Boolean).join(' ') : '');
+    setEditMcpCommand(
+      server.transport === 'stdio' ? [server.command, ...args].filter(Boolean).join(' ') : '',
+    );
     setEditMcpUrl(server.url || '');
     setEditMcpEnvText('');
     setEditMcpEnvKeys(server.env_keys ?? []);
@@ -273,7 +303,8 @@ export default function SkillsPage() {
     // (even a single blank-after-trim entry) means "replace the entire
     // env map with what I just typed".
     const envSubmitted = editMcpEnvText.trim().length > 0;
-    const env = editMcpTransport === 'stdio' && envSubmitted ? parseEnvText(editMcpEnvText) : undefined;
+    const env =
+      editMcpTransport === 'stdio' && envSubmitted ? parseEnvText(editMcpEnvText) : undefined;
     const body =
       editMcpTransport === 'stdio'
         ? {
@@ -362,12 +393,13 @@ export default function SkillsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, enabled: !current }),
     });
-    setBuiltinTools(prev => prev.map(t => t.id === id ? { ...t, enabled: !current } : t));
+    setBuiltinTools((prev) => prev.map((t) => (t.id === id ? { ...t, enabled: !current } : t)));
   };
 
   const handleDeleteSkill = async (id: string) => {
     const ok = await showConfirm('This skill will be unregistered.', {
-      title: 'Remove skill?', confirmLabel: 'Remove',
+      title: 'Remove skill?',
+      confirmLabel: 'Remove',
     });
     if (!ok) return;
     await fetch(`/api/skills?id=${id}`, { method: 'DELETE' });
@@ -376,7 +408,8 @@ export default function SkillsPage() {
 
   const handleDeleteFnTool = async (id: string) => {
     const ok = await showConfirm('This function tool will be unregistered.', {
-      title: 'Remove function tool?', confirmLabel: 'Remove',
+      title: 'Remove function tool?',
+      confirmLabel: 'Remove',
     });
     if (!ok) return;
     await fetch(`/api/function-tools?id=${id}`, { method: 'DELETE' });
@@ -385,7 +418,8 @@ export default function SkillsPage() {
 
   const handleDeleteMcp = async (id: string) => {
     const ok = await showConfirm('The MCP server and all its files will be permanently removed.', {
-      title: 'Uninstall MCP server?', confirmLabel: 'Uninstall',
+      title: 'Uninstall MCP server?',
+      confirmLabel: 'Uninstall',
     });
     if (!ok) return;
     await fetch(`/api/mcp?id=${id}`, { method: 'DELETE' });
@@ -393,14 +427,34 @@ export default function SkillsPage() {
   };
 
   const tabs = [
-    { key: 'skills'         as Tab, icon: <BookOpen size={16} />,      label: 'Skills',          count: skills.length,
-      desc: 'SKILL.md instruction modules - Edit or Create new in Agent Files > skills folder' },
-    { key: 'function_tools' as Tab, icon: <FunctionSquare size={16} />, label: 'Function Tools',  count: functionTools.length,
-      desc: 'Function-calling tools — Edit or Create new in Agent Files > function-tools folder' },
-    { key: 'mcp'            as Tab, icon: <Server size={16} />,        label: 'MCP Servers',     count: mcpServers.length,
-      desc: 'Model Context Protocol servers - Use external MCP servers or create new in Agent Files > mcp-servers' },
-    { key: 'builtin'        as Tab, icon: <Terminal size={16} />,      label: 'Built-in Tools',  count: builtinTools.filter(t => t.enabled).length,
-      desc: 'AgentPrimer\'s built-in core function-calling capabilities — disable any you don\'t need' },
+    {
+      key: 'skills' as Tab,
+      icon: <BookOpen size={16} />,
+      label: 'Skills',
+      count: skills.length,
+      desc: 'SKILL.md instruction modules - Edit or Create new in Agent Files > skills folder',
+    },
+    {
+      key: 'function_tools' as Tab,
+      icon: <FunctionSquare size={16} />,
+      label: 'Function Tools',
+      count: functionTools.length,
+      desc: 'Function-calling tools — Edit or Create new in Agent Files > function-tools folder',
+    },
+    {
+      key: 'mcp' as Tab,
+      icon: <Server size={16} />,
+      label: 'MCP Servers',
+      count: mcpServers.length,
+      desc: 'Model Context Protocol servers - Use external MCP servers or create new in Agent Files > mcp-servers',
+    },
+    {
+      key: 'builtin' as Tab,
+      icon: <Terminal size={16} />,
+      label: 'Built-in Tools',
+      count: builtinTools.filter((t) => t.enabled).length,
+      desc: "AgentPrimer's built-in core function-calling capabilities — disable any you don't need",
+    },
   ];
 
   return (
@@ -418,16 +472,16 @@ export default function SkillsPage() {
                   <Zap size={24} className="text-white" />
                 </div>
                 <div className="min-w-0 overflow-hidden">
-                  <h1 className="text-3xl font-800 text-white tracking-tight truncate">Skills &amp; MCP</h1>
-                  <p className="text-emerald-100 text-sm truncate">Skills, function tools, MCP servers, and built-in tools</p>
+                  <h1 className="text-3xl font-800 text-white tracking-tight truncate">
+                    Skills &amp; MCP
+                  </h1>
+                  <p className="text-emerald-100 text-sm truncate">
+                    Skills, function tools, MCP servers, and built-in tools
+                  </p>
                 </div>
               </div>
               {tab !== 'builtin' && (
-                <Button
-                  variant="primary"
-                  onClick={() => setInstallModal(true)}
-                  className="gap-2"
-                >
+                <Button variant="primary" onClick={() => setInstallModal(true)} className="gap-2">
                   <Plus size={16} /> Install
                 </Button>
               )}
@@ -438,66 +492,92 @@ export default function SkillsPage() {
         {/* Tabs row — sticks below header */}
         <div className="flex-shrink-0 w-full max-w-3xl mx-auto px-4 md:px-8 pt-4 md:pt-6">
           <div className="overflow-x-auto pb-1 -mx-1 px-1">
-          <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 w-max min-w-full md:min-w-0 md:w-fit mx-auto">
-            {tabs.map(({ key, icon, label, count }) => (
-              <button
-                key={key}
-                onClick={() => setTab(key)}
-                className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-600 transition-all duration-150 whitespace-nowrap ${
-                  tab === key
-                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                }`}
-              >
-                {icon}
-                {label}
-                <span className={`text-sm rounded-full px-1.5 py-0.5 ${
-                  tab === key ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-                }`}>
-                  {count}
-                </span>
-              </button>
-            ))}
-          </div>
+            <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 w-max min-w-full md:min-w-0 md:w-fit mx-auto">
+              {tabs.map(({ key, icon, label, count }) => (
+                <button
+                  key={key}
+                  onClick={() => setTab(key)}
+                  className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-600 transition-all duration-150 whitespace-nowrap ${
+                    tab === key
+                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                  }`}
+                >
+                  {icon}
+                  {label}
+                  <span
+                    className={`text-sm rounded-full px-1.5 py-0.5 ${
+                      tab === key
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Scrollable content area — full-width scrollbar at browser edge */}
         <div className="flex-1 overflow-y-auto">
           <div className="pt-2 max-w-3xl mx-auto w-full px-4 md:px-8 pb-6">
-
-          {/* Contextual hint for active tab */}
-          <div className="mb-4 px-4 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300">
-            {tabs.find(t => t.key === tab)?.desc}
-          </div>
-
-          {loading ? (
-            <div className="flex items-center gap-3 text-gray-400 dark:text-gray-500 py-16 justify-center">
-              <RefreshCw size={18} className="animate-spin" />
-              <span>Loading…</span>
+            {/* Contextual hint for active tab */}
+            <div className="mb-4 px-4 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300">
+              {tabs.find((t) => t.key === tab)?.desc}
             </div>
-          ) : tab === 'skills' ? (
-            <SkillsList skills={skills} onToggle={handleToggleSkill} onDelete={handleDeleteSkill} />
-          ) : tab === 'function_tools' ? (
-            <SkillsList skills={functionTools} onToggle={handleToggleFnTool} onDelete={handleDeleteFnTool} isFnTools />
-          ) : tab === 'mcp' ? (
-            <McpList servers={mcpServers} onToggle={handleToggleMcp} onDelete={handleDeleteMcp} onEdit={openEditMcp} />
-          ) : (
-            <BuiltinToolsList tools={builtinTools} onToggle={handleToggleBuiltin} />
-          )}
-          </div>{/* end inner centered content */}
-        </div>{/* end outer scroll container */}
+
+            {loading ? (
+              <div className="flex items-center gap-3 text-gray-400 dark:text-gray-500 py-16 justify-center">
+                <RefreshCw size={18} className="animate-spin" />
+                <span>Loading…</span>
+              </div>
+            ) : tab === 'skills' ? (
+              <SkillsList
+                skills={skills}
+                onToggle={handleToggleSkill}
+                onDelete={handleDeleteSkill}
+              />
+            ) : tab === 'function_tools' ? (
+              <SkillsList
+                skills={functionTools}
+                onToggle={handleToggleFnTool}
+                onDelete={handleDeleteFnTool}
+                isFnTools
+              />
+            ) : tab === 'mcp' ? (
+              <McpList
+                servers={mcpServers}
+                onToggle={handleToggleMcp}
+                onDelete={handleDeleteMcp}
+                onEdit={openEditMcp}
+              />
+            ) : (
+              <BuiltinToolsList tools={builtinTools} onToggle={handleToggleBuiltin} />
+            )}
+          </div>
+          {/* end inner centered content */}
+        </div>
+        {/* end outer scroll container */}
       </main>
 
       {/* Edit MCP Modal */}
       <Modal
         open={!!editMcp}
-        onClose={() => { setEditMcp(null); setEditMcpError(''); }}
+        onClose={() => {
+          setEditMcp(null);
+          setEditMcpError('');
+        }}
         title="Edit MCP Server"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setEditMcp(null)}>Cancel</Button>
-            <Button variant="primary" onClick={handleSaveMcp} loading={savingMcp}>Save changes</Button>
+            <Button variant="secondary" onClick={() => setEditMcp(null)}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleSaveMcp} loading={savingMcp}>
+              Save changes
+            </Button>
           </>
         }
       >
@@ -507,14 +587,14 @@ export default function SkillsPage() {
             <input
               type="text"
               value={editMcpName}
-              onChange={e => setEditMcpName(e.target.value)}
+              onChange={(e) => setEditMcpName(e.target.value)}
               className="w-full h-11 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-transparent text-sm focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 transition-all duration-200"
             />
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Transport</label>
             <div className="flex gap-3">
-              {(['stdio', 'sse'] as const).map(t => (
+              {(['stdio', 'sse'] as const).map((t) => (
                 <button
                   key={t}
                   type="button"
@@ -529,11 +609,13 @@ export default function SkillsPage() {
           {editMcpTransport === 'stdio' ? (
             <>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Start Command</label>
+                <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                  Start Command
+                </label>
                 <input
                   type="text"
                   value={editMcpCommand}
-                  onChange={e => setEditMcpCommand(e.target.value)}
+                  onChange={(e) => setEditMcpCommand(e.target.value)}
                   placeholder="npx -y exa-mcp-server"
                   className="w-full h-11 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-transparent text-sm focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 transition-all duration-200 font-mono"
                 />
@@ -548,9 +630,7 @@ export default function SkillsPage() {
                 <textarea
                   value={editMcpEnvText}
                   onChange={(e) => setEditMcpEnvText(e.target.value)}
-                  placeholder={
-                    'GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxx\nBRAVE_API_KEY=...'
-                  }
+                  placeholder={'GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxx\nBRAVE_API_KEY=...'}
                   rows={4}
                   className="w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 rounded-lg border-2 border-transparent text-sm focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 transition-all duration-200 font-mono"
                 />
@@ -558,12 +638,14 @@ export default function SkillsPage() {
                   Values are write-only and never sent back to the browser.{' '}
                   {editMcpEnvParseError ? (
                     <span className="text-amber-600 dark:text-amber-400">
-                      ⚠ The saved env data could not be parsed. Re-enter the env vars below to replace it.
+                      ⚠ The saved env data could not be parsed. Re-enter the env vars below to
+                      replace it.
                     </span>
                   ) : editMcpEnvKeys.length > 0 ? (
                     <>
-                      Currently configured: <code className="font-mono">{editMcpEnvKeys.join(', ')}</code>.
-                      Leave blank to keep them as-is, or type at least one line to replace them.
+                      Currently configured:{' '}
+                      <code className="font-mono">{editMcpEnvKeys.join(', ')}</code>. Leave blank to
+                      keep them as-is, or type at least one line to replace them.
                     </>
                   ) : (
                     <>No env vars are currently set for this server.</>
@@ -573,16 +655,19 @@ export default function SkillsPage() {
             </>
           ) : (
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Server URL</label>
+              <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                Server URL
+              </label>
               <input
                 type="url"
                 value={editMcpUrl}
-                onChange={e => setEditMcpUrl(e.target.value)}
+                onChange={(e) => setEditMcpUrl(e.target.value)}
                 placeholder="http://localhost:3001"
                 className="w-full h-11 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-transparent text-sm focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 transition-all duration-200"
               />
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Per-server environment variables only apply to <code>stdio</code> transport. SSE servers receive no env from AgentPrimer.
+                Per-server environment variables only apply to <code>stdio</code> transport. SSE
+                servers receive no env from AgentPrimer.
               </p>
             </div>
           )}
@@ -598,46 +683,64 @@ export default function SkillsPage() {
       {/* Install Modal */}
       <Modal
         open={installModal}
-        onClose={() => { setInstallModal(false); setInstallError(''); setGithubUrl(''); setMcpEnvText(''); }}
+        onClose={() => {
+          setInstallModal(false);
+          setInstallError('');
+          setGithubUrl('');
+          setMcpEnvText('');
+        }}
         title={
-          tab === 'skills' ? 'Install Skill' :
-          tab === 'function_tools' ? 'Install Function Tool' :
-          'Install MCP Server'
+          tab === 'skills'
+            ? 'Install Skill'
+            : tab === 'function_tools'
+              ? 'Install Function Tool'
+              : 'Install MCP Server'
         }
         footer={
           <>
-            <Button variant="secondary" onClick={() => setInstallModal(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setInstallModal(false)}>
+              Cancel
+            </Button>
             <Button variant="primary" onClick={handleInstall} loading={installing}>
-              {tab === 'skills' ? 'Install' : tab === 'function_tools' ? 'Install' : 'Install Server'}
+              {tab === 'skills'
+                ? 'Install'
+                : tab === 'function_tools'
+                  ? 'Install'
+                  : 'Install Server'}
             </Button>
           </>
         }
       >
         <div className="space-y-4">
           {(tab === 'skills' || tab === 'function_tools') && (
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
-              GitHub Repository URL
-            </label>
-            <div className="relative">
-              <GitBranch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="url"
-                value={githubUrl}
-                onChange={e => setGithubUrl(e.target.value)}
-                placeholder="https://github.com/owner/repo"
-                className="w-full h-11 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 pl-10 pr-4 rounded-lg border-2 border-transparent text-sm focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 transition-all duration-200"
-              />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                GitHub Repository URL
+              </label>
+              <div className="relative">
+                <GitBranch
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <input
+                  type="url"
+                  value={githubUrl}
+                  onChange={(e) => setGithubUrl(e.target.value)}
+                  placeholder="https://github.com/owner/repo"
+                  className="w-full h-11 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 pl-10 pr-4 rounded-lg border-2 border-transparent text-sm focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 transition-all duration-200"
+                />
+              </div>
             </div>
-          </div>
           )}
 
           {tab === 'mcp' && (
             <>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Transport</label>
+                <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                  Transport
+                </label>
                 <div className="flex gap-3">
-                  {(['stdio', 'sse'] as const).map(t => (
+                  {(['stdio', 'sse'] as const).map((t) => (
                     <button
                       key={t}
                       type="button"
@@ -652,11 +755,13 @@ export default function SkillsPage() {
               {mcpTransport === 'stdio' ? (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Start Command</label>
+                    <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                      Start Command
+                    </label>
                     <input
                       type="text"
                       value={mcpCommand}
-                      onChange={e => setMcpCommand(e.target.value)}
+                      onChange={(e) => setMcpCommand(e.target.value)}
                       placeholder="npx -y exa-mcp-server"
                       className="w-full h-11 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-transparent text-sm focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 transition-all duration-200 font-mono"
                     />
@@ -676,17 +781,20 @@ export default function SkillsPage() {
                       className="w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 rounded-lg border-2 border-transparent text-sm focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 transition-all duration-200 font-mono"
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Only this server&apos;s subprocess receives these. AgentPrimer&apos;s host env (provider API keys, AGENT_PRIMER_SECRET, …) is not forwarded by default.
+                      Only this server&apos;s subprocess receives these. AgentPrimer&apos;s host env
+                      (provider API keys, AGENT_PRIMER_SECRET, …) is not forwarded by default.
                     </p>
                   </div>
                 </>
               ) : (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-600 text-gray-700 dark:text-gray-300">Server URL</label>
+                  <label className="text-sm font-600 text-gray-700 dark:text-gray-300">
+                    Server URL
+                  </label>
                   <input
                     type="url"
                     value={mcpUrl}
-                    onChange={e => setMcpUrl(e.target.value)}
+                    onChange={(e) => setMcpUrl(e.target.value)}
                     placeholder="http://localhost:3001"
                     className="w-full h-11 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 rounded-lg border-2 border-transparent text-sm focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 transition-all duration-200"
                   />
@@ -710,7 +818,12 @@ export default function SkillsPage() {
 // ---------------------------------------------------------------------------
 // Generic list component — used for Skills (SKILL.md) and Function Tools
 // ---------------------------------------------------------------------------
-function SkillsList({ skills, onToggle, onDelete, isFnTools }: {
+function SkillsList({
+  skills,
+  onToggle,
+  onDelete,
+  isFnTools,
+}: {
   skills: Skill[];
   onToggle: (s: Skill) => void;
   onDelete: (id: string) => void;
@@ -720,7 +833,13 @@ function SkillsList({ skills, onToggle, onDelete, isFnTools }: {
     const toolType = isFnTools ? 'function tools' : 'skills';
     return (
       <EmptyState
-        icon={isFnTools ? <FunctionSquare size={32} className="text-gray-400" /> : <BookOpen size={32} className="text-gray-400" />}
+        icon={
+          isFnTools ? (
+            <FunctionSquare size={32} className="text-gray-400" />
+          ) : (
+            <BookOpen size={32} className="text-gray-400" />
+          )
+        }
         title={`No ${toolType} registered`}
         description={
           isFnTools
@@ -736,33 +855,47 @@ function SkillsList({ skills, onToggle, onDelete, isFnTools }: {
       {skills.map((skill) => {
         const isOn = !!skill.enabled;
         return (
-          <div key={skill.id ?? skill.name} className={`rounded-xl p-5 border-2 transition-all duration-150 ${
-            isOn
-              ? 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30'
-              : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
-          }`}>
+          <div
+            key={skill.id ?? skill.name}
+            className={`rounded-xl p-5 border-2 transition-all duration-150 ${
+              isOn
+                ? 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30'
+                : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
+            }`}
+          >
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-4 min-w-0">
-                <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  isOn ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
-                }`}>
-                  {isFnTools ? <FunctionSquare size={18} className="text-white" /> : <BookOpen size={18} className="text-white" />}
+                <div
+                  className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    isOn ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                >
+                  {isFnTools ? (
+                    <FunctionSquare size={18} className="text-white" />
+                  ) : (
+                    <BookOpen size={18} className="text-white" />
+                  )}
                 </div>
                 <div className="min-w-0 overflow-hidden">
                   <p className="font-700 text-gray-900 dark:text-gray-100 truncate">{skill.name}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
-                    {skill.description || (isFnTools ? 'OpenAI function-calling tool' : 'SKILL.md instruction module')}
+                    {skill.description ||
+                      (isFnTools ? 'OpenAI function-calling tool' : 'SKILL.md instruction module')}
                   </p>
                   <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                    <span className={`text-sm font-600 px-1.5 py-0.5 rounded-full ${
-                      isFnTools
-                        ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400'
-                        : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400'
-                    }`}>
+                    <span
+                      className={`text-sm font-600 px-1.5 py-0.5 rounded-full ${
+                        isFnTools
+                          ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400'
+                          : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400'
+                      }`}
+                    >
                       {isFnTools ? 'function tool' : 'skill'}
                     </span>
                     {skill.source && (
-                      <span className="text-sm text-gray-400 dark:text-gray-500">{skill.source}</span>
+                      <span className="text-sm text-gray-400 dark:text-gray-500">
+                        {skill.source}
+                      </span>
                     )}
                     {skill.registered && (
                       <a
@@ -779,10 +912,7 @@ function SkillsList({ skills, onToggle, onDelete, isFnTools }: {
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
-                <Toggle
-                  checked={isOn}
-                  onChange={() => onToggle(skill)}
-                />
+                <Toggle checked={isOn} onChange={() => onToggle(skill)} />
                 {skill.id && (
                   <button
                     onClick={() => onDelete(skill.id!)}
@@ -812,7 +942,12 @@ function SkillsList({ skills, onToggle, onDelete, isFnTools }: {
 // ---------------------------------------------------------------------------
 // MCP Server list component
 // ---------------------------------------------------------------------------
-function McpList({ servers, onToggle, onDelete, onEdit }: {
+function McpList({
+  servers,
+  onToggle,
+  onDelete,
+  onEdit,
+}: {
   servers: McpServer[];
   onToggle: (id: string, current: number) => void;
   onDelete: (id: string) => void;
@@ -830,30 +965,46 @@ function McpList({ servers, onToggle, onDelete, onEdit }: {
 
   return (
     <div className="space-y-4">
-      {servers.map(server => (
-        <div key={server.id} className={`rounded-xl p-5 border-2 transition-all duration-150 ${server.enabled ? 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'}`}>
+      {servers.map((server) => (
+        <div
+          key={server.id}
+          className={`rounded-xl p-5 border-2 transition-all duration-150 ${server.enabled ? 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'}`}
+        >
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-4">
-              <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${server.enabled ? 'bg-blue-500' : 'bg-gray-300'}`}>
+              <div
+                className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${server.enabled ? 'bg-blue-500' : 'bg-gray-300'}`}
+              >
                 <Server size={18} className="text-white" />
               </div>
               <div>
                 <p className="font-700 text-gray-900 dark:text-gray-100">{server.name}</p>
                 <div className="flex items-center gap-2 mt-1 w-full flex-col items-start md:flex-row md:items-center">
-                  <span className={`text-sm font-600 px-2 py-0.5 rounded-full w-20 ${server.transport === 'stdio' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                  <span
+                    className={`text-sm font-600 px-2 py-0.5 rounded-full w-20 ${server.transport === 'stdio' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}
+                  >
                     {server.transport === 'stdio' ? '⟳ stdio' : '🌐 SSE'}
                   </span>
                   {server.transport === 'stdio' && server.command && (
                     <code className="break-all md:break-normal text-sm bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded font-mono">
-                      {[server.command, ...(JSON.parse(server.args_json || '[]') as string[])].join(' ')}
+                      {[server.command, ...(JSON.parse(server.args_json || '[]') as string[])].join(
+                        ' ',
+                      )}
                     </code>
                   )}
                   {server.transport === 'sse' && server.url && (
-                    <code className="break-all md:break-normal text-sm bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded font-mono">{server.url}</code>
+                    <code className="break-all md:break-normal text-sm bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded font-mono">
+                      {server.url}
+                    </code>
                   )}
                 </div>
                 {server.github_url && (
-                  <a href={server.github_url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:text-blue-600 flex items-center gap-1 mt-2">
+                  <a
+                    href={server.github_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-500 hover:text-blue-600 flex items-center gap-1 mt-2"
+                  >
                     <GitBranch size={14} /> {server.github_url}
                   </a>
                 )}
@@ -899,18 +1050,24 @@ function McpList({ servers, onToggle, onDelete, onEdit }: {
 // ---------------------------------------------------------------------------
 
 const CATEGORY_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  shell:      { label: 'Shell',       icon: <Terminal size={14} />,     color: 'text-red-500' },
-  filesystem: { label: 'Filesystem',  icon: <HardDrive size={14} />,    color: 'text-blue-500' },
-  memory:     { label: 'Memory',      icon: <Brain size={14} />,        color: 'text-purple-500' },
-  agent:      { label: 'Agent',       icon: <Bot size={14} />,          color: 'text-emerald-500' },
-  output:     { label: 'Output',      icon: <PackageOpen size={14} />,  color: 'text-amber-500' },
-  skill:      { label: 'Skill',       icon: <BookOpen size={14} />,     color: 'text-indigo-500' },
+  shell: { label: 'Shell', icon: <Terminal size={14} />, color: 'text-red-500' },
+  filesystem: { label: 'Filesystem', icon: <HardDrive size={14} />, color: 'text-blue-500' },
+  memory: { label: 'Memory', icon: <Brain size={14} />, color: 'text-purple-500' },
+  agent: { label: 'Agent', icon: <Bot size={14} />, color: 'text-emerald-500' },
+  output: { label: 'Output', icon: <PackageOpen size={14} />, color: 'text-amber-500' },
+  skill: { label: 'Skill', icon: <BookOpen size={14} />, color: 'text-indigo-500' },
 };
 
 // ---------------------------------------------------------------------------
 // BuiltinToolCard – single tool row with collapsible source viewer
 // ---------------------------------------------------------------------------
-function BuiltinToolCard({ tool, onToggle }: { tool: BuiltinTool; onToggle: (id: string, current: boolean) => void }) {
+function BuiltinToolCard({
+  tool,
+  onToggle,
+}: {
+  tool: BuiltinTool;
+  onToggle: (id: string, current: boolean) => void;
+}) {
   const [sourceOpen, setSourceOpen] = useState(false);
   const [source, setSource] = useState<string | null>(null);
   const [sourceLoading, setSourceLoading] = useState(false);
@@ -958,12 +1115,22 @@ function BuiltinToolCard({ tool, onToggle }: { tool: BuiltinTool; onToggle: (id:
       <div className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 min-w-0">
-            <div className={`h-9 w-9 rounded-lg min-w-9 flex items-center justify-center flex-shrink-0 ${
-              tool.dangerous
-                ? tool.enabled ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'
-                : tool.enabled ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
-            }`}>
-              {tool.dangerous ? <ShieldAlert size={16} className="text-white" /> : <Zap size={16} className="text-white" />}
+            <div
+              className={`h-9 w-9 rounded-lg min-w-9 flex items-center justify-center flex-shrink-0 ${
+                tool.dangerous
+                  ? tool.enabled
+                    ? 'bg-red-500'
+                    : 'bg-gray-300 dark:bg-gray-600'
+                  : tool.enabled
+                    ? 'bg-emerald-500'
+                    : 'bg-gray-300 dark:bg-gray-600'
+              }`}
+            >
+              {tool.dangerous ? (
+                <ShieldAlert size={16} className="text-white" />
+              ) : (
+                <Zap size={16} className="text-white" />
+              )}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -979,14 +1146,15 @@ function BuiltinToolCard({ tool, onToggle }: { tool: BuiltinTool; onToggle: (id:
                   </span>
                 )}
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{tool.description}</p>
-              <code className="text-sm text-gray-400 dark:text-gray-500 font-mono mt-1 block">{tool.id}</code>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
+                {tool.description}
+              </p>
+              <code className="text-sm text-gray-400 dark:text-gray-500 font-mono mt-1 block">
+                {tool.id}
+              </code>
             </div>
           </div>
-          <Toggle
-            checked={tool.enabled}
-            onChange={() => onToggle(tool.id, tool.enabled)}
-          />
+          <Toggle checked={tool.enabled} onChange={() => onToggle(tool.id, tool.enabled)} />
         </div>
 
         {/* View / close source link */}
@@ -1002,7 +1170,9 @@ function BuiltinToolCard({ tool, onToggle }: { tool: BuiltinTool; onToggle: (id:
       </div>
 
       {/* Source code panel */}
-      <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${sourceOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${sourceOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+      >
         <div className="overflow-hidden">
           <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-4 py-3">
             {sourceLoading ? (
@@ -1014,7 +1184,12 @@ function BuiltinToolCard({ tool, onToggle }: { tool: BuiltinTool; onToggle: (id:
                 <SyntaxHighlighter
                   language="typescript"
                   style={isDark ? oneDark : oneLight}
-                  customStyle={{ margin: 0, background: 'transparent', padding: 0, fontSize: 'inherit' }}
+                  customStyle={{
+                    margin: 0,
+                    background: 'transparent',
+                    padding: 0,
+                    fontSize: 'inherit',
+                  }}
                   wrapLongLines={false}
                   wrapLines={true}
                   lineProps={{ style: { background: 'transparent', display: 'block' } }}
@@ -1030,7 +1205,10 @@ function BuiltinToolCard({ tool, onToggle }: { tool: BuiltinTool; onToggle: (id:
   );
 }
 
-function BuiltinToolsList({ tools, onToggle }: {
+function BuiltinToolsList({
+  tools,
+  onToggle,
+}: {
   tools: BuiltinTool[];
   onToggle: (id: string, current: boolean) => void;
 }) {
@@ -1039,7 +1217,13 @@ function BuiltinToolsList({ tools, onToggle }: {
     return acc;
   }, {});
 
-  const categoryOrder: BuiltinTool['category'][] = ['shell', 'output', 'filesystem', 'memory', 'agent'];
+  const categoryOrder: BuiltinTool['category'][] = [
+    'shell',
+    'output',
+    'filesystem',
+    'memory',
+    'agent',
+  ];
 
   return (
     <div className="space-y-8">
@@ -1051,27 +1235,41 @@ function BuiltinToolsList({ tools, onToggle }: {
         </p>
       </div> */}
 
-      {categoryOrder.filter(cat => grouped[cat]?.length).map(cat => {
-        const meta = CATEGORY_META[cat] ?? { label: cat, icon: <Zap size={14} />, color: 'text-gray-500' };
-        return (
-          <div key={cat}>
-            <div className={`flex items-center gap-2 mb-3 text-sm font-700 ${meta.color}`}>
-              {meta.icon}
-              {meta.label}
+      {categoryOrder
+        .filter((cat) => grouped[cat]?.length)
+        .map((cat) => {
+          const meta = CATEGORY_META[cat] ?? {
+            label: cat,
+            icon: <Zap size={14} />,
+            color: 'text-gray-500',
+          };
+          return (
+            <div key={cat}>
+              <div className={`flex items-center gap-2 mb-3 text-sm font-700 ${meta.color}`}>
+                {meta.icon}
+                {meta.label}
+              </div>
+              <div className="space-y-3">
+                {grouped[cat].map((tool) => (
+                  <BuiltinToolCard key={tool.id} tool={tool} onToggle={onToggle} />
+                ))}
+              </div>
             </div>
-            <div className="space-y-3">
-              {grouped[cat].map(tool => (
-                <BuiltinToolCard key={tool.id} tool={tool} onToggle={onToggle} />
-              ))}
-            </div>
-          </div>
-        );
-      })}
+          );
+        })}
     </div>
   );
 }
 
-function EmptyState({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+function EmptyState({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <div className="h-16 w-16 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">

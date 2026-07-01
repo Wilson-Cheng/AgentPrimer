@@ -28,7 +28,9 @@ async function patchUiSettings(patch: Record<string, unknown>) {
         content: JSON.stringify({ ...current, ...patch }),
       }),
     });
-  } catch { /* best-effort */ }
+  } catch {
+    /* best-effort */
+  }
 }
 
 /**
@@ -42,10 +44,10 @@ export default function ResizableSidebar(props: SidebarProps) {
   const [width, setWidth] = useState(DEFAULT);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const widthRef   = useRef(DEFAULT);
+  const widthRef = useRef(DEFAULT);
   const isDragging = useRef(false);
-  const startX     = useRef(0);
-  const startW     = useRef(0);
+  const startX = useRef(0);
+  const startW = useRef(0);
 
   // Detect mobile breakpoint – runs only on the client to avoid hydration mismatch
   useEffect(() => {
@@ -68,13 +70,15 @@ export default function ResizableSidebar(props: SidebarProps) {
     }
     // Fall back to server-persisted preference
     fetch('/api/data-files?file=.ui-settings.json')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
         if (!d?.content) return;
         const prefs = JSON.parse(d.content as string);
         if (typeof prefs.sidebarWidthPct === 'number') {
-          const w = Math.max(MIN, Math.min(MAX,
-            Math.round((prefs.sidebarWidthPct / 100) * window.innerWidth)));
+          const w = Math.max(
+            MIN,
+            Math.min(MAX, Math.round((prefs.sidebarWidthPct / 100) * window.innerWidth)),
+          );
           widthRef.current = w;
           setWidth(w);
           localStorage.setItem(STORAGE_KEY, String(w));
@@ -126,10 +130,7 @@ export default function ResizableSidebar(props: SidebarProps) {
 
         {/* Backdrop – tap to close */}
         {mobileOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 z-40"
-            onClick={() => setMobileOpen(false)}
-          />
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setMobileOpen(false)} />
         )}
 
         {/* Slide-in drawer */}
@@ -153,7 +154,7 @@ export default function ResizableSidebar(props: SidebarProps) {
 
       {/* Drag handle */}
       <div
-        onMouseDown={e => {
+        onMouseDown={(e) => {
           isDragging.current = true;
           startX.current = e.clientX;
           startW.current = widthRef.current;

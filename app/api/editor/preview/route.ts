@@ -27,7 +27,11 @@ import fs from 'fs';
 import { Readable } from 'stream';
 import { ReadableStream as WebReadableStream } from 'stream/web';
 import { resolveDataPath } from '@/lib/path-security';
-import { activePreviewContentSecurityPolicy, injectPreviewStorageShim, isActivePreviewContentType } from '@/lib/preview-security';
+import {
+  activePreviewContentSecurityPolicy,
+  injectPreviewStorageShim,
+  isActivePreviewContentType,
+} from '@/lib/preview-security';
 
 export const runtime = 'nodejs';
 
@@ -35,15 +39,15 @@ export const runtime = 'nodejs';
 // file types the editor preview pane actually renders.
 const MIME: Record<string, string> = {
   html: 'text/html; charset=utf-8',
-  htm:  'text/html; charset=utf-8',
-  md:   'text/markdown; charset=utf-8',
-  svg:  'image/svg+xml',
-  png:  'image/png',
-  jpg:  'image/jpeg',
+  htm: 'text/html; charset=utf-8',
+  md: 'text/markdown; charset=utf-8',
+  svg: 'image/svg+xml',
+  png: 'image/png',
+  jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
-  gif:  'image/gif',
+  gif: 'image/gif',
   webp: 'image/webp',
-  pdf:  'application/pdf',
+  pdf: 'application/pdf',
 };
 
 function contentTypeFor(filePath: string): string {
@@ -54,7 +58,8 @@ function contentTypeFor(filePath: string): string {
 export async function GET(request: NextRequest) {
   const rel = request.nextUrl.searchParams.get('path') ?? '';
   const abs = resolveDataPath(rel);
-  if (!abs || !fs.existsSync(abs)) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  if (!abs || !fs.existsSync(abs))
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
   let stat: fs.Stats;
   try {

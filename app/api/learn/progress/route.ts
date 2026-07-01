@@ -17,7 +17,7 @@ export async function PATCH(request: NextRequest) {
   const username = await getSessionUser();
   if (!username) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = await request.json().catch(() => null) as {
+  const body = (await request.json().catch(() => null)) as {
     lessonSlug?: string;
     status?: Status;
     quizScore?: number;
@@ -33,8 +33,10 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
   }
 
-  const quizScore = typeof body?.quizScore === 'number' ? Math.max(0, Math.floor(body.quizScore)) : null;
-  const quizTotal = typeof body?.quizTotal === 'number' ? Math.max(0, Math.floor(body.quizTotal)) : null;
+  const quizScore =
+    typeof body?.quizScore === 'number' ? Math.max(0, Math.floor(body.quizScore)) : null;
+  const quizTotal =
+    typeof body?.quizTotal === 'number' ? Math.max(0, Math.floor(body.quizTotal)) : null;
   const progress = upsertLessonProgress(username, lessonSlug, status, quizScore, quizTotal);
 
   return NextResponse.json({ progress });
