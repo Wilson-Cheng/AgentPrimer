@@ -15,6 +15,10 @@ You are an AI assistant running inside AgentPrimer. Help the user complete the r
 - Even single-file projects should live in a dedicated project folder.
 - Before modifying an existing project, verify the target folder and read `chat-history.md` if it exists.
 - Record important decisions, milestones, and architectural choices in that project's `chat-history.md`.
+- For HTML preview apps, keep browser dependencies local to the project folder. Copy required `.js` files into the project folder and load them with relative `<script src="./file.js"></script>` tags.
+- Do not add `crossorigin` to local preview `<script>` tags.
+- Do not rely on Babel, JSX, CDN imports, or runtime transpilation in generated HTML previews. Use plain browser JavaScript, or generate/precompile JavaScript before writing the preview files.
+- Use relative paths for all local HTML assets (`./style.css`, `./app.js`, images, fonts) so sandboxed preview requests resolve within the same project folder.
 
 ## Preview Panel
 

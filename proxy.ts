@@ -16,6 +16,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
+import { isSameOriginPreviewAssetRequest } from './lib/preview-security';
 
 // Routes that are accessible without authentication.
 // We treat each entry as either an exact match or a strict directory prefix
@@ -51,6 +52,10 @@ export async function proxy(request: NextRequest) {
   }
 
   if (PUBLIC_API_PATHS.some((p) => pathname === p)) {
+    return NextResponse.next();
+  }
+
+  if (pathname.startsWith('/api/workspace/') && isSameOriginPreviewAssetRequest(request)) {
     return NextResponse.next();
   }
 

@@ -27,7 +27,7 @@ import fs from 'fs';
 import { Readable } from 'stream';
 import { ReadableStream as WebReadableStream } from 'stream/web';
 import { resolveDataPath } from '@/lib/path-security';
-import { ACTIVE_PREVIEW_CONTENT_SECURITY_POLICY, isActivePreviewContentType } from '@/lib/preview-security';
+import { activePreviewContentSecurityPolicy, injectPreviewStorageShim, isActivePreviewContentType } from '@/lib/preview-security';
 
 export const runtime = 'nodejs';
 
@@ -66,12 +66,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'not a file' }, { status: 400 });
   }
 
-  const nodeStream = fs.createReadStream(abs);
-  const webStream = Readable.toWeb(nodeStream) as WebReadableStream<Uint8Array>;
   const contentType = contentTypeFor(abs);
+  const rawContent = contentType.startsWith('text/html') ? fs.readFileSync(abs, 'utf8') : null;
+  const body = rawContent === null ? null : injectPreviewStorageShim(contentType, rawContent);
+  const contentLength = body === null ? stat.size : Buffer.byteLength(body);
   const headers: Record<string, string> = {
     'Content-Type': contentType,
-    'Content-Length': String(stat.size),
+    'Content-Length': String(contentLength),
     'Content-Disposition': 'inline',
     // Disable any intermediate caching — after a save we want the new
     // bytes immediately, even if the URL is identical. The frontend
@@ -82,9 +83,18 @@ export async function GET(request: NextRequest) {
   };
 
   if (isActivePreviewContentType(contentType)) {
-    headers['Content-Security-Policy'] = ACTIVE_PREVIEW_CONTENT_SECURITY_POLICY;
+    headers['Content-Security-Policy'] = activePreviewContentSecurityPolicy(request.nextUrl.origin);
   }
 
+  if (body !== null) {
+    return new Response(body, {
+      status: 200,
+      headers,
+    });
+  }
+
+  const nodeStream = fs.createReadStream(abs);
+  const webStream = Readable.toWeb(nodeStream) as WebReadableStream<Uint8Array>;
   return new Response(webStream as unknown as ReadableStream<Uint8Array>, {
     status: 200,
     headers,

@@ -32,7 +32,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "NODE_ENV=development fuser -k 15432/tcp 2>/dev/null; sleep 0.5; next dev --hostname 0.0.0.0 -p 15432",
+    "dev": "NODE_ENV=development fuser -k 15432/tcp 2>/dev/null; sleep 0.5; next dev --webpack --hostname 0.0.0.0 -p 15432",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0 -p 15432",
     "lint": "eslint",

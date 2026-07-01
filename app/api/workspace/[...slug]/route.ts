@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { getSessionUser } from '@/lib/auth';
-import { ACTIVE_PREVIEW_CONTENT_SECURITY_POLICY, isActivePreviewContentType } from '@/lib/preview-security';
+import { activePreviewContentSecurityPolicy, injectPreviewStorageShim, isActivePreviewContentType, isSameOriginPreviewAssetRequest } from '@/lib/preview-security';
 import { DATA_ROOT, isInsideRoot } from '@/lib/path-security';
 
 const PREVIEW_ROOT = path.resolve(DATA_ROOT);
@@ -53,13 +53,15 @@ function getMime(filePath: string): string {
 }
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ slug: string[] }> },
 ) {
-  // Require a valid session
-  const user = await getSessionUser();
-  if (!user) {
-    return new NextResponse('Unauthorized', { status: 401 });
+  const isPreviewAssetRequest = isSameOriginPreviewAssetRequest(req);
+  if (!isPreviewAssetRequest) {
+    const user = await getSessionUser();
+    if (!user) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
   }
 
   const { slug } = await params;
@@ -88,11 +90,13 @@ export async function GET(
     return new NextResponse('Not a file', { status: 400 });
   }
 
-  const content = fs.readFileSync(realPath);
   const contentType = getMime(realPath);
+  const rawContent = contentType.startsWith('text/html') ? fs.readFileSync(realPath, 'utf8') : null;
+  const body = rawContent === null ? fs.readFileSync(realPath) : injectPreviewStorageShim(contentType, rawContent);
+  const contentLength = typeof body === 'string' ? Buffer.byteLength(body) : stats.size;
   const headers: Record<string, string> = {
     'Content-Type': contentType,
-    'Content-Length': String(stats.size),
+    'Content-Length': String(contentLength),
     // Allow iframe embedding from same origin; no caching so edits show immediately
     'Cache-Control': 'no-store',
     'X-Frame-Options': 'SAMEORIGIN',
@@ -100,10 +104,10 @@ export async function GET(
   };
 
   if (isActivePreviewContentType(contentType)) {
-    headers['Content-Security-Policy'] = ACTIVE_PREVIEW_CONTENT_SECURITY_POLICY;
+    headers['Content-Security-Policy'] = activePreviewContentSecurityPolicy(req.nextUrl.origin);
   }
 
-  return new NextResponse(content, {
+  return new NextResponse(body, {
     headers,
   });
 }
