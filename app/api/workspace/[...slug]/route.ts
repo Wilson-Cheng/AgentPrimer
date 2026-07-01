@@ -15,7 +15,6 @@ import {
   activePreviewContentSecurityPolicy,
   injectPreviewStorageShim,
   isActivePreviewContentType,
-  isSameOriginPreviewAssetRequest,
 } from '@/lib/preview-security';
 import { DATA_ROOT, isInsideRoot } from '@/lib/path-security';
 
@@ -58,12 +57,9 @@ function getMime(filePath: string): string {
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string[] }> }) {
-  const isPreviewAssetRequest = isSameOriginPreviewAssetRequest(req);
-  if (!isPreviewAssetRequest) {
-    const user = await getSessionUser();
-    if (!user) {
-      return new NextResponse('Unauthorized', { status: 401 });
-    }
+  const user = await getSessionUser();
+  if (!user) {
+    return new NextResponse('Unauthorized', { status: 401 });
   }
 
   const { slug } = await params;

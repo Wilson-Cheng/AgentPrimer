@@ -2,6 +2,8 @@ import fs from 'fs';
 import path from 'path';
 
 export const DATA_ROOT = path.join(/* turbopackIgnore: true */ process.cwd(), 'data');
+export const PROJECTS_ROOT = path.join(DATA_ROOT, 'projects');
+export const PREVIEW_ROOT = path.join(DATA_ROOT, 'preview');
 
 export function isInsideRoot(root: string, target: string): boolean {
   const relative = path.relative(path.resolve(root), path.resolve(target));
@@ -71,4 +73,17 @@ export function resolveAgentPath(p: string): string | null {
   if (!p || typeof p !== 'string') return null;
   const absolute = path.isAbsolute(p) ? p : path.resolve(process.cwd(), p);
   return resolvePathWithinRoot(DATA_ROOT, absolute, true);
+}
+
+export function extractProjectName(absPath: string): string | null {
+  const resolved = path.resolve(absPath);
+  const projectsResolved = path.resolve(PROJECTS_ROOT);
+  const rel = path.relative(projectsResolved, resolved);
+  if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) return null;
+  const firstSeg = rel.split(path.sep)[0];
+  return firstSeg || null;
+}
+
+export function resolvePreviewPath(relPath: string): string | null {
+  return resolveInsideRoot(PREVIEW_ROOT, relPath);
 }

@@ -312,6 +312,23 @@ export function bootstrap(): void {
   // Step 1: copy built-in content from defaults/ to data/ (first run or forced)
   copyDefaults(DEFAULTS_DIR, DATA_DIR);
 
+  // Step 1b: ensure project and preview directories exist
+  fs.mkdirSync(path.join(DATA_DIR, 'projects'), { recursive: true });
+  fs.mkdirSync(path.join(DATA_DIR, 'preview'), { recursive: true });
+
+  // Step 1c: remove stale preview copies whose source project no longer exists
+  const previewDir = path.join(DATA_DIR, 'preview');
+  if (fs.existsSync(previewDir)) {
+    for (const entry of fs.readdirSync(previewDir, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        const sourceDir = path.join(DATA_DIR, 'projects', entry.name);
+        if (!fs.existsSync(sourceDir)) {
+          fs.rmSync(path.join(previewDir, entry.name), { recursive: true, force: true });
+        }
+      }
+    }
+  }
+
   // Step 2: create data/.env template if it doesn't exist yet
   createEnvTemplate();
 

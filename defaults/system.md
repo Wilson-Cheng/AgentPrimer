@@ -28,7 +28,12 @@ Use `open_preview` after creating or updating visual output:
 - Markdown opens in an editable split preview.
 - Images and PDFs display inline.
 
-For generated HTML, use relative asset paths such as `./style.css` and `./game.js` so preview and deployment paths both work.
+When you call `open_preview`, the platform automatically copies the entire
+`data/projects/<project-name>/` folder to a sandboxed preview area and opens
+the file from there. You do not need to copy files manually — just make sure
+the entry file lives under `data/projects/<project-name>/` and all assets use
+relative paths (`./style.css`, `./game.js`, images, fonts) so they resolve
+within the same project folder.
 
 ## Memory
 

@@ -16,7 +16,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
-import { isSameOriginPreviewAssetRequest } from './lib/preview-security';
 
 // Routes that are accessible without authentication.
 // We treat each entry as either an exact match or a strict directory prefix
@@ -55,7 +54,12 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (pathname.startsWith('/api/workspace/') && isSameOriginPreviewAssetRequest(request)) {
+  // Allow unauthenticated GET access to the dedicated preview route only.
+  // /api/preview/** is scoped to data/preview/ (a throwaway mirror published
+  // by the authenticated open_preview tool) — source files, the database,
+  // and everything else under data/ are unreachable from this route.
+  // All other /api/workspace/** requests require a valid JWT.
+  if (request.method === 'GET' && pathname.startsWith('/api/preview/')) {
     return NextResponse.next();
   }
 

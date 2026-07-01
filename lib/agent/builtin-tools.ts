@@ -44,7 +44,12 @@ import type { AgentFileResult } from '../agent-files';
 import { retrieveChunks } from '../rag';
 import { getOutputLength } from '../model-lengths';
 import { startSubagentMonitor } from '../subagent-monitor';
-import { resolveAgentPath } from '../path-security';
+import {
+  resolveAgentPath,
+  extractProjectName,
+  PROJECTS_ROOT,
+  PREVIEW_ROOT,
+} from '../path-security';
 import { createOpenAIClient } from './openai-client';
 import { resolveModelWithFallback } from './model-resolver';
 import { toolsToOpenAIFormat, zodToOpenAISchema } from './schema';
@@ -959,10 +964,15 @@ export function createBuiltinTools(
         '  • PDFs                     → rendered with the browser PDF viewer',
         'For multi-file web apps pass the main entry file (e.g. index.html).',
         'Do NOT call this for config files, JSON data, scripts, or other non-visual outputs.',
-        'The source path must resolve to a file under the project data directory (./data/).',
+        'The file must live under data/projects/<project-name>/. The entire project folder is',
+        'copied to a sandboxed preview area before opening, so all relative assets resolve',
+        'correctly. You do not need to copy files manually — just build under',
+        'data/projects/<project-name>/ and call open_preview on the entry file.',
       ].join('\n'),
       parameters: z.object({
-        file_path: z.string().describe('Path to an existing file under ./data/ to preview'),
+        file_path: z
+          .string()
+          .describe('Path to an existing file under data/projects/<project-name>/ to preview'),
         title: z
           .string()
           .optional()
@@ -979,11 +989,43 @@ export function createBuiltinTools(
           .access(resolved)
           .then(() => true)
           .catch(() => false);
+        if (!exists) {
+          return { error: `File not found: ${file_path}` };
+        }
+
+        // Derive the project name from the path (must be under
+        // data/projects/<name>/...).
+        const projectName = extractProjectName(resolved);
+        if (!projectName) {
+          return {
+            error:
+              'Preview files must live under data/projects/<project-name>/. ' +
+              'Create a project folder there first, then call open_preview on the entry file.',
+          };
+        }
+
+        // Copy the entire project directory to data/preview/<name>/ so the
+        // sandboxed preview iframe (no cookies) can load every relative asset
+        // without exposing source files or the database to unauthenticated
+        // access.
+        const projectSrcDir = path.join(PROJECTS_ROOT, projectName);
+        const previewDestDir = path.join(PREVIEW_ROOT, projectName);
+        try {
+          await fs.promises.rm(previewDestDir, { recursive: true, force: true });
+          await fs.promises.cp(projectSrcDir, previewDestDir, { recursive: true });
+        } catch {
+          return { error: `Failed to stage preview for project "${projectName}".` };
+        }
+
+        const relFromProjectRoot = path.relative(projectSrcDir, resolved);
+        const previewPath = path.join(previewDestDir, relFromProjectRoot);
+
         return {
           type: 'open_preview' as const,
-          path: resolved,
+          path: previewPath,
+          sourcePath: resolved,
           title: (title as string | undefined) ?? path.basename(resolved),
-          exists,
+          exists: true,
         };
       },
     }),

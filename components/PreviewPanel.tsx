@@ -43,10 +43,21 @@ const DEFAULT_PCT = 38;
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Convert an absolute filesystem path to the /api/workspace/… URL */
+/** Convert an absolute filesystem path to a preview URL.
+ *  Files under data/preview/ are served by the unauthenticated /api/preview/
+ *  route (sandboxed iframe cannot carry cookies). The path is relativized so
+ *  the absolute filesystem path never appears in the URL. Legacy paths under
+ *  data/projects/ are also routed to /api/preview/ (the route stages them
+ *  on-demand if the preview copy doesn't exist yet). Other legacy absolute
+ *  paths fall back to the authed /api/workspace/ route. */
 function fileUrl(absPath: string): string {
-  // absPath starts with '/', e.g. /workspaces/agent-dev/output/index.html
-  // Served at /api/workspace/workspaces/agent-dev/output/index.html
+  for (const marker of ['/data/preview/', '/data/projects/']) {
+    const idx = absPath.indexOf(marker);
+    if (idx !== -1) {
+      const rel = absPath.slice(idx + marker.length);
+      return `/api/preview/${rel}`;
+    }
+  }
   return `/api/workspace${absPath}`;
 }
 
@@ -197,12 +208,12 @@ function TextPreview({ url, refreshKey }: { url: string; refreshKey: number }) {
 }
 
 interface MarkdownPreviewProps {
-  filePath: string;
+  savePath: string;
   url: string;
   refreshKey: number;
 }
 
-function MarkdownPreview({ filePath, url, refreshKey }: MarkdownPreviewProps) {
+function MarkdownPreview({ savePath, url, refreshKey }: MarkdownPreviewProps) {
   const [source, setSource] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -246,7 +257,7 @@ function MarkdownPreview({ filePath, url, refreshKey }: MarkdownPreviewProps) {
       await fetch('/api/workspace', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: filePath, content: source }),
+        body: JSON.stringify({ path: savePath, content: source }),
       });
       setSavedOk(true);
       setIsDirty(false);
@@ -468,6 +479,9 @@ function MarkdownPreview({ filePath, url, refreshKey }: MarkdownPreviewProps) {
 export interface PreviewFile {
   path: string;
   title?: string;
+  /** Original source path under data/projects/ — used for markdown saves so
+   *  edits persist to the source, not the throwaway preview copy. */
+  sourcePath?: string;
   /** Incremented by the chat page on every open_preview call; drives auto-refresh */
   version?: number;
 }
@@ -715,7 +729,11 @@ export default function PreviewPanel({ file, onClose }: PreviewPanelProps) {
             )}
             {kind === 'pdf' && <PdfPreview url={url} refreshKey={refreshKey} />}
             {kind === 'markdown' && (
-              <MarkdownPreview filePath={file.path} url={url} refreshKey={refreshKey} />
+              <MarkdownPreview
+                savePath={file.sourcePath ?? file.path}
+                url={url}
+                refreshKey={refreshKey}
+              />
             )}
             {(kind === 'text' || kind === 'unknown') && (
               <TextPreview url={url} refreshKey={refreshKey} />

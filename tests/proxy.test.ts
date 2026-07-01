@@ -6,64 +6,50 @@ function request(url: string, init?: RequestInit): NextRequest {
   return new NextRequest(url, init);
 }
 
-describe('proxy preview asset auth bypass', () => {
-  it('allows same-origin workspace preview asset requests before auth enforcement', async () => {
+describe('proxy preview route auth', () => {
+  it('allows unauthenticated GET requests to /api/preview/', async () => {
+    const response = await proxy(request('http://localhost:15432/api/preview/myapp/index.html'));
+    expect(response.status).toBe(200);
+  });
+
+  it('allows unauthenticated GET requests with spoofed sec-fetch-dest to /api/preview/', async () => {
+    const response = await proxy(
+      request('http://localhost:15432/api/preview/myapp/game.js', {
+        headers: { 'sec-fetch-dest': 'script' },
+      }),
+    );
+    expect(response.status).toBe(200);
+  });
+
+  it('protects /api/workspace/ even with spoofed sec-fetch-dest header', async () => {
     const response = await proxy(
       request(
-        'http://localhost:15432/api/workspace/workspaces/AgentPrimer/data/app/react.production.min.js',
+        'http://localhost:15432/api/workspace/workspaces/AgentPrimer/data/projects/myapp/index.html',
+        {
+          headers: { 'sec-fetch-dest': 'empty' },
+        },
+      ),
+    );
+    expect(response.status).toBe(401);
+  });
+
+  it('protects /api/workspace/ even with same-origin referer', async () => {
+    const response = await proxy(
+      request(
+        'http://localhost:15432/api/workspace/workspaces/AgentPrimer/data/projects/myapp/index.html',
         {
           headers: {
             referer:
-              'http://localhost:15432/api/workspace/workspaces/AgentPrimer/data/app/page2.html',
+              'http://localhost:15432/api/workspace/workspaces/AgentPrimer/data/projects/myapp/index.html',
           },
         },
       ),
     );
-
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(401);
   });
 
-  it('allows sandboxed iframe script asset requests before auth enforcement', async () => {
-    const response = await proxy(
-      request(
-        'http://localhost:15432/api/workspace/workspaces/AgentPrimer/data/projects/react-todo-demo/react.production.min.js',
-        {
-          headers: {
-            'sec-fetch-dest': 'script',
-            'sec-fetch-mode': 'no-cors',
-            'sec-fetch-site': 'cross-site',
-          },
-        },
-      ),
-    );
-
-    expect(response.status).toBe(200);
-  });
-
-  it('allows sandboxed iframe source map requests before auth enforcement', async () => {
-    const response = await proxy(
-      request(
-        'http://localhost:15432/api/workspace/workspaces/AgentPrimer/data/projects/react-todo-demo/babel.min.js.map',
-        {
-          headers: {
-            'sec-fetch-dest': 'empty',
-            'sec-fetch-mode': 'cors',
-            'sec-fetch-site': 'cross-site',
-          },
-        },
-      ),
-    );
-
-    expect(response.status).toBe(200);
-  });
-
-  it('keeps unauthenticated API requests protected when they are not preview assets', async () => {
-    const response = await proxy(
-      request(
-        'http://localhost:15432/api/workspace/workspaces/AgentPrimer/data/app/react.production.min.js',
-      ),
-    );
-
+  it('keeps unauthenticated non-preview API requests protected', async () => {
+    const response = await proxy(request('http://localhost:15432/api/settings'));
     expect(response.status).toBe(401);
   });
 });

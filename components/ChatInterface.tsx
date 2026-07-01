@@ -622,6 +622,7 @@ export default function ChatInterface({ initialSessionId }: Props) {
               if (result?.type === 'open_preview' && typeof result.path === 'string') {
                 const item: PreviewFile = {
                   path: result.path as string,
+                  sourcePath: result.sourcePath as string | undefined,
                   title: result.title as string | undefined,
                   version: 1,
                 };
@@ -650,6 +651,7 @@ export default function ChatInterface({ initialSessionId }: Props) {
               const item: PreviewFile = {
                 path: tc.result.path as string,
                 title: tc.result.title as string | undefined,
+                sourcePath: tc.result.sourcePath as string | undefined,
                 version: 1,
               };
               newItems.push(item);
