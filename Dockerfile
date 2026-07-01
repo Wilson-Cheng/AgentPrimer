@@ -1,5 +1,5 @@
 # ─── Stage 1: install dependencies (compiles better-sqlite3 native binding) ───
-FROM node:20-slim AS deps
+FROM node:26-slim AS deps
 
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
 
@@ -8,7 +8,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 # ─── Stage 2: build Next.js ───────────────────────────────────────────────────
-FROM node:20-slim AS builder
+FROM node:26-slim AS builder
 
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -16,7 +16,7 @@ COPY . .
 RUN npm run build
 
 # ─── Stage 3: production runner ───────────────────────────────────────────────
-FROM node:20-slim AS runner
+FROM node:26-slim AS runner
 
 WORKDIR /app
 ENV NODE_ENV=production
